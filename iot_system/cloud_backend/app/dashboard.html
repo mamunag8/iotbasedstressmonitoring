@@ -4382,6 +4382,10 @@
       setElText('txtChartTitle', t('chartTitle'));
       setElText('txtLeafChartTitle', t('leafChartTitle'));
 
+      if (typeof applyStudioTranslations === 'function') {
+        applyStudioTranslations(lang);
+      }
+
       renderDashboard(latestState, lastStats);
       if (plcRulesData || diagnosticsData) {
         renderPlcRulesAndDiagnostics();
@@ -8889,11 +8893,527 @@
       renderAll16Charts();
     }
 
+    const STUDIO_I18N = {
+      en: {
+        nav: ["🌿 Dashboard", "📈 Graphs", "🎛️ Settings", "📡 Sensors", "🗄️ Export", "🧬 Stress, Recovery & Notes"],
+        bannerHtml: "<strong>🔬 Biophysical Models Active (Passive Monitoring &amp; Database Logging Only — Zero Valve Control):</strong> Hilhorst (2000) Pore-Water EC (ECp) &amp; Osmotic Potential • Maas &amp; Hoffman (1977) Tomato Salinity Threshold (2.5 dS/m) • Tetens Canopy VPD &amp; Dew-Point Margin • Jackson (1981) CWSI • Henderson-Hasselbalch H2S/HS- Speciation • Biostimulant Stress Recovery Index (SRI %)",
+        btnRefresh: "🔄 Refresh Studio",
+        btnExcel: "📥 Export 7-Sheet Excel (.xlsx)",
+        kpiLabels: [
+          "Mean Composite Stress (PSI)",
+          "Plant Vitality Index (PVI)",
+          "Hilhorst Pore EC (ECp) & Psi_pi",
+          "Canopy CWSI & Leaf VPD",
+          "Salt Coefficient & Soil pH",
+          "Best Biostimulant Recovery (SRI)",
+          "Active Molecular H2S (aq)",
+          "Logged Pulses & Research Notes"
+        ],
+        trtHead: "🧪 Log Experimental Treatment & Biostimulant Application (Saved in Database)",
+        trtSub: "Record H2S donor (NaHS), Humic Substance (LIQHUMUS NK), Salt (NaCl), and Solution/Drainage EC & pH with mandatory Date & Time. Marks all historical stress & recovery charts.",
+        trtSubBoxes: [
+          "💨 1. H2S Donor (Sodium Hydrosulfide — NaHS) Application",
+          "🌱 2. Humic Substance (LIQHUMUS Liquid 18 NK — 18% HA+FA)",
+          "🧂 3. Salinity Stress (NaCl) & Root-Zone Solution / Drainage Chemistry"
+        ],
+        trtSubmit: "💾 Save Treatment Pulse to Database",
+        trtHistoryTitle: "📋 Saved Treatment & Biostimulant Applications History",
+        noteHead: "📓 Persistent Research Notes & Stress/Recovery Observation Database",
+        noteSub: "All notes are stored permanently in the SQLite & PostgreSQL database (research_notes), pinned on historical charts, and exported to Excel.",
+        noteSubmit: "📌 Save Research Note to Database",
+        noteHistoryTitle: "🗂️ Database Research Notes Log",
+        chartsHead: "📊 Multi-Chart Plant Stress & Biostimulant Recovery Visualization Suite (16 Interactive Charts)",
+        chartsSub: "Live 48-sensor biophysical state + historical trajectories with treatment pulse vertical markers and pinned research notes.",
+        chartTitles: [
+          ["1. 24-Plot Spatial Stress & Vitality Heatmap Matrix (8 Lines × 3 Replicates R1–R24)", "Color-coded by Composite PSI (0–100), Pore ECp (dS/m), CWSI, and +2.0 deg C Leaf Outlier Flag"],
+          ["2. 6-Axis Biophysical Stress Radar Spider Chart (Salinity vs. Biostimulant Lines)", "Comparing S_moisture, S_salinity, S_pH, S_salt_ratio, S_canopy_temp, and S_leaf_vpd (0–100)"],
+          ["3. Composite Plant Stress Index (PSI) vs. Plant Vitality Index (PVI) Across 8 Lines", "Grouped bar comparison of Non-Saline (Zones 1–4) and 100 mM NaCl Salinized Lines (Zones 5–8)"],
+          ["4. Biostimulant Stress Recovery Index (SRI %) & PSI Reduction vs. Salt Control (I-S-0)", "Quantifies how NaHS (Line 6), Humic (Line 7), and NaHS+Humic (Line 8) alleviate salinity stress"],
+          ["5. Maas-Hoffman Salinity Yield Potential Curve & Hilhorst Pore-Water EC (ECp)", "Tomato threshold ECt = 2.5 dS/m, slope = 9.9% per dS/m • Plots live Pore ECp & Osmotic Potential"],
+          ["6. Canopy Psychrometric Phase Space (Leaf Temp vs. Leaf Humidity & VPD Zones)", "All 24 Tomato Leaf Sensors (Slave IDs 101–124) plotted against Optimal VPD (0.5–1.2 kPa) & Stress Zones"],
+          ["7. Jackson CWSI Baseline Diagram (Canopy-Root Delta T vs. Leaf VPD)", "Delta T (T_leaf - T_soil) plotted between Non-Water-Stressed Lower Baseline (LL) and Upper Limit (UL = +3.5 C)"],
+          ["8. H2S / HS- Equilibrium Speciation Curve vs. Soil pH & Root-Zone Temperature", "Henderson-Hasselbalch pKa1(T) curve showing % Molecular H2S(aq) and Active uM H2S across Lines 1–8"],
+          ["9. Historical Trajectory: Composite Stress (PSI) & Vitality (PVI) + Treatment & Note Markers", "Time-series with vertical dashed lines for H2S / Humic / Salt pulses and pinned research notes"],
+          ["10. Historical Trajectory: Soil VWC (%), Bulk EC (uS/cm), Pore ECp (dS/m) & Salt Coefficient", "Root-zone water-salinity dynamics and ion accumulation ratio (soil_salt / soil_ec)"],
+          ["11. Historical Trajectory: Tomato Leaf Temp (C), Leaf Humidity (%), VPD (kPa) & CWSI", "Canopy boundary-layer microclimate and stomatal transpiration recovery over time"],
+          ["12. Pre- vs. Post-Pulse Biostimulant Recovery Curve (-12h Pre vs. +24h / +48h / +72h Post)", "Event-aligned PSI & CWSI recovery following logged NaHS and Humic Substance applications"],
+          ["13. Factorial Synergy Interaction Plot (Salinity × NaHS × Humic Substance)", "2-way interaction slopes comparing 0 mM vs. 100 mM NaCl across Control, NaHS, Humic, and NaHS+Humic"],
+          ["14. 24-Hour Diurnal Stress Cycle Profile (00:00–23:00 Hourly Aggregation)", "Identifies midday stomatal closure peak (11:00–15:00) vs. night turgor recovery across lines"],
+          ["15. Within-Line Replicate Spread (Rep 1–3) & +2.0 deg C Leaf Sensor Anomaly Detector", "Displays 3-plot min/mean/max dispersion per line and highlights any leaf sensor deviating > 2.0 C"],
+          ["16. Pore-Water ECp vs. CWSI Linear Regression (R2) & Cumulative Stress Degree-Hours (SDH)", "Left: Root-to-canopy coupling scatter & OLS regression | Right: Cumulative SDH integral per line"]
+        ],
+        profilesHead: "⚙️ 8-Line Experimental Treatment Profiles & Reference Soil pH Configuration",
+        profilesSub: "Update the assigned NaCl (mM), NaHS (uM), Humic (mL/L), and Reference Soil pH for each irrigation line (Zones 1–8).",
+        methodHead: "📖 Detailed Materials & Methods and Biophysical Modeling Methodology",
+        methodSub: "Experimental protocol, 48-node RS485 Modbus RTU telemetry architecture, thermodynamic equations, and statistical framework (Atatürk University Faculty of Agriculture — Tomato Salinity x NaHS x Humic Substance Study).",
+        methodBadge: "Experimental Protocol & Mathematical Framework",
+        methodCards: [
+          {
+            title: "2.1 Experimental Site, Plant Material & 8-Line Factorial Design",
+            tag: "Yıldırım et al. (2023) Protocol",
+            body: `<p style="margin:0 0 6px 0;"><strong>Experimental Facility &amp; Crop:</strong> Conducted at the controlled greenhouse research facility of the Faculty of Agriculture, Atatürk University, Erzurum, Türkiye (39.90 deg N, 41.27 deg E; ~1,850 m altitude). Uniform tomato (<em>Solanum lycopersicum</em> L.) seedlings were transplanted (Reference Transplant Date T0: 16 October 2026) into 7 L pots filled with a standardized 2:1 (v/v) peat:perlite substrate (dry bulk dielectric offset <code>epsilon_b0 = 4.1</code>, bulk density <code>1.15 g/cm3</code>).</p>
+            <p style="margin:0 0 6px 0;"><strong>8-Line Fertigation &amp; Biostimulant Regime (24 Plots, n = 3 Replicates/Line):</strong></p>
+            <ul style="margin:0 0 6px 0; padding-left:18px;">
+              <li><strong>Line 1 (<code>I-C-0</code>, Plots R1–R3):</strong> Non-saline Control (<code>0 mM NaCl</code>, target solution EC <code>2,000 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 2 (<code>I-C-H2S</code>, Plots R4–R6):</strong> Non-saline + Exogenous H2S Donor (<code>0 mM NaCl</code>, <code>25 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 3 (<code>I-C-HS</code>, Plots R7–R9):</strong> Non-saline + Humic Substance (<code>0 mM NaCl</code>, <code>0 uM NaHS</code>, <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>).</li>
+              <li><strong>Line 4 (<code>I-C-H2S+HS</code>, Plots R10–R12):</strong> Non-saline + Combined Biostimulants (<code>0 mM NaCl</code>, <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Line 5 (<code>I-S-0</code>, Plots R13–R15):</strong> Salinized Control (<code>100 mM NaCl</code> [<code>5.844 g/L</code>], target solution EC <code>11,500 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 6 (<code>I-S-H2S</code>, Plots R16–R18):</strong> Salinized + Exogenous H2S Rescue (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>).</li>
+              <li><strong>Line 7 (<code>I-S-HS</code>, Plots R19–R21):</strong> Salinized + Humic Substance Rescue (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Line 8 (<code>I-S-H2S+HS</code>, Plots R22–R24):</strong> Salinized + Synergistic Co-Application (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            </ul>
+            <div class="q1-eq-box">Isovalent Mineral Nutrient Matching: Non-humic lines (Lines 1, 2, 5, 6) receive stoichiometric N and K compensation via reagent-grade Urea [CO(NH2)2] + K2SO4 matching the intrinsic N and K content of 2.5 mL/L LIQHUMUS Liquid 18 (NK), isolating supramolecular humic effects from macronutrient nutrition.</div>`
+          },
+          {
+            title: "2.2 High-Frequency IIoT Sensor Array & Non-Invasive Monitoring Architecture",
+            tag: "48 RS485 Modbus RTU Nodes",
+            body: `<p style="margin:0 0 6px 0;"><strong>Root-Zone Dielectric &amp; Ionic Telemetry (Slave IDs 1–24, Plots R1–R24):</strong> Each experimental replicate pot is instrumented with an industrial 4-parameter RS485 Modbus RTU frequency-domain/time-domain dielectric probe measuring volumetric water content (<code>VWC</code>, %, resolution 0.1%), root-zone temperature (<code>T_soil</code>, deg C), bulk apparent electrical conductivity (<code>EC_bulk</code>, uS/cm), and apparent salt concentration (<code>TDS_soil</code>, mg/L).</p>
+            <p style="margin:0 0 6px 0;"><strong>Canopy Phyllosphere Microclimate Array (Slave IDs 101–124, Plots R1_L–R24_L):</strong> Paired abaxial/boundary-layer leaf sensors continuously monitor canopy temperature (<code>T_leaf</code>, deg C) and leaf boundary-layer relative humidity (<code>RH_leaf</code>, %).</p>
+            <p style="margin:0 0 6px 0;"><strong>Edge-to-Cloud Synchronization &amp; Strict Analytical Isolation:</strong> A local edge agent buffers PLC and Modbus RTU frames into SQLite and synchronizes batch telemetry to the PostgreSQL 16 cloud database. All stress algorithms, treatment logs, and research diary entries operate in a strictly passive, monitoring-only analytical plane with zero write feedback to PLC solenoid valves (<code>vana1–vana8</code>).</p>
+            <div class="q1-eq-box">Apparent Root-Zone Ionic Ratio (Salt Coefficient):\nSalt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [Baseline ~0.55; NaCl accumulation > 0.72]</div>`
+          },
+          {
+            title: "2.3 Root-Zone Pore-Water Conductivity (ECp), Osmotic Potential & Yield Model",
+            tag: "Hilhorst (2000) • Maas & Hoffman (1977)",
+            body: `<p style="margin:0 0 6px 0;">Because bulk soil conductivity (<code>EC_bulk</code>) declines non-linearly during substrate drying even when dissolved NaCl concentration rises, true root-zone salinity exposure is quantified via the linear dielectric-conductivity model of <strong>Hilhorst (2000, Soil Sci. Soc. Am. J. 64:1922–1925)</strong> coupled with the <strong>Topp et al. (1980)</strong> polynomial dielectric relationship:</p>
+            <div class="q1-eq-box">1. Volumetric moisture fraction: theta = max(0.10, VWC_pct / 100.0)\n2. Bulk dielectric permittivity (Topp et al., 1980): epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)\n3. Pore-water permittivity &amp; 25 deg C compensation: epsilon_p = 80.3 - 0.37*(T_soil - 20.0); EC_bulk_25 = (EC_bulk / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]\n4. Hilhorst Pore-Water EC &amp; Osmotic Potential: EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - 4.1); Psi_pi (MPa) = -0.036 * EC_p</div>
+            <p style="margin:4px 0 0 0;"><strong>Maas &amp; Hoffman (1977) Tomato Relative Yield Potential (<code>Y_rel</code>):</strong> Parameterized with tomato salinity threshold <code>EC_t = 2.5 dS/m</code> and slope <code>s = 9.9% per dS/m</code>:</p>
+            <div class="q1-eq-box">Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)</div>`
+          },
+          {
+            title: "2.4 Canopy Psychrometrics (VPD), Dew-Point Margin & Empirical CWSI",
+            tag: "FAO-56 Tetens • Jackson et al. (1981)",
+            body: `<p style="margin:0 0 6px 0;">Canopy stomatal regulation and atmospheric evaporative demand are derived from paired leaf sensor telemetry (<code>T_leaf</code>, <code>RH_leaf</code>) using the Magnus-Tetens saturation vapor pressure formulation (<strong>Allen et al., 1998, FAO-56</strong>) and the empirical Crop Water Stress Index (<strong>Jackson et al., 1981</strong>):</p>
+            <div class="q1-eq-box">1. Leaf Boundary-Layer Vapor Pressure Deficit (VPD_leaf):\n   e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)] (kPa);  e_a = e_s(T_leaf) * (RH_leaf / 100.0);  VPD_leaf = max(0.0, e_s - e_a)\n2. Dew-Point Temperature &amp; Condensation Margin:\n   gamma = ln(max(1.0, RH_leaf)/100.0) + (17.27*T_leaf)/(T_leaf + 237.3);  T_dew = (237.3*gamma)/(17.27 - gamma);  Dew_Margin = T_leaf - T_dew\n3. Empirical Canopy-Root CWSI (Jackson et al., 1981):\n   Delta_T = T_leaf - T_soil;  Delta_T_LL = 1.20 - 1.85 * VPD_leaf;  Delta_T_UL = +3.50 deg C\n   CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)</div>`
+          },
+          {
+            title: "2.5 Thermodynamic H2S / HS- Equilibrium Speciation in Substrate Solution",
+            tag: "Henderson-Hasselbalch pKa1(T) Model",
+            body: `<p style="margin:0 0 6px 0;">When sodium hydrosulfide (<code>NaHS</code>) is delivered into the root zone, it dissociates rapidly into dissolved molecular hydrogen sulfide gas (<code>H2S(aq)</code>, the uncharged lipophilic signaling species that permeates root aquaporins and plasma membranes) and hydrosulfide anion (<code>HS-</code>). The temperature-dependent dissociation constant <code>pKa1(T)</code> and bioavailable <code>[H2S]_active</code> concentration are computed continuously per irrigation line:</p>
+            <div class="q1-eq-box">1. Temperature-Corrected First Dissociation Constant: pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)\n2. Molecular H2S(aq) Molar Fraction: f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))];  f_HS_minus = 1.0 - f_H2S\n3. Bioavailable Dissolved Signaling Gas Concentration: [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S\n   (At pH 6.0 and T_soil = 22 deg C: pKa1 = 7.09, f_H2S = 92.5%, so 25 uM NaHS yields 23.1 uM active H2S(aq))</div>`
+          },
+          {
+            title: "2.6 Composite Plant Stress Index (PSI), Vitality (PVI), Recovery (SRI) & Statistical Pipeline",
+            tag: "Multi-Subscore Integration & ANOVA / R2",
+            body: `<p style="margin:0 0 6px 0;">Four normalized physiological sub-scores (each scaled <code>0–100</code>) integrate root-zone osmotic/halophytic load (<code>S_salinity</code>, weight 0.30), soil matric water deficit/waterlogging (<code>S_water</code>, weight 0.25), phyllosphere evaporative demand (<code>S_vpd</code>, weight 0.25), and canopy stomatal/thermal stress (<code>S_thermal</code>, weight 0.20):</p>
+            <div class="q1-eq-box">1. Composite Plant Stress Index (PSI) &amp; Vitality Index (PVI):\n   PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal;  PVI = 100.0 - PSI\n2. Biostimulant Stress Recovery Index (SRI %) for Salinized Treatments T in {Line 6, Line 7, Line 8}:\n   SRI_T (%) = clamp(((PSI_Line5_SaltControl - PSI_T) / max(5.0, PSI_Line5_SaltControl - PSI_Line1_NonSaline)) * 100.0, -100.0, 100.0)\n3. Cumulative Stress Degree-Hours (SDH) &amp; Root-to-Canopy Regression:\n   SDH (deg C * h) = Sum [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_hours ];  OLS Regression: CWSI = beta_0 + beta_1 * EC_p (R2)</div>`
+          }
+        ]
+      },
+      tr: {
+        nav: ["🌿 Gösterge Paneli", "📈 Grafikler", "🎛️ Ayarlar", "📡 Sensörler", "🗄️ Dışa Aktar", "🧬 Stres, İyileşme ve Notlar"],
+        bannerHtml: "<strong>🔬 Biyofiziksel Modeller Aktif (Sadece Pasif İzleme ve Veritabanı Kaydı — Vana Kontrolü Yok):</strong> Hilhorst (2000) Gözenek Suyu EC (ECp) ve Ozmotik Potansiyel • Maas ve Hoffman (1977) Domates Tuzluluk Eşiği (2.5 dS/m) • Tetens Kanopi VPD ve Çiğ Noktası Marjı • Jackson (1981) CWSI • Henderson-Hasselbalch H2S/HS- Türleşmesi • Biyostimülant Stres İyileşme İndeksi (SRI %)",
+        btnRefresh: "🔄 Stüdyoyu Yenile",
+        btnExcel: "📥 7 Sayfalık Excel İndir (.xlsx)",
+        kpiLabels: [
+          "Ortalama Bileşik Stres (PSI)",
+          "Bitki Canlılık İndeksi (PVI)",
+          "Hilhorst Gözenek EC (ECp) & Psi_pi",
+          "Kanopi CWSI & Yaprak VPD",
+          "Tuz Katsayısı & Toprak pH",
+          "En İyi Biyostimülant İyileşmesi (SRI)",
+          "Aktif Moleküler H2S (aq)",
+          "Kaydedilen Uygulamalar & Notlar"
+        ],
+        trtHead: "🧪 Deneysel Uygulama ve Biyostimülant Doz Kaydı (Veritabanına Kaydedilir)",
+        trtSub: "H2S donörü (NaHS), Hümik Madde (LIQHUMUS NK), Tuz (NaCl) ve Çözelti/Drenaj EC & pH değerlerini zorunlu Tarih ve Saat ile kaydedin. Tüm geçmiş stres ve iyileşme grafiklerinde işaretlenir.",
+        trtSubBoxes: [
+          "💨 1. H2S Donörü (Sodyum Hidrosülfür — NaHS) Uygulaması",
+          "🌱 2. Hümik Madde (LIQHUMUS Liquid 18 NK — %18 HA+FA)",
+          "🧂 3. Tuzluluk Stresi (NaCl) ve Kök Bölgesi Çözelti / Drenaj Kimyası"
+        ],
+        trtSubmit: "💾 Uygulama Kaydını Veritabanına Kaydet",
+        trtHistoryTitle: "📋 Kaydedilen Uygulama ve Biyostimülant Geçmişi",
+        noteHead: "📓 Kalıcı Araştırma Notları ve Stres/İyileşme Gözlem Veritabanı",
+        noteSub: "Tüm araştırma notları SQLite ve PostgreSQL veritabanında (research_notes) kalıcı olarak saklanır, geçmiş grafiklere sabitlenir ve Excel'e aktarılır.",
+        noteSubmit: "📌 Araştırma Notunu Veritabanına Kaydet",
+        noteHistoryTitle: "🗂️ Veritabanı Araştırma Notları Kayıtları",
+        chartsHead: "📊 Çoklu Grafik Bitki Stresi ve Biyostimülant İyileşme Görselleştirme Paketi (16 İnteraktif Grafik)",
+        chartsSub: "Canlı 48 sensör biyofiziksel durumu + uygulama işaretleyicileri ve sabitlenmiş araştırma notları ile geçmiş yörüngeler.",
+        chartTitles: [
+          ["1. 24 Parsel Mekansal Stres ve Canlılık Isı Haritası Matrisi (8 Hat × 3 Tekerrür R1–R24)", "Bileşik PSI (0–100), Gözenek ECp (dS/m), CWSI ve +2.0 deg C Yaprak Sapma Bayrağına göre renklendirilmiştir"],
+          ["2. 6 Eksenli Biyofiziksel Stres Radar Grafiği (Tuzluluk vs. Biyostimülant Hatları)", "S_nem, S_tuzluluk, S_pH, S_tuz_oranı, S_kanopi_sıcaklık ve S_yaprak_vpd (0–100) karşılaştırması"],
+          ["3. 8 Hat Boyunca Bileşik Bitki Stres İndeksi (PSI) vs. Bitki Canlılık İndeksi (PVI)", "Tuzsuz (Hat 1–4) ve 100 mM NaCl Tuzlu Hatların (Hat 5–8) gruplandırılmış sütun karşılaştırması"],
+          ["4. Biyostimülant Stres İyileşme İndeksi (SRI %) ve Tuz Kontrolüne (I-S-0) Göre PSI Azalması", "NaHS (Hat 6), Hümik (Hat 7) ve NaHS+Hümik (Hat 8) uygulamalarının tuz stresini nasıl azalttığını ölçer"],
+          ["5. Maas-Hoffman Tuzluluk Verim Potansiyeli Eğrisi ve Hilhorst Gözenek Suyu EC (ECp)", "Domates eşiği ECt = 2.5 dS/m, eğim = %9.9 / dS/m • Canlı Gözenek ECp ve Ozmotik Potansiyeli gösterir"],
+          ["6. Kanopi Psikrometrik Faz Uzayı (Yaprak Sıcaklığı vs. Yaprak Nemi ve VPD Bölgeleri)", "24 Domates Yaprak Sensörünün (Slave 101–124) Optimal VPD (0.5–1.2 kPa) ve Stres Bölgelerine göre dağılımı"],
+          ["7. Jackson CWSI Referans Diyagramı (Kanopi-Kök Delta T vs. Yaprak VPD)", "Delta T (T_yaprak - T_toprak) değerinin Susuzluk Stresi Olmayan Alt Sınır (LL) ve Üst Sınır (UL = +3.5 C) arasındaki konumu"],
+          ["8. Toprak pH ve Kök Bölgesi Sıcaklığına Göre H2S / HS- Denge Türleşme Eğrisi", "Hat 1–8 boyunca % Moleküler H2S(aq) ve Aktif uM H2S gösteren Henderson-Hasselbalch pKa1(T) eğrisi"],
+          ["9. Geçmiş Yörünge: Bileşik Stres (PSI) ve Canlılık (PVI) + Uygulama ve Not İşaretleyicileri", "H2S / Hümik / Tuz uygulamaları ve sabitlenmiş araştırma notları için dikey kesikli çizgiler içeren zaman serisi"],
+          ["10. Geçmiş Yörünge: Toprak VWC (%), Yığın EC (uS/cm), Gözenek ECp (dS/m) ve Tuz Katsayısı", "Kök bölgesi su-tuzluluk dinamikleri ve iyon birikim oranı (toprak_tuz / toprak_ec)"],
+          ["11. Geçmiş Yörünge: Domates Yaprak Sıcaklığı (C), Yaprak Nemi (%), VPD (kPa) ve CWSI", "Zaman içinde kanopi sınır tabakası mikrokliması ve 기공 (stoma) transpirasyon iyileşmesi"],
+          ["12. Uygulama Öncesi vs. Sonrası Biyostimülant İyileşme Eğrisi (-12sa Önce vs. +24sa / +48sa / +72sa Sonra)", "Kaydedilen NaHS ve Hümik Madde uygulamalarını takip eden PSI ve CWSI iyileşmesi"],
+          ["13. Faktöriyel Sinerji Etkileşim Grafiği (Tuzluluk × NaHS × Hümik Madde)", "Kontrol, NaHS, Hümik ve NaHS+Hümik genelinde 0 mM vs. 100 mM NaCl karşılaştırmalı 2 yönlü etkileşim eğimleri"],
+          ["14. 24 Saatlik Günlük (Diurnal) Stres Döngüsü Profili (00:00–23:00 Saatlik Ortalama)", "Hatlar arasında öğle vakti stoma kapanma zirvesini (11:00–15:00) ve gece turgor iyileşmesini belirler"],
+          ["15. Hat İçi Tekerrür Dağılımı (Tekerrür 1–3) ve +2.0 deg C Yaprak Sensörü Anomali Dedektörü", "Hat başına 3 parsel min/ort/maks dağılımını gösterir ve > 2.0 C sapan yaprak sensörlerini vurgular"],
+          ["16. Gözenek Suyu ECp vs. CWSI Doğrusal Regresyon (R2) ve Kümülatif Stres Derece-Saatleri (SDH)", "Sol: Kök-kanopi eşleşmesi dağılımı ve OLS regresyonu | Sağ: Hat başına kümülatif SDH integrali"]
+        ],
+        profilesHead: "⚙️ 8 Hat Deneysel Uygulama Profilleri ve Referans Toprak pH Yapılandırması",
+        profilesSub: "Her sulama hattı (Bölge 1–8) için atanan NaCl (mM), NaHS (uM), Hümik (mL/L) ve Referans Toprak pH değerlerini güncelleyin.",
+        methodHead: "📖 Detaylı Materyal ve Yöntem ile Biyofiziksel Modelleme Metodolojisi",
+        methodSub: "Deneysel protokol, 48 düğümlü RS485 Modbus RTU telemetri mimarisi, termodinamik denklemler ve istatistiksel çerçeve (Atatürk Üniversitesi Ziraat Fakültesi — Domates Tuzluluk x NaHS x Hümik Madde Çalışması).",
+        methodBadge: "Deneysel Protokol ve Matematiksel Çerçeve",
+        methodCards: [
+          {
+            title: "2.1 Deney Alanı, Bitki Materyali ve 8 Hatlı Faktöriyel Tasarım",
+            tag: "Yıldırım vd. (2023) Protokolü",
+            body: `<p style="margin:0 0 6px 0;"><strong>Deney Tesisi ve Bitki Materyali:</strong> Çalışma, Atatürk Üniversitesi Ziraat Fakültesi (Erzurum, Türkiye; 39.90 K, 41.27 D; ~1.850 m rakım) kontrollü sera araştırma tesisinde yürütülmüştür. Homojen domates (<em>Solanum lycopersicum</em> L.) fideleri (Referans Dikim Tarihi T0: 16 Ekim 2026), standart 2:1 (v/v) torf:perlit substratı (<code>epsilon_b0 = 4.1</code>, hacim ağırlığı <code>1.15 g/cm3</code>) içeren 7 L saksılara şaşırtılmıştır.</p>
+            <p style="margin:0 0 6px 0;"><strong>8 Hatlı Fertigasyon ve Biyostimülant Rejimi (24 Parsel, n = 3 Tekerrür/Hat):</strong></p>
+            <ul style="margin:0 0 6px 0; padding-left:18px;">
+              <li><strong>Hat 1 (<code>I-C-0</code>, R1–R3):</strong> Tuzsuz Kontrol (<code>0 mM NaCl</code>, hedef EC <code>2.000 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Hümik</code>).</li>
+              <li><strong>Hat 2 (<code>I-C-H2S</code>, R4–R6):</strong> Tuzsuz + Ekzojen H2S Donörü (<code>0 mM NaCl</code>, <code>25 uM NaHS</code>, <code>0 mL/L Hümik</code>).</li>
+              <li><strong>Hat 3 (<code>I-C-HS</code>, R7–R9):</strong> Tuzsuz + Hümik Madde (<code>0 mM NaCl</code>, <code>0 uM NaHS</code>, <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>).</li>
+              <li><strong>Hat 4 (<code>I-C-H2S+HS</code>, R10–R12):</strong> Tuzsuz + Kombine Biyostimülant (<code>0 mM NaCl</code>, <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Hat 5 (<code>I-S-0</code>, R13–R15):</strong> Tuzlu Kontrol (<code>100 mM NaCl</code> [<code>5.844 g/L</code>], hedef EC <code>11.500 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Hümik</code>).</li>
+              <li><strong>Hat 6 (<code>I-S-H2S</code>, R16–R18):</strong> Tuzlu + Ekzojen H2S İyileştirmesi (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>).</li>
+              <li><strong>Hat 7 (<code>I-S-HS</code>, R19–R21):</strong> Tuzlu + Hümik Madde İyileştirmesi (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Hat 8 (<code>I-S-H2S+HS</code>, R22–R24):</strong> Tuzlu + Sinerjik Birlikte Uygulama (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            </ul>
+            <div class="q1-eq-box">İzovalan Mineral Besin Eşitlemesi: Hümik içermeyen hatlar (Hat 1, 2, 5, 6), 2.5 mL/L LIQHUMUS Liquid 18 (NK) içindeki N ve K miktarını dengelemek üzere Üre [CO(NH2)2] + K2SO4 ile desteklenerek supramoleküler hümik etkiler makro besin etkisinden ayrıştırılmıştır.</div>`
+          },
+          {
+            title: "2.2 Yüksek Frekanslı IIoT Sensör Dizisi ve Müdahalesiz İzleme Mimarisi",
+            tag: "48 RS485 Modbus RTU Düğümü",
+            body: `<p style="margin:0 0 6px 0;"><strong>Kök Bölgesi Dielektrik ve İyonik Telemetri (Slave ID 1–24, Parsel R1–R24):</strong> Her tekerrür saksısı; hacimsel su içeriği (<code>VWC</code>, %), kök bölgesi sıcaklığı (<code>T_soil</code>, deg C), yığın elektriksel iletkenlik (<code>EC_bulk</code>, uS/cm) ve görünür tuz konsantrasyonunu (<code>TDS_soil</code>, mg/L) ölçen 4 parametreli endüstriyel RS485 Modbus RTU probu ile donatılmıştır.</p>
+            <p style="margin:0 0 6px 0;"><strong>Kanopi Filosfer Mikroklima Dizisi (Slave ID 101–124, Parsel R1_L–R24_L):</strong> Eşleştirilmiş yaprak yüzey sensörleri, kanopi sıcaklığını (<code>T_leaf</code>, deg C) ve yaprak sınır tabakası bağıl nemini (<code>RH_leaf</code>, %) sürekli olarak izler.</p>
+            <p style="margin:0 0 6px 0;"><strong>Uçtan Buluta Senkronizasyon ve Tam Analitik İzolasyon:</strong> Yerel uç ajan (edge agent), PLC ve Modbus RTU verilerini SQLite'ta tamponlar ve PostgreSQL 16 bulut veritabanına senkronize eder. Tüm stres algoritmaları ve araştırma kayıtları, PLC solenoid vanalarına (<code>vana1–vana8</code>) hiçbir müdahalede bulunmadan salt-izleme modunda çalışır.</p>
+            <div class="q1-eq-box">Görünür Kök Bölgesi İyonik Oranı (Tuz Katsayısı):\nSalt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [Bazal ~0.55; NaCl birikimi > 0.72]</div>`
+          },
+          {
+            title: "2.3 Kök Bölgesi Gözenek Suyu İletkenliği (ECp), Ozmotik Potansiyel ve Verim Modeli",
+            tag: "Hilhorst (2000) • Maas ve Hoffman (1977)",
+            body: `<p style="margin:0 0 6px 0;">Yığın toprak iletkenliği (<code>EC_bulk</code>) substrat kurudukça doğrusal olmayan şekilde düştüğünden, gerçek kök bölgesi tuzluluk maruziyeti <strong>Hilhorst (2000)</strong> doğrusal dielektrik-iletkenlik modeli ve <strong>Topp vd. (1980)</strong> denklemi ile hesaplanır:</p>
+            <div class="q1-eq-box">1. Hacimsel nem oranı: theta = max(0.10, VWC_pct / 100.0)\n2. Yığın dielektrik geçirgenliği (Topp vd., 1980): epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)\n3. Gözenek suyu geçirgenliği ve 25 deg C düzeltmesi: epsilon_p = 80.3 - 0.37*(T_soil - 20.0); EC_bulk_25 = (EC_bulk / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]\n4. Hilhorst Gözenek Suyu EC ve Ozmotik Potansiyel: EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - 4.1); Psi_pi (MPa) = -0.036 * EC_p</div>
+            <p style="margin:4px 0 0 0;"><strong>Maas ve Hoffman (1977) Domates Bağıl Verim Potansiyeli (<code>Y_rel</code>):</strong> Domates tuzluluk eşiği <code>EC_t = 2.5 dS/m</code> ve eğim <code>s = %9.9 / dS/m</code> ile modellenmiştir:</p>
+            <div class="q1-eq-box">Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)</div>`
+          },
+          {
+            title: "2.4 Kanopi Psikrometrisi (VPD), Çiğ Noktası Marjı ve Ampirik CWSI",
+            tag: "FAO-56 Tetens • Jackson vd. (1981)",
+            body: `<p style="margin:0 0 6px 0;">Kanopi stoma kontrolü ve atmosferik buharlaşma talebi, eşleştirilmiş yaprak sensörü verilerinden (<code>T_leaf</code>, <code>RH_leaf</code>) Magnus-Tetens doygun buhar basıncı (<strong>Allen vd., 1998, FAO-56</strong>) ve Bitki Su Stresi İndeksi (<strong>Jackson vd., 1981</strong>) ile türetilir:</p>
+            <div class="q1-eq-box">1. Yaprak Sınır Tabakası Buhar Basıncı Açığı (VPD_leaf):\n   e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)] (kPa);  e_a = e_s(T_leaf) * (RH_leaf / 100.0);  VPD_leaf = max(0.0, e_s - e_a)\n2. Çiğ Noktası Sıcaklığı (T_dew) ve Yoğuşma Güvenlik Marjı:\n   gamma = ln(max(1.0, RH_leaf)/100.0) + (17.27*T_leaf)/(T_leaf + 237.3);  T_dew = (237.3*gamma)/(17.27 - gamma);  Dew_Margin = T_leaf - T_dew\n3. Ampirik Kanopi-Kök CWSI (Jackson vd., 1981):\n   Delta_T = T_leaf - T_soil;  Delta_T_LL = 1.20 - 1.85 * VPD_leaf;  Delta_T_UL = +3.50 deg C\n   CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)</div>`
+          },
+          {
+            title: "2.5 Substrat Çözeltisinde Termodinamik H2S / HS- Denge Türleşmesi",
+            tag: "Henderson-Hasselbalch pKa1(T) Modeli",
+            body: `<p style="margin:0 0 6px 0;">Sodyum hidrosülfür (<code>NaHS</code>) kök bölgesine uygulandığında hızla çözünmüş moleküler hidrojen sülfür gazına (<code>H2S(aq)</code>, kök akuaporinlerinden geçen yüksüz lipofilik sinyal molekülü) ve hidrosülfür anyonuna (<code>HS-</code>) ayrışır. Sıcaklığa bağlı <code>pKa1(T)</code> ve biyo-yarayışlı <code>[H2S]_active</code> konsantrasyonu her hat için sürekli hesaplanır:</p>
+            <div class="q1-eq-box">1. Sıcaklık Düzeltmeli İlk Ayrışma Sabiti: pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)\n2. Moleküler H2S(aq) Molar Kesri: f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))];  f_HS_minus = 1.0 - f_H2S\n3. Biyo-yarayışlı Çözünmüş Sinyal Gazı Konsantrasyonu: [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S\n   (pH 6.0 ve T_soil = 22 deg C'de: pKa1 = 7.09, f_H2S = %92.5 olup 25 uM NaHS uygulaması 23.1 uM aktif H2S(aq) sağlar)</div>`
+          },
+          {
+            title: "2.6 Bileşik Bitki Stres İndeksi (PSI), Canlılık (PVI), İyileşme (SRI) ve İstatistiksel Модель",
+            tag: "Çoklu Alt-Skor Entegrasyonu ve ANOVA / R2",
+            body: `<p style="margin:0 0 6px 0;">Dört normalize fizyolojik alt skor (<code>0–100</code>), kök bölgesi ozmotik/tuz yükünü (<code>S_salinity</code>, ağırlık 0.30), toprak su eksikliğini (<code>S_water</code>, ağırlık 0.25), yaprak buharlaşma talebini (<code>S_vpd</code>, ağırlık 0.25) ve kanopi termal stresini (<code>S_thermal</code>, ağırlık 0.20) birleştirir:</p>
+            <div class="q1-eq-box">1. Bileşik Bitki Stres İndeksi (PSI) ve Canlılık İndeksi (PVI):\n   PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal;  PVI = 100.0 - PSI\n2. Tuzlu Biyostimülant Hatları (Hat 6, 7, 8) İçin Stres İyileşme İndeksi (SRI %):\n   SRI_T (%) = clamp(((PSI_Hat5_TuzKontrol - PSI_T) / max(5.0, PSI_Hat5_TuzKontrol - PSI_Hat1_TuzsuzKontrol)) * 100.0, -100.0, 100.0)\n3. Kümülatif Stres Derece-Saatleri (SDH) ve Kök-Kanopi Regresyonu:\n   SDH (deg C * sa) = Toplam [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_saat ];  OLS Regresyon: CWSI = beta_0 + beta_1 * EC_p (R2)</div>`
+          }
+        ]
+      },
+      bn: {
+        nav: ["🌿 ড্যাশবোর্ড", "📈 গ্রাফ", "🎛️ সেটিংস", "📡 সেন্সরসমূহ", "🗄️ এক্সপোর্ট", "🧬 স্ট্রেস, রিকভারি ও নোটস"],
+        bannerHtml: "<strong>🔬 বায়োফিজিক্যাল মডেল সক্রিয় (শুধুমাত্র প্যাসিভ মনিটরিং ও ডাটাবেস লগিং — ভালভ কন্ট্রোল নেই):</strong> Hilhorst (2000) পোর-ওয়াটার EC (ECp) ও অসমোটিক পটেনশিয়াল • Maas & Hoffman (1977) টমেটো লবণাক্ততা সীমা (2.5 dS/m) • Tetens ক্যানোপি VPD ও ডিউ-পয়েন্ট মার্জিন • Jackson (1981) CWSI • Henderson-Hasselbalch H2S/HS- স্পিসিয়েশন • বায়োস্টিমুল্যান্ট স্ট্রেস রিকভারি ইনডেক্স (SRI %)",
+        btnRefresh: "🔄 স্টুডিও রিফ্রেশ করুন",
+        btnExcel: "📥 ৭-শিট এক্সেল ডাউনলোড (.xlsx)",
+        kpiLabels: [
+          "গড় কম্পোজিট স্ট্রেস (PSI)",
+          "প্ল্যান্ট ভাইটালিটি ইনডেক্স (PVI)",
+          "Hilhorst পোর EC (ECp) ও Psi_pi",
+          "ক্যানোপি CWSI ও পাতার VPD",
+          "লবণ সহগ ও মাটির pH",
+          "সেরা বায়োস্টিমুল্যান্ট রিকভারি (SRI)",
+          "সক্রিয় আণবিক H2S (aq)",
+          "লগকৃত প্রয়োগ ও রিসার্চ নোটস"
+        ],
+        trtHead: "🧪 পরীক্ষামূলক ট্রিটমেন্ট ও বায়োস্টিমুল্যান্ট প্রয়োগ লগ করুন (ডাটাবেসে সংরক্ষিত)",
+        trtSub: "বাধ্যতামূলক তারিখ ও সময়সহ H2S ডোনার (NaHS), হিউমিক সাবস্ট্যান্স (LIQHUMUS NK), লবণ (NaCl), এবং সলিউশন/ড্রেনেজ EC ও pH রেকর্ড করুন। এটি সব ঐতিহাসিক স্ট্রেস ও রিকভারি চার্টে চিহ্নিত থাকবে।",
+        trtSubBoxes: [
+          "💨 ১. H2S ডোনার (সোডিয়াম হাইড্রোসালফাইড — NaHS) প্রয়োগ",
+          "🌱 ২. হিউমিক সাবস্ট্যান্স (LIQHUMUS Liquid 18 NK — ১৮% HA+FA)",
+          "🧂 ৩. লবণাক্ততা স্ট্রেস (NaCl) ও রুট-জোন সলিউশন / ড্রেনেজ কেমিস্ট্রি"
+        ],
+        trtSubmit: "💾 ট্রিটমেন্ট পালস ডাটাবেসে সেভ করুন",
+        trtHistoryTitle: "📋 সংরক্ষিত ট্রিটমেন্ট ও বায়োস্টিমুল্যান্ট প্রয়োগের ইতিহাস",
+        noteHead: "📓 স্থায়ী রিসার্চ নোটস এবং স্ট্রেস/রিকভারি পর্যবেক্ষণ ডাটাবেস",
+        noteSub: "সমস্ত নোট SQLite ও PostgreSQL ডাটাবেসে (research_notes) স্থায়ীভাবে সংরক্ষিত থাকে, চার্টে পিন করা থাকে এবং এক্সেলে এক্সপোর্ট হয়।",
+        noteSubmit: "📌 রিসার্চ নোট ডাটাবেসে সেভ করুন",
+        noteHistoryTitle: "🗂️ ডাটাবেস রিসার্চ নোটস লগ",
+        chartsHead: "📊 মাল্টি-চার্ট প্ল্যান্ট স্ট্রেস ও বায়োস্টিমুল্যান্ট রিকভারি ভিজ্যুয়ালাইজেশন স্যুইট (১৬টি ইন্টারঅ্যাক্টিভ চার্ট)",
+        chartsSub: "৪৮টি সেন্সরের লাইভ বায়োফিজিক্যাল অবস্থা + ট্রিটমেন্ট পালস মার্কার ও পিন করা রিসার্চ নোটসহ ঐতিহাসিক গতিপথ।",
+        chartTitles: [
+          ["১. ২৪-প্লট স্পেশিয়াল স্ট্রেস ও ভাইটালিটি হিটম্যাপ ম্যাট্রিক্স (৮ লাইন × ৩ রেপ্লিকেট R1–R24)", "কম্পোজিট PSI (0–100), পোর ECp (dS/m), CWSI এবং +2.0 deg C পাতার তাপমাত্রা বিচ্যুতি অনুযায়ী রঙিন"],
+          ["২. ৬-অক্ষ বায়োফিজিক্যাল স্ট্রেস রাডার স্পাইডার চার্ট (লবণাক্ততা বনাম বায়োস্টিমুল্যান্ট লাইন)", "S_moisture, S_salinity, S_pH, S_salt_ratio, S_canopy_temp এবং S_leaf_vpd (0–100) এর তুলনা"],
+          ["৩. ৮টি লাইনে কম্পোজিট প্ল্যান্ট স্ট্রেস ইনডেক্স (PSI) বনাম প্ল্যান্ট ভাইটালিটি ইনডেক্স (PVI)", "লবণমুক্ত (জোন ১–৪) এবং ১০০ mM NaCl লবণাক্ত লাইনের (জোন ৫–৮) গ্রুপকৃত বার তুলনা"],
+          ["৪. বায়োস্টিমুল্যান্ট স্ট্রেস রিকভারি ইনডেক্স (SRI %) ও লবণ কন্ট্রোলের (I-S-0) তুলনায় PSI হ্রাস", "NaHS (লাইন ৬), হিউমিক (লাইন ৭) এবং NaHS+হিউমিক (লাইন ৮) কীভাবে লবণাক্ততার স্ট্রেস কমায় তা পরিমাপ করে"],
+          ["৫. Maas-Hoffman লবণাক্ততা ফলন সম্ভাবনা রেখা ও Hilhorst পোর-ওয়াটার EC (ECp)", "টমেটো থ্রেশহোল্ড ECt = 2.5 dS/m, ঢাল = ৯.৯% প্রতি dS/m • লাইভ পোর ECp ও অসমোটিক পটেনশিয়াল প্রদর্শন করে"],
+          ["৬. ক্যানোপি সাইক্রোমেট্রিক ফেজ স্পেস (পাতার তাপমাত্রা বনাম পাতার আর্দ্রতা ও VPD জোন)", "২৪টি টমেটো লিফ সেন্সর (Slave 101–124) অপটিমাল VPD (0.5–1.2 kPa) ও স্ট্রেস জোনের বিপরীতে প্লট করা হয়েছে"],
+          ["৭. Jackson CWSI বেসলাইন ডায়াগ্রাম (ক্যানোপি-রুট Delta T বনাম পাতার VPD)", "Delta T (T_leaf - T_soil) নন-ওয়াটার-স্ট্রেসড লোয়ার বেসলাইন (LL) ও আপার লিমিট (UL = +3.5 C) এর মধ্যে প্লট করা"],
+          ["৮. মাটির pH ও রুট-জোন তাপমাত্রার বিপরীতে H2S / HS- সাম্যাবস্থা স্পিসিয়েশন কার্ভ", "লাইন ১–৮ জুড়ে % আণবিক H2S(aq) এবং সক্রিয় uM H2S প্রদর্শনকারী Henderson-Hasselbalch pKa1(T) রেখা"],
+          ["৯. ঐতিহাসিক গতিপথ: কম্পোজিট স্ট্রেস (PSI) ও ভাইটালিটি (PVI) + ট্রিটমেন্ট ও নোট মার্কার", "H2S / হিউমিক / লবণ প্রয়োগ এবং পিন করা রিসার্চ নোটের উল্লম্ব ড্যাশ লাইনসহ টাইম-সিরিজ"],
+          ["১০. ঐতিহাসিক গতিপথ: মাটির VWC (%), বাল্ক EC (uS/cm), পোর ECp (dS/m) ও লবণ সহগ", "রুট-জোন পানি-লবণাক্ততা গতিশীলতা এবং আয়ন জমার অনুপাত (soil_salt / soil_ec)"],
+          ["১১. ঐতিহাসিক গতিপথ: টমেটো পাতার তাপমাত্রা (C), পাতার আর্দ্রতা (%), VPD (kPa) ও CWSI", "সময়ের সাথে ক্যানোপি বাউন্ডারি-লেয়ার মাইক্রোক্লাইমেট এবং স্টোমাটাল ট্রান্সপিরেশন রিকভারি"],
+          ["১২. পালস-পূর্ব বনাম পালস-পরবর্তী বায়োস্টিমুল্যান্ট রিকভারি কার্ভ (-১২ ঘণ্টা বনাম +২৪/+৪৮/+৭২ ঘণ্টা)", "লগকৃত NaHS এবং হিউমিক সাবস্ট্যান্স প্রয়োগের পর ইভেন্ট-সারিবদ্ধ PSI ও CWSI রিকভারি"],
+          ["১৩. ফ্যাক্টোরিয়াল সিনার্জি ইন্টারঅ্যাকশন প্লট (লবণাক্ততা × NaHS × হিউমিক সাবস্ট্যান্স)", "কন্ট্রোল, NaHS, হিউমিক এবং NaHS+হিউমিক জুড়ে ০ mM বনাম ১০০ mM NaCl এর দ্বিমুখী ইন্টারঅ্যাকশন ঢাল"],
+          ["১৪. ২৪-ঘণ্টা ডায়ার্নাল স্ট্রেস সাইকেল প্রোফাইল (০০:০০–২৩:০০ ঘণ্টাভিত্তিক গড়)", "বিভিন্ন লাইনে দুপুরের স্টোমাটাল ক্লোজার পিক (১১:০০–১৫:০০) বনাম রাতের টার্গর রিকভারি চিহ্নিত করে"],
+          ["১৫. লাইন-অভ্যন্তরীণ রেপ্লিকেট বিস্তার (Rep 1–3) ও +2.0 deg C লিফ সেন্সর অ্যানোমালি ডিটেক্টর", "প্রতি লাইনে ৩টি প্লটের সর্বনিম্ন/গড়/সর্বোচ্চ বিস্তার এবং > 2.0 C বিচ্যুত পাতার সেন্সর হাইলাইট করে"],
+          ["১৬. পোর-ওয়াটার ECp বনাম CWSI লিনিয়ার রিগ্রেশন (R2) ও কিউমুলেটিভ স্ট্রেস ডিগ্রি-আওয়ার্স (SDH)", "বামে: রুট-টু-ক্যানোপি কাপলিং স্ক্যাটার ও OLS রিগ্রেশন | ডানে: প্রতি লাইনে কিউমুলেটিভ SDH ইন্টিগ্রাল"]
+        ],
+        profilesHead: "⚙️ ৮-লাইন পরীক্ষামূলক ট্রিটমেন্ট প্রোফাইল ও রেফারেন্স মাটির pH কনফিগারেশন",
+        profilesSub: "প্রতিটি সেচ লাইনের (জোন ১–৮) জন্য নির্ধারিত NaCl (mM), NaHS (uM), হিউমিক (mL/L) এবং রেফারেন্স মাটির pH আপডেট করুন।",
+        methodHead: "📖 বিস্তারিত উপকরণ ও পদ্ধতি এবং বায়োফিজিক্যাল মডেলিং মেথডোলজি",
+        methodSub: "পরীক্ষামূলক প্রোটোকল, ৪৮-নোড RS485 Modbus RTU টেলিমেট্রি আর্কিটেকচার, তাপগতিবিদ্যা সমীকরণ এবং পরিসংখ্যানগত কাঠামো (আতাতুর্ক বিশ্ববিদ্যালয় কৃষি অনুষদ — টমেটো লবণাক্ততা x NaHS x হিউমিক সাবস্ট্যান্স গবেষণা)।",
+        methodBadge: "পরীক্ষামূলক প্রোটোকল ও গাণিতিক কাঠামো",
+        methodCards: [
+          {
+            title: "২.১ পরীক্ষার স্থান, উদ্ভিদ উপাদান ও ৮-লাইন ফ্যাক্টোরিয়াল ডিজাইন",
+            tag: "Yıldırım et al. (2023) প্রোটোকল",
+            body: `<p style="margin:0 0 6px 0;"><strong>গবেষণাগার ও ফসল:</strong> তুরস্কের এরজুরুমে আতাতুর্ক বিশ্ববিদ্যালয়ের কৃষি অনুষদের নিয়ন্ত্রিত গ্রিনহাউস গবেষণা কেন্দ্রে (৩৯.৯০° উত্তর, ৪১.২৭° পূর্ব; ~১,৮৫০ মিটার উচ্চতা) পরিচালিত। সমান আকারের টমেটো (<em>Solanum lycopersicum</em> L.) চারা (রেফারেন্স রোপণ তারিখ T0: ১৬ অক্টোবর ২০২৬) ২:১ (v/v) পিট:পার্লাইট সাবস্ট্রেট (<code>epsilon_b0 = 4.1</code>, বাল্ক ঘনত্ব <code>1.15 g/cm3</code>) ভর্তি ৭ লিটার পটে স্থানান্তর করা হয়।</p>
+            <p style="margin:0 0 6px 0;"><strong>৮-লাইন ফার্টিগেশন ও বায়োস্টিমুল্যান্ট বিন্যাস (২৪টি প্লট, প্রতি লাইনে ৩টি রেপ্লিকেট):</strong></p>
+            <ul style="margin:0 0 6px 0; padding-left:18px;">
+              <li><strong>লাইন ১ (<code>I-C-0</code>, R1–R3):</strong> লবণমুক্ত কন্ট্রোল (<code>0 mM NaCl</code>, লক্ষ্য EC <code>2,000 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>)।</li>
+              <li><strong>লাইন ২ (<code>I-C-H2S</code>, R4–R6):</strong> লবণমুক্ত + বহিরাগত H2S ডোনার (<code>0 mM NaCl</code>, <code>25 uM NaHS</code>, <code>0 mL/L Humic</code>)।</li>
+              <li><strong>লাইন ৩ (<code>I-C-HS</code>, R7–R9):</strong> লবণমুক্ত + হিউমিক সাবস্ট্যান্স (<code>0 mM NaCl</code>, <code>0 uM NaHS</code>, <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>)।</li>
+              <li><strong>লাইন ৪ (<code>I-C-H2S+HS</code>, R10–R12):</strong> লবণমুক্ত + সমন্বিত বায়োস্টিমুল্যান্ট (<code>0 mM NaCl</code>, <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>)।</li>
+              <li><strong>লাইন ৫ (<code>I-S-0</code>, R13–R15):</strong> লবণাক্ত কন্ট্রোল (<code>100 mM NaCl</code> [<code>5.844 g/L</code>], লক্ষ্য EC <code>11,500 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>)।</li>
+              <li><strong>লাইন ৬ (<code>I-S-H2S</code>, R16–R18):</strong> লবণাক্ত + H2S পুনরুদ্ধার ট্রিটমেন্ট (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>)।</li>
+              <li><strong>লাইন ৭ (<code>I-S-HS</code>, R19–R21):</strong> লবণাক্ত + হিউমিক সাবস্ট্যান্স পুনরুদ্ধার (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>)।</li>
+              <li><strong>লাইন ৮ (<code>I-S-H2S+HS</code>, R22–R24):</strong> লবণাক্ত + সিনারজিস্টিক যৌথ প্রয়োগ (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>)।</li>
+            </ul>
+            <div class="q1-eq-box">সমতুল্য খনিজ পুষ্টি সমন্বয়: হিউমিক-বিহীন লাইনগুলোতে (লাইন ১, ২, ৫, ৬) ২.৫ mL/L LIQHUMUS Liquid 18 (NK)-এর সমপরিমাণ N ও K মেটাতে ইউরিয়া [CO(NH2)2] + K2SO4 প্রদান করা হয়, যাতে হিউমিক পদার্থের প্রকৃত জৈব-উদ্দীপক প্রভাব নির্ভুলভাবে আলাদা করা যায়।</div>`
+          },
+          {
+            title: "২.২ উচ্চ-ফ্রিকোয়েন্সি IIoT সেন্সর অ্যারে ও নন-ইনভেসিভ মনিটরিং আর্কিটেকচার",
+            tag: "৪৮টি RS485 Modbus RTU নোড",
+            body: `<p style="margin:0 0 6px 0;"><strong>রুট-জোন ডাইইলেকট্রিক ও আয়নিক টেলিমেট্রি (Slave ID 1–24, প্লট R1–R24):</strong> প্রতিটি পটে ৪-প্যারামিটার ইন্ডাস্ট্রিয়াল RS485 Modbus RTU প্রোব স্থাপন করা হয়েছে যা মাটির আয়তনিক আর্দ্রতা (<code>VWC</code>, %), মাটির তাপমাত্রা (<code>T_soil</code>, deg C), বাল্ক ইলেকট্রিক্যাল কন্ডাক্টিভিটি (<code>EC_bulk</code>, uS/cm) এবং দ্রবীভূত লবণ (<code>TDS_soil</code>, mg/L) পরিমাপ করে।</p>
+            <p style="margin:0 0 6px 0;"><strong>ক্যানোপি ফাইলোস্ফিয়ার মাইক্রোক্লাইমেট অ্যারে (Slave ID 101–124, প্লট R1_L–R24_L):</strong> প্রতিটি প্লটের পাতায় যুক্ত লিফ সেন্সর সার্বক্ষণিক পাতার তাপমাত্রা (<code>T_leaf</code>, deg C) এবং পাতার পৃষ্ঠের আপেক্ষিক আর্দ্রতা (<code>RH_leaf</code>, %) পরিমাপ করে।</p>
+            <p style="margin:0 0 6px 0;"><strong>এজ-টু-ক্লাউড সিঙ্ক্রোনাইজেশন ও সম্পূর্ণ বিশ্লেষণাত্মক পৃথকীকরণ:</strong> লোকাল এজ এজেন্ট PLC ও সেন্সর ডাটা SQLite-এ বাফার করে এবং ক্লাউড PostgreSQL 16 ডাটাবেসে সিঙ্ক করে। সমস্ত স্ট্রেস বিশ্লেষণ ও নোট সম্পূর্ণ প্যাসিভ মনিটরিং মোডে কাজ করে এবং PLC সোলেনয়েড ভালভে (<code>vana1–vana8</code>) কোনো কমান্ড পাঠায় না।</p>
+            <div class="q1-eq-box">রুট-জোন আয়নিক অনুপাত (লবণ সহগ):\nSalt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [স্বাভাবিক ~0.55; NaCl জমা হলে > 0.72]</div>`
+          },
+          {
+            title: "২.৩ রুট-জোন পোর-ওয়াটার কন্ডাক্টিভিটি (ECp), অসমোটিক পটেনশিয়াল ও ফলন মডেল",
+            tag: "Hilhorst (2000) • Maas & Hoffman (1977)",
+            body: `<p style="margin:0 0 6px 0;">মাটি শুকানোর সাথে সাথে বাল্ক ইলেকট্রিক্যাল কন্ডাক্টিভিটি (<code>EC_bulk</code>) অ-রৈখিকভাবে হ্রাস পায়। তাই মূল অঞ্চলের প্রকৃত লবণাক্ততা নির্ণয়ে <strong>Hilhorst (2000)</strong>-এর রৈখিক ডাইইলেকট্রিক-কন্ডাক্টিভিটি মডেল এবং <strong>Topp et al. (1980)</strong> সমীকরণ ব্যবহার করা হয়েছে:</p>
+            <div class="q1-eq-box">1. আয়তনিক আর্দ্রতা ভগ্নাংশ: theta = max(0.10, VWC_pct / 100.0)\n2. বাল্ক ডাইইলেকট্রিক পারমিটিভিটি (Topp et al., 1980): epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)\n3. পোর-ওয়াটার পারমিটিভিটি ও 25 deg C তাপমাত্রা সংশোধন: epsilon_p = 80.3 - 0.37*(T_soil - 20.0); EC_bulk_25 = (EC_bulk / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]\n4. Hilhorst পোর-ওয়াটার EC ও অসমোটিক পটেনশিয়াল: EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - 4.1); Psi_pi (MPa) = -0.036 * EC_p</div>
+            <p style="margin:4px 0 0 0;"><strong>Maas &amp; Hoffman (1977) টমেটো আপেক্ষিক ফলন সম্ভাবনা (<code>Y_rel</code>):</strong> টমেটো লবণাক্ততা সীমা <code>EC_t = 2.5 dS/m</code> এবং ঢাল <code>s = 9.9% per dS/m</code>:</p>
+            <div class="q1-eq-box">Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)</div>`
+          },
+          {
+            title: "২.৪ ক্যানোপি সাইক্রোমেট্রিক্স (VPD), ডিউ-পয়েন্ট মার্জিন ও এম্পিরিক্যাল CWSI",
+            tag: "FAO-56 Tetens • Jackson et al. (1981)",
+            body: `<p style="margin:0 0 6px 0;">পাতার সেন্সর টেলিমেট্রি (<code>T_leaf</code>, <code>RH_leaf</code>) থেকে Magnus-Tetens সম্পৃক্ত বাষ্পচাপ সমীকরণ (<strong>Allen et al., 1998, FAO-56</strong>) এবং ক্রপ ওয়াটার স্ট্রেস ইনডেক্স (<strong>Jackson et al., 1981</strong>) দ্বারা পত্ররন্ধ্রীয় নিয়ন্ত্রণ ও বাষ্পীভবন চাহিদা নির্ণয় করা হয়:</p>
+            <div class="q1-eq-box">1. পাতার বাউন্ডারি-লেয়ার ভেপার প্রেসার ডেফিসিট (VPD_leaf):\n   e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)] (kPa);  e_a = e_s(T_leaf) * (RH_leaf / 100.0);  VPD_leaf = max(0.0, e_s - e_a)\n2. শিশিরাঙ্ক তাপমাত্রা (T_dew) ও ছত্রাক ঘনীভবন নিরাপত্তা মার্জিন:\n   gamma = ln(max(1.0, RH_leaf)/100.0) + (17.27*T_leaf)/(T_leaf + 237.3);  T_dew = (237.3*gamma)/(17.27 - gamma);  Dew_Margin = T_leaf - T_dew\n3. এম্পিরিক্যাল ক্যানোপি-রুট CWSI (Jackson et al., 1981):\n   Delta_T = T_leaf - T_soil;  Delta_T_LL = 1.20 - 1.85 * VPD_leaf;  Delta_T_UL = +3.50 deg C\n   CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)</div>`
+          },
+          {
+            title: "২.৫ সাবস্ট্রেট দ্রবণে তাপগতিবিদ্যাগত H2S / HS- সাম্যাবস্থা স্পিসিয়েশন",
+            tag: "Henderson-Hasselbalch pKa1(T) মডেল",
+            body: `<p style="margin:0 0 6px 0;">যখন সোডিয়াম হাইড্রোসালফাইড (<code>NaHS</code>) মূল অঞ্চলে প্রয়োগ করা হয়, তখন এটি দ্রুত দ্রবীভূত আণবিক হাইড্রোজেন সালফাইড গ্যাস (<code>H2S(aq)</code>, যা মূলের অ্যাকোয়াপোরিন ও কোষঝিল্লি ভেদ করে সিগন্যালিং কাজ করে) এবং হাইড্রোসালফাইড অ্যানায়নে (<code>HS-</code>) বিয়োজিত হয়। তাপমাত্রা-নির্ভর <code>pKa1(T)</code> এবং সক্রিয় <code>[H2S]_active</code> ঘনত্ব প্রতিটি লাইনের জন্য গণনা করা হয়:</p>
+            <div class="q1-eq-box">1. তাপমাত্রা-সংশোধিত প্রথম বিয়োজন ধ্রুবক: pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)\n2. আণবিক H2S(aq) মোলার ভগ্নাংশ: f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))];  f_HS_minus = 1.0 - f_H2S\n3. জৈব-লভ্য দ্রবীভূত সিগন্যালিং গ্যাস ঘনত্ব: [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S\n   (pH 6.0 এবং T_soil = 22 deg C-এ: pKa1 = 7.09, f_H2S = 92.5%, তাই 25 uM NaHS থেকে 23.1 uM সক্রিয় H2S(aq) পাওয়া যায়)</div>`
+          },
+          {
+            title: "২.৬ কম্পোজিট প্ল্যান্ট স্ট্রেস ইনডেক্স (PSI), ভাইটালিটি (PVI), রিকভারি (SRI) ও পরিসংখ্যান পাইপলাইন",
+            tag: "মাল্টি-সাবস্কোর ইন্টিগ্রেশন ও ANOVA / R2",
+            body: `<p style="margin:0 0 6px 0;">চারটি নরমালাইজড শারীরবৃত্তীয় সাব-স্কোর (<code>0–100</code>) মূল অঞ্চলের অসমোটিক/লবণাক্ততা লোড (<code>S_salinity</code>, গুরুত্ব 0.30), মাটির পানির ঘাটতি (<code>S_water</code>, গুরুত্ব 0.25), পাতার বাষ্পীভবন চাহিদা (<code>S_vpd</code>, গুরুত্ব 0.25) এবং ক্যানোপি তাপীয় স্ট্রেসকে (<code>S_thermal</code>, গুরুত্ব 0.20) সমন্বিত করে:</p>
+            <div class="q1-eq-box">1. কম্পোজিট প্ল্যান্ট স্ট্রেস ইনডেক্স (PSI) ও ভাইটালিটি ইনডেক্স (PVI):\n   PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal;  PVI = 100.0 - PSI\n2. লবণাক্ত বায়োস্টিমুল্যান্ট ট্রিটমেন্টের (লাইন ৬, ৭, ৮) জন্য স্ট্রেস রিকভারি ইনডেক্স (SRI %):\n   SRI_T (%) = clamp(((PSI_Line5_SaltControl - PSI_T) / max(5.0, PSI_Line5_SaltControl - PSI_Line1_NonSaline)) * 100.0, -100.0, 100.0)\n3. কিউমুলেটিভ স্ট্রেস ডিগ্রি-আওয়ার্স (SDH) ও রুট-টু-ক্যানোপি রিগ্রেশন:\n   SDH (deg C * h) = Sum [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_hours ];  OLS রিগ্রেশন: CWSI = beta_0 + beta_1 * EC_p (R2)</div>`
+          }
+        ]
+      },
+      ar: {
+        nav: ["🌿 لوحة القيادة", "📈 الرسوم البيانية", "🎛️ الإعدادات", "📡 الحساسات", "🗄️ تصدير", "🧬 الإجهاد والتعافي والملاحظات"],
+        bannerHtml: "<strong>🔬 النماذج الفيزيائية الحيوية نشطة (مراقبة سلبية وتسجيل في قاعدة البيانات فقط — بدون تحكم في الصمامات):</strong> نموذج Hilhorst (2000) لتوصيل مياه المسام (ECp) والجهد الأسموزي • عتبة ملوحة الطماطم Maas & Hoffman (1977) (2.5 dS/m) • عجز ضغط البخار VPD ونقطة الندى • مؤشر إجهاد الماء Jackson (1981) CWSI • توازن H2S/HS- • مؤشر تعافي الإجهاد بالمنشطات الحيوية (SRI %)",
+        btnRefresh: "🔄 تحديث الاستوديو",
+        btnExcel: "📥 تصدير ملف إكسل (7 أوراق .xlsx)",
+        kpiLabels: [
+          "متوسط الإجهاد المركب (PSI)",
+          "مؤشر حيوية النبات (PVI)",
+          "توصيل المسام Hilhorst (ECp) و Psi_pi",
+          "مؤشر CWSI وعجز ضغط البخار VPD",
+          "معامل الملوحة و pH التربة",
+          "أفضل تعافٍ بالمنشطات الحيوية (SRI)",
+          "غاز H2S الجزيئي النشط (aq)",
+          "التطبيقات والملاحظات المسجلة"
+        ],
+        trtHead: "🧪 تسجيل المعاملات التجريبية وتطبيقات المنشطات الحيوية (تحفظ في قاعدة البيانات)",
+        trtSub: "سجل مانح H2S (NaHS)، والمادة الدبالية (LIQHUMUS NK)، والملح (NaCl)، و EC و pH للمحلول والصرف مع التاريخ والوقت الإلزاميين.",
+        trtSubBoxes: [
+          "💨 1. تطبيق مانح H2S (هيدروسلفيد الصوديوم — NaHS)",
+          "🌱 2. المادة الدبالية (LIQHUMUS Liquid 18 NK — 18% HA+FA)",
+          "🧂 3. إجهاد الملوحة (NaCl) وكيمياء محلول الجذور والصرف"
+        ],
+        trtSubmit: "💾 حفظ دفعة المعاملة في قاعدة البيانات",
+        trtHistoryTitle: "📋 سجل تطبيقات المعاملات والمنشطات الحيوية المحفوظة",
+        noteHead: "📓 قاعدة بيانات الملاحظات البحثية الدائمة ومراقبة الإجهاد والتعافي",
+        noteSub: "يتم تخزين جميع الملاحظات بشكل دائم في قاعدة بيانات SQLite و PostgreSQL (research_notes)، وتثبيتها على الرسوم البيانية وتصديرها إلى Excel.",
+        noteSubmit: "📌 حفظ الملاحظة البحثية في قاعدة البيانات",
+        noteHistoryTitle: "🗂️ سجل الملاحظات البحثية في قاعدة البيانات",
+        chartsHead: "📊 جناح الرسوم البيانية المتعددة لإجهاد النبات والتعافي بالمنشطات الحيوية (16 رسماً تفاعلياً)",
+        chartsSub: "الحالة الفيزيائية الحيوية المباشرة لـ 48 حساساً + المسارات التاريخية مع علامات المعاملات والملاحظات البحثية المثبتة.",
+        chartTitles: [
+          ["1. مصفوفة الخريطة الحرارية المكانية للإجهاد والحيوية لـ 24 قطعة (8 خطوط × 3 مكررات R1–R24)", "ملونة حسب PSI المركب (0–100)، وتوصيل المسام ECp (dS/m)، و CWSI، وتنبيه انحراف حرارة الورقة (+2.0 درجة مئوية)"],
+          ["2. مخطط الرادار السداسي للإجهاد الفيزيائي الحيوي (خطوط الملوحة مقابل المنشطات الحيوية)", "مقارنة S_moisture و S_salinity و S_pH و S_salt_ratio و S_canopy_temp و S_leaf_vpd (0–100)"],
+          ["3. مؤشر إجهاد النبات المركب (PSI) مقابل مؤشر حيوية النبات (PVI) عبر 8 خطوط", "مقارنة الأعمدة بين الخطوط غير المالحة (1–4) والخطوط المالحة 100 mM NaCl (5–8)"],
+          ["4. مؤشر التعافي بالمنشطات الحيوية (SRI %) وخفض PSI مقارنةً بشاهد الملوحة (I-S-0)", "يقيس كيف يخفف NaHS (خط 6) والدبالية (خط 7) والجمع بينهما (خط 8) من إجهاد الملوحة"],
+          ["5. منحنى Maas-Hoffman لإنتاجية الملوحة وتوصيل مياه المسام Hilhorst (ECp)", "عتبة الطماطم ECt = 2.5 dS/m، الميل = 9.9% لكل dS/m • يعرض ECp المباشر والجهد الأسموزي"],
+          ["6. فضاء الطور السيكرومتري للمجموع الخضري (حرارة الورقة مقابل رطوبة الورقة ومناطق VPD)", "توزيع 24 حساس أوراق طماطم (Slave 101–124) مقابل منطقة VPD المثلى (0.5–1.2 kPa) ومناطق الإجهاد"],
+          ["7. مخطط خط الأساس لـ Jackson CWSI (الفرق الحراري Delta T مقابل VPD للورقة)", "رسم Delta T (T_leaf - T_soil) بين الحد الأدنى غير المجهد مائياً (LL) والحد الأعلى (UL = +3.5 C)"],
+          ["8. منحنى توازن أنواع H2S / HS- مقابل pH التربة وحرارة منطقة الجذور", "منحنى Henderson-Hasselbalch pKa1(T) يوضح نسبة H2S(aq) الجزيئي والتركيز النشط عبر الخطوط 1–8"],
+          ["9. المسار التاريخي: الإجهاد المركب (PSI) والحيوية (PVI) + علامات المعاملات والملاحظات", "سلسلة زمنية مع خطوط رأسية متقطعة لدفعات H2S / الدبالية / الملح والملاحظات البحثية المثبتة"],
+          ["10. المسار التاريخي: رطوبة التربة VWC (%)، وتوصيل التربة EC، وتوصيل المسام ECp، ومعامل الملوحة", "ديناميكيات المياه والملوحة في منطقة الجذور ونسبة تراكم الأيونات (soil_salt / soil_ec)"],
+          ["11. المسار التاريخي: حرارة ورقة الطماطم (C)، ورطوبة الورقة (%)، و VPD (kPa)، و CWSI", "المناخ الدقيق للطبقة الحدودية للورقة وتعافي النتح الثغري بمرور الوقت"],
+          ["12. منحنى التعافي قبل وبعد تطبيق المنشطات الحيوية (-12 ساعة قبل مقابل +24/+48/+72 ساعة بعد)", "تعافي مؤشري PSI و CWSI بعد تطبيقات NaHS والمادة الدبالية المسجلة"],
+          ["13. مخطط التفاعل التآزري العاملي (الملوحة × NaHS × المادة الدبالية)", "منحنيات التفاعل الثنائي لمقارنة 0 mM مقابل 100 mM NaCl عبر الشاهد و NaHS والدبالية والجمع بينهما"],
+          ["14. ملف دورة الإجهاد اليومية على مدار 24 ساعة (تجميع ساعي 00:00–23:00)", "يحدد ذروة إغلاق الثغور وقت الظهيرة (11:00–15:00) مقابل تعافي الامتلاء الليلي عبر الخطوط"],
+          ["15. تشتت المكررات داخل الخط (Rep 1–3) وكاشف شذوذ حساسات الأوراق (+2.0 درجة مئوية)", "يعرض الحد الأدنى/المتوسط/الأقصى لكل خط ويسلط الضوء على أي حساس أوراق ينحرف بأكثر من 2.0 درجة مئوية"],
+          ["16. الانحدار الخطي بين ECp و CWSI (R2) ودرجات-ساعات الإجهاد التراكمية (SDH)", "يسار: ارتباط الجذور بالمجموع الخضري وانحدار OLS | يمين: تكامل SDH التراكمي لكل خط"]
+        ],
+        profilesHead: "⚙️ ملفات المعاملات التجريبية للخطوط الـ 8 وإعداد pH التربة المرجعي",
+        profilesSub: "تحديث قيم NaCl (mM) و NaHS (uM) والمادة الدبالية (mL/L) و pH التربة المرجعي لكل خط ري (المناطق 1–8).",
+        methodHead: "📖 المواد والطرق التفصيلية ومنهجية النمذجة الفيزيائية الحيوية",
+        methodSub: "البروتوكول التجريبي، وبنية القياس عن بعد لـ 48 عقدة RS485 Modbus RTU، والمعادلات الديناميكية الحرارية، والإطار الإحصائي (جامعة أتاتورك كلية الزراعة — دراسة ملوحة الطماطم × NaHS × المادة الدبالية).",
+        methodBadge: "البروتوكول التجريبي والإطار الرياضي",
+        methodCards: [
+          {
+            title: "2.1 موقع التجربة والمادة النباتية والتصميم العاملي لـ 8 خطوط",
+            tag: "بروتوكول Yıldırım et al. (2023)",
+            body: `<p style="margin:0 0 6px 0;"><strong>منشأة البحث والمحصول:</strong> أجريت التجربة في الدفيئة البحثية بكلية الزراعة، جامعة أتاتورك، أرضروم، تركيا (39.90 شمالاً، 41.27 شرقاً؛ ارتفاع ~1,850 م). تم شتل بادرات طماطم (<em>Solanum lycopersicum</em> L.) متجانسة (تاريخ الشتل المرجعي T0: 16 أكتوبر 2026) في أصص سعة 7 لتر مملوءة بوسط بيتموس:بيرلايت بنسبة 2:1 (<code>epsilon_b0 = 4.1</code>، الكثافة الظاهرية <code>1.15 g/cm3</code>).</p>
+            <p style="margin:0 0 6px 0;"><strong>نظام التسميد بالري والمنشطات الحيوية عبر 8 خطوط (24 قطعة تجريبية، 3 مكررات لكل خط):</strong></p>
+            <ul style="margin:0 0 6px 0; padding-left:18px;">
+              <li><strong>الخط 1 (<code>I-C-0</code>، القطع R1–R3):</strong> شاهد غير مالح (<code>0 mM NaCl</code>، EC المستهدف <code>2,000 uS/cm</code>، <code>0 uM NaHS</code>، <code>0 mL/L Humic</code>).</li>
+              <li><strong>الخط 2 (<code>I-C-H2S</code>، القطع R4–R6):</strong> غير مالح + مانح H2S خارجي (<code>0 mM NaCl</code>، <code>25 uM NaHS</code>، <code>0 mL/L Humic</code>).</li>
+              <li><strong>الخط 3 (<code>I-C-HS</code>، القطع R7–R9):</strong> غير مالح + مادة دبالية (<code>0 mM NaCl</code>، <code>0 uM NaHS</code>، <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>).</li>
+              <li><strong>الخط 4 (<code>I-C-H2S+HS</code>، القطع R10–R12):</strong> غير مالح + منشطات حيوية مشتركة (<code>0 mM NaCl</code>، <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>الخط 5 (<code>I-S-0</code>، القطع R13–R15):</strong> شاهد مالح (<code>100 mM NaCl</code> [<code>5.844 g/L</code>]، EC المستهدف <code>11,500 uS/cm</code>، <code>0 uM NaHS</code>، <code>0 mL/L Humic</code>).</li>
+              <li><strong>الخط 6 (<code>I-S-H2S</code>، القطع R16–R18):</strong> مالح + إنقاذ بمانح H2S (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>).</li>
+              <li><strong>الخط 7 (<code>I-S-HS</code>، القطع R19–R21):</strong> مالح + إنقاذ بالمادة الدبالية (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>الخط 8 (<code>I-S-H2S+HS</code>، القطع R22–R24):</strong> مالح + تطبيق تآزري مشترك (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            </ul>
+            <div class="q1-eq-box">موازنة العناصر الغذائية المعدنية: تتلقى الخطوط الخالية من المادة الدبالية (الخطوط 1، 2، 5، 6) تعويضاً متكافئاً من النيتروجين والبوتاسيوم عبر اليوريا [CO(NH2)2] وكبريتات البوتاسيوم K2SO4 لمطابقة محتوى N و K في 2.5 mL/L LIQHUMUS Liquid 18 (NK).</div>`
+          },
+          {
+            title: "2.2 مصفوفة حساسات IIoT عالية التردد وبنية المراقبة غير الجراحية",
+            tag: "48 عقدة RS485 Modbus RTU",
+            body: `<p style="margin:0 0 6px 0;"><strong>القياس العازل والأيوني لمنطقة الجذور (Slave IDs 1–24، القطع R1–R24):</strong> كل أصيص مزود بمجس صناعي رباعي المعاملات يعمل ببروتوكول RS485 Modbus RTU لقياس المحتوى المائي الحجمي (<code>VWC</code>، %)، ودرجة حرارة منطقة الجذور (<code>T_soil</code>، درجة مئوية)، والتوصيل الكهربائي الظاهري للتربة (<code>EC_bulk</code>، uS/cm)، وتركيز الأملاح الظاهري (<code>TDS_soil</code>، mg/L).</p>
+            <p style="margin:0 0 6px 0;"><strong>مصفوفة المناخ الدقيق لسطح الورقة (Slave IDs 101–124، القطع R1_L–R24_L):</strong> تقيس حساسات الأوراق المقترنة درجة حرارة المجموع الخضري (<code>T_leaf</code>، درجة مئوية) والرطوبة النسبية للطبقة الحدودية للورقة (<code>RH_leaf</code>، %).</p>
+            <p style="margin:0 0 6px 0;"><strong>المزامنة من الحافة إلى السحابة والعزل التحليلي التام:</strong> يقوم وكيل الحافة المحلي بتخزين قراءات PLC و Modbus RTU مؤقتاً في SQLite ومزامنتها مع قاعدة بيانات PostgreSQL 16 السحابية. تعمل جميع خوارزميات الإجهاد والملاحظات البحثية في مستوى تحليلي للمراقبة فقط دون أي تدخل في صمامات السولينويد (<code>vana1–vana8</code>).</p>
+            <div class="q1-eq-box">النسبة الأيونية الظاهرية لمنطقة الجذور (معامل الملوحة):\nSalt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [خط الأساس ~0.55؛ تراكم NaCl > 0.72]</div>`
+          },
+          {
+            title: "2.3 توصيل مياه المسام في منطقة الجذور (ECp) والجهد الأسموزي ونموذج الإنتاجية",
+            tag: "Hilhorst (2000) • Maas & Hoffman (1977)",
+            body: `<p style="margin:0 0 6px 0;">نظراً لأن توصيل التربة الظاهري (<code>EC_bulk</code>) ينخفض بشكل غير خطي أثناء جفاف الوسط حتى مع ارتفاع تركيز NaCl المذاب، يتم حساب التعرض الفعلي للملوحة في منطقة الجذور عبر نموذج <strong>Hilhorst (2000)</strong> المقترن بمعادلة <strong>Topp et al. (1980)</strong>:</p>
+            <div class="q1-eq-box">1. كسر الرطوبة الحجمي: theta = max(0.10, VWC_pct / 100.0)\n2. السماحية العازلة للتربة (Topp et al., 1980): epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)\n3. سماحية مياه المسام وتعويض الحرارة عند 25 درجة مئوية: epsilon_p = 80.3 - 0.37*(T_soil - 20.0); EC_bulk_25 = (EC_bulk / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]\n4. توصيل مياه المسام Hilhorst والجهد الأسموزي: EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - 4.1); Psi_pi (MPa) = -0.036 * EC_p</div>
+            <p style="margin:4px 0 0 0;"><strong>نموذج Maas &amp; Hoffman (1977) للإنتاجية النسبية للطماطم (<code>Y_rel</code>):</strong> بعتبة ملوحة الطماطم <code>EC_t = 2.5 dS/m</code> وميل انخفاض الإنتاجية <code>s = 9.9% لكل dS/m</code>:</p>
+            <div class="q1-eq-box">Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)</div>`
+          },
+          {
+            title: "2.4 السيكرومتريا للمجموع الخضري (VPD) وهامش نقطة الندى ومؤشر CWSI التجريبي",
+            tag: "FAO-56 Tetens • Jackson et al. (1981)",
+            body: `<p style="margin:0 0 6px 0;">يتم اشتقاق التنظيم الثغري والطلب التبخيري الجوي من قياسات حساسات الأوراق (<code>T_leaf</code>, <code>RH_leaf</code>) باستخدام معادلة Magnus-Tetens لضغط البخار المشبع (<strong>Allen et al., 1998, FAO-56</strong>) ومؤشر إجهاد الماء للمحصول (<strong>Jackson et al., 1981</strong>):</p>
+            <div class="q1-eq-box">1. عجز ضغط البخار في الطبقة الحدودية للورقة (VPD_leaf):\n   e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)] (kPa);  e_a = e_s(T_leaf) * (RH_leaf / 100.0);  VPD_leaf = max(0.0, e_s - e_a)\n2. درجة حرارة نقطة الندى (T_dew) وهامش الأمان ضد التكاثف الفطري:\n   gamma = ln(max(1.0, RH_leaf)/100.0) + (17.27*T_leaf)/(T_leaf + 237.3);  T_dew = (237.3*gamma)/(17.27 - gamma);  Dew_Margin = T_leaf - T_dew\n3. مؤشر CWSI التجريبي (Jackson et al., 1981):\n   Delta_T = T_leaf - T_soil;  Delta_T_LL = 1.20 - 1.85 * VPD_leaf;  Delta_T_UL = +3.50 deg C\n   CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)</div>`
+          },
+          {
+            title: "2.5 التوازن الديناميكي الحراري لأنواع H2S / HS- في محلول منطقة الجذور",
+            tag: "نموذج Henderson-Hasselbalch pKa1(T)",
+            body: `<p style="margin:0 0 6px 0;">عند إضافة هيدروسلفيد الصوديوم (<code>NaHS</code>) إلى منطقة الجذور، يتفكك سريعاً إلى غاز كبريتيد الهيدروجين الجزيئي المذاب (<code>H2S(aq)</code>، وهو الجزيء الإشاري المحب للدهون الذي يعبر أغشية خلايا الجذور) وأنيون الهيدروسلفيد (<code>HS-</code>). يتم حساب ثابت التفكك المعتمد على الحرارة <code>pKa1(T)</code> والتركيز النشط <code>[H2S]_active</code> لكل خط ري:</p>
+            <div class="q1-eq-box">1. ثابت التفكك الحمضي الأول المصحح حرارياً: pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)\n2. الكسر المولي لـ H2S(aq) الجزيئي: f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))];  f_HS_minus = 1.0 - f_H2S\n3. تركيز غاز الإشارة المذاب المتاح حيوياً: [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S\n   (عند pH 6.0 وحرارة تربة 22 درجة مئوية: pKa1 = 7.09، و f_H2S = 92.5%، لذا فإن 25 uM NaHS ينتج 23.1 uM من H2S(aq) النشط)</div>`
+          },
+          {
+            title: "2.6 مؤشر إجهاد النبات المركب (PSI) والحيوية (PVI) والتعافي (SRI) والتحليل الإحصائي",
+            tag: "تكامل المؤشرات الفرعية و ANOVA / R2",
+            body: `<p style="margin:0 0 6px 0;">تدمج أربع درجات فسيولوجية فرعية معيارية (<code>0–100</code>) كلاً من الحمل الأسموزي/الملحي لمنطقة الجذور (<code>S_salinity</code>، وزن 0.30)، وعجز رطوبة التربة (<code>S_water</code>، وزن 0.25)، والطلب التبخيري للورقة (<code>S_vpd</code>، وزن 0.25)، والإجهاد الحراري للمجموع الخضري (<code>S_thermal</code>، وزن 0.20):</p>
+            <div class="q1-eq-box">1. مؤشر إجهاد النبات المركب (PSI) ومؤشر الحيوية (PVI):\n   PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal;  PVI = 100.0 - PSI\n2. مؤشر التعافي بالمنشطات الحيوية (SRI %) للمعاملات المالحة (الخطوط 6، 7، 8):\n   SRI_T (%) = clamp(((PSI_Line5_SaltControl - PSI_T) / max(5.0, PSI_Line5_SaltControl - PSI_Line1_NonSaline)) * 100.0, -100.0, 100.0)\n3. درجات-ساعات الإجهاد التراكمية (SDH) وانحدار الجذور والمجموع الخضري:\n   SDH (deg C * h) = Sum [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_hours ];  انحدار OLS: CWSI = beta_0 + beta_1 * EC_p (R2)</div>`
+          }
+        ]
+      }
+    };
+
+    function applyStudioTranslations(lang) {
+      const L = STUDIO_I18N[lang] || STUDIO_I18N.en;
+      const navIds = ["menuLines", "menuDetails", "menuBasicRules", "menuSensors", "menuExport", "menuStressStudio"];
+      navIds.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (el && L.nav[idx]) el.textContent = L.nav[idx];
+      });
+
+      const root = document.getElementById("viewStressStudio") || document;
+      const bannerDiv = root.querySelector(".safety-banner > div:first-child");
+      if (bannerDiv) bannerDiv.innerHTML = L.bannerHtml;
+      const bannerBtns = root.querySelectorAll(".safety-banner .btn");
+      if (bannerBtns[0]) bannerBtns[0].textContent = L.btnRefresh;
+      if (bannerBtns[1]) bannerBtns[1].textContent = L.btnExcel;
+
+      const kpiLbls = root.querySelectorAll(".kpi-grid .kpi-card .kpi-label");
+      kpiLbls.forEach((el, idx) => {
+        if (L.kpiLabels[idx]) el.textContent = L.kpiLabels[idx];
+      });
+
+      const inputsNotesCards = root.querySelectorAll("#sec-inputs-notes > .section-card");
+      if (inputsNotesCards[0]) {
+        const h2 = inputsNotesCards[0].querySelector(".section-head h2");
+        const p = inputsNotesCards[0].querySelector(".section-head p");
+        if (h2) h2.textContent = L.trtHead;
+        if (p) p.textContent = L.trtSub;
+        const subTitles = inputsNotesCards[0].querySelectorAll(".sub-box-title > span:first-child");
+        subTitles.forEach((st, idx) => {
+          if (L.trtSubBoxes[idx]) st.textContent = L.trtSubBoxes[idx];
+        });
+        const submitBtn = inputsNotesCards[0].querySelector("button[type='submit']");
+        if (submitBtn) submitBtn.textContent = L.trtSubmit;
+      }
+      if (inputsNotesCards[1]) {
+        const h2 = inputsNotesCards[1].querySelector(".section-head h2");
+        const p = inputsNotesCards[1].querySelector(".section-head p");
+        if (h2) h2.textContent = L.noteHead;
+        if (p) p.textContent = L.noteSub;
+        const submitBtn = inputsNotesCards[1].querySelector("#btnSubmitNote");
+        if (submitBtn) submitBtn.textContent = L.noteSubmit;
+      }
+
+      const chartsSec = root.querySelector("#sec-live-charts");
+      if (chartsSec) {
+        const h2 = chartsSec.querySelector(".section-head h2");
+        const p = chartsSec.querySelector(".section-head p");
+        if (h2) h2.textContent = L.chartsHead;
+        if (p) p.textContent = L.chartsSub;
+        const chartBoxes = chartsSec.querySelectorAll(".charts-grid-2 .chart-box");
+        chartBoxes.forEach((box, idx) => {
+          if (L.chartTitles[idx]) {
+            const ch3 = box.querySelector(".chart-header h3");
+            const csub = box.querySelector(".chart-header .chart-sub");
+            if (ch3) ch3.textContent = L.chartTitles[idx][0];
+            if (csub) csub.textContent = L.chartTitles[idx][1];
+          }
+        });
+      }
+
+      const profSec = root.querySelector("#sec-line-profiles");
+      if (profSec) {
+        const h2 = profSec.querySelector(".section-head h2");
+        const p = profSec.querySelector(".section-head p");
+        if (h2) h2.textContent = L.profilesHead;
+        if (p) p.textContent = L.profilesSub;
+      }
+
+      const methSec = root.querySelector("#sec-methodology");
+      if (methSec) {
+        const h2 = methSec.querySelector(".section-head h2");
+        const p = methSec.querySelector(".section-head p");
+        const badge = methSec.querySelector(".section-head .q1-ref-tag");
+        if (h2) h2.textContent = L.methodHead;
+        if (p) p.textContent = L.methodSub;
+        if (badge) badge.textContent = L.methodBadge;
+        const mCards = methSec.querySelectorAll(".q1-method-grid .q1-method-card");
+        mCards.forEach((card, idx) => {
+          const mc = L.methodCards[idx];
+          if (!mc) return;
+          card.innerHTML = `<h3><span>${mc.title}</span><span class="q1-ref-tag">${mc.tag}</span></h3>${mc.body}`;
+        });
+      }
+    }
+
     function initStressStudioEmbedded() {
       try {
         populatePlotSelects();
         setTreatmentDateTimeNow();
         setNoteDateTimeNow();
+        applyStudioTranslations(currentLang);
         refreshAllStudioData();
         window.addEventListener("resize", () => renderAll16Charts());
       } catch (e) {
