@@ -2135,6 +2135,66 @@
     #viewStressStudio .stress-mild { background: #fef9c3; color: #854d0e; }
     #viewStressStudio .stress-moderate { background: #ffedd5; color: #9a3412; }
     #viewStressStudio .stress-severe { background: #fee2e2; color: #991b1b; }
+    #viewStressStudio .q1-method-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media (max-width: 1100px) {
+      #viewStressStudio .q1-method-grid { grid-template-columns: 1fr; }
+    }
+    #viewStressStudio .q1-method-card {
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-left: 4px solid #0284c7;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.78rem;
+      line-height: 1.58;
+      color: var(--text-primary);
+    }
+    #viewStressStudio .q1-method-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.88rem;
+      font-weight: 900;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    body.dark-mode #viewStressStudio .q1-method-card h3 {
+      color: #38bdf8;
+    }
+    #viewStressStudio .q1-eq-box {
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: 7px;
+      padding: 8px 11px;
+      margin: 7px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #0f766e;
+      overflow-x: auto;
+    }
+    body.dark-mode #viewStressStudio .q1-eq-box {
+      color: #2dd4bf;
+    }
+    #viewStressStudio .q1-ref-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(2, 132, 199, 0.12);
+      color: #0284c7;
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+    body.dark-mode #viewStressStudio .q1-ref-tag {
+      color: #38bdf8;
+    }
     .toast-msg {
       position: fixed;
       bottom: 20px;
@@ -2274,7 +2334,7 @@
         <button class="top-nav-link" id="menuBasicRules" onclick="switchTab('basicRules')">🎛️ Settings</button>
         <button class="top-nav-link" id="menuSensors" onclick="switchTab('sensors')">📡 Sensors</button>
         <button class="top-nav-link" id="menuExport" onclick="switchTab('database')">🗄️ Export</button>
-        <button class="top-nav-link" id="menuStressStudio" onclick="switchTab('stressStudio')">🧬 Stress, Recovery &amp; Notes</button>
+        <a class="top-nav-link" id="menuStressStudio" href="/stress" onclick="event.preventDefault(); switchTab('stressStudio');">🧬 Stress, Recovery &amp; Notes</a>
       </nav>
     </div>
   </header>
@@ -3285,7 +3345,804 @@
 
       <div id="problemsListContainer"></div>
     </div>
+
+    <!-- TAB 6: PHD STRESS, BIOSTIMULANT RECOVERY, TREATMENT LOG & RESEARCH NOTES STUDIO -->
+    <div id="viewStressStudio" class="hidden">
+      <!-- Safety & Architecture Banner -->
+      <div class="safety-banner">
+        <div>
+          <strong>🔬 Biophysical Models Active (Passive Monitoring &amp; Database Logging Only — Zero Valve Control):</strong>
+          Hilhorst (2000) Pore-Water EC (ECp) &amp; Osmotic Potential • Maas &amp; Hoffman (1977) Tomato Salinity Threshold (2.5 dS/m) • Tetens Canopy VPD &amp; Dew-Point Margin • Jackson (1981) CWSI • Henderson-Hasselbalch H2S/HS- Speciation • Biostimulant Stress Recovery Index (SRI %)
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span id="lastTimestampLabel" style="font-weight:800; color:#38bdf8;">Last PLC Telemetry: Waiting for hardware...</span>
+          <button type="button" class="btn teal" style="padding:4px 10px; font-size:0.72rem;" onclick="refreshAllStudioData()">🔄 Refresh Studio</button>
+          <a class="btn secondary" style="padding:4px 10px; font-size:0.72rem; background:#16a34a; color:#fff; border-color:#15803d;" href="/api/v1/export/excel?resolution=5min" target="_blank">📥 Export 7-Sheet Excel (.xlsx)</a>
+        </div>
+      </div>
+
+      <!-- 8-Card KPI Summary Strip -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="border-top-color:#dc2626;">
+          <div class="kpi-label">Mean Composite Stress (PSI)</div>
+          <div class="kpi-val" id="kpiMeanPsi">—</div>
+          <div class="kpi-sub" id="kpiMeanPsiClass">0–20 Optimal | 20–45 Mild | 45–70 Mod | >70 Severe</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#16a34a;">
+          <div class="kpi-label">Plant Vitality Index (PVI)</div>
+          <div class="kpi-val" id="kpiMeanPvi">—</div>
+          <div class="kpi-sub">PVI = 100 - PSI (Canopy + Root Vigor)</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#d97706;">
+          <div class="kpi-label">Hilhorst Pore EC (ECp) &amp; Psi_pi</div>
+          <div class="kpi-val" id="kpiMeanPoreEc">—</div>
+          <div class="kpi-sub" id="kpiMeanOsmotic">Osmotic Potential: — MPa</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#0284c7;">
+          <div class="kpi-label">Canopy CWSI &amp; Leaf VPD</div>
+          <div class="kpi-val" id="kpiMeanCwsi">—</div>
+          <div class="kpi-sub" id="kpiMeanVpd">Leaf VPD: — kPa | Dew Margin: — deg C</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#7c3aed;">
+          <div class="kpi-label">Salt Coefficient &amp; Soil pH</div>
+          <div class="kpi-val" id="kpiMeanSaltCoeff">—</div>
+          <div class="kpi-sub" id="kpiMeanPh">Reference / Live Soil pH: 6.00</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#0d9488;">
+          <div class="kpi-label">Best Biostimulant Recovery (SRI)</div>
+          <div class="kpi-val" id="kpiBestSri">—</div>
+          <div class="kpi-sub" id="kpiBestSriLine">vs. Salinized Control (Line 5: I-S-0)</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#0891b2;">
+          <div class="kpi-label">Active Molecular H2S (aq)</div>
+          <div class="kpi-val" id="kpiActiveH2s">—</div>
+          <div class="kpi-sub" id="kpiH2sFraction">pKa1(T) Equilibrium Speciation</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#4f46e5;">
+          <div class="kpi-label">Logged Pulses &amp; Research Notes</div>
+          <div class="kpi-val" id="kpiDbCounts">0 Pulses / 0 Notes</div>
+          <div class="kpi-sub" id="kpiDatBadge">Days After Transplant (DAT): —</div>
+        </div>
+      </div>
+
+      <!-- TREATMENT INPUT FORM + RESEARCH NOTES DATABASE STUDIO -->
+      <div id="sec-inputs-notes" class="dual-panel">
+        <!-- Left: Treatment & Biostimulant Application Input Form -->
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h2>🧪 Log Experimental Treatment &amp; Biostimulant Application (Saved in Database)</h2>
+              <p>Record H2S donor (NaHS), Humic Substance (LIQHUMUS NK), Salt (NaCl), and Solution/Drainage EC &amp; pH with mandatory Date &amp; Time. Marks all historical stress &amp; recovery charts.</p>
+            </div>
+          </div>
+
+          <div class="preset-strip">
+            <button type="button" class="chip-btn" onclick="applyTreatmentPreset('combo_best')">⚡ Best Combo: 25 uM NaHS + 2.5 mL/L Humic + 100 mM NaCl (Line 8)</button>
+            <button type="button" class="chip-btn" onclick="applyTreatmentPreset('nahs_only')">💧 25 uM NaHS Pulse Only (Line 6)</button>
+            <button type="button" class="chip-btn" onclick="applyTreatmentPreset('humic_only')">🌱 2.5 mL/L Humic Only (Line 7)</button>
+            <button type="button" class="chip-btn" onclick="applyTreatmentPreset('salt_step')">🧂 100 mM NaCl Stress Application (Line 5)</button>
+            <button type="button" class="chip-btn" onclick="applyTreatmentPreset('control_ns')">🚰 Non-Saline Control Nutrient Solution (Line 1)</button>
+          </div>
+
+          <form id="treatmentForm" onsubmit="submitTreatmentForm(event)">
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Application Date &amp; Time (Required) *</label>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="datetime-local" id="trtAppliedAt" required style="flex:1;" oninput="recalcTreatmentDat()" />
+                  <button type="button" class="chip-btn" onclick="setTreatmentDateTimeNow()" title="Set to current Date & Time">⌚ Now</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Days After Transplant (DAT)</label>
+                <input type="number" id="trtDat" placeholder="Auto from Date" />
+              </div>
+              <div class="form-group">
+                <label>Irrigation Line (Zone)</label>
+                <select id="trtZoneId" onchange="syncTreatmentCodeFromZone()">
+                  <option value="">All Lines (Global Application)</option>
+                  <option value="1">Line 1 (Zone 1) — I-C-0 (0 mM Control)</option>
+                  <option value="2">Line 2 (Zone 2) — I-C-H2S (0 mM + 25 uM NaHS)</option>
+                  <option value="3">Line 3 (Zone 3) — I-C-HS (0 mM + Humic)</option>
+                  <option value="4">Line 4 (Zone 4) — I-C-H2S+HS (0 mM + Combo)</option>
+                  <option value="5">Line 5 (Zone 5) — I-S-0 (100 mM NaCl Control)</option>
+                  <option value="6">Line 6 (Zone 6) — I-S-H2S (100 mM + 25 uM NaHS)</option>
+                  <option value="7">Line 7 (Zone 7) — I-S-HS (100 mM + Humic)</option>
+                  <option value="8" selected>Line 8 (Zone 8) — I-S-H2S+HS (100 mM + Best Combo)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Specific Plot (Optional)</label>
+                <select id="trtSensorId">
+                  <option value="">All 3 Replicate Plots in Line</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Treatment Code</label>
+                <input type="text" id="trtCode" value="I-S-H2S+HS" required />
+              </div>
+              <div class="form-group">
+                <label>Solution Volume Applied (L)</label>
+                <input type="number" step="0.1" id="trtVolL" value="10.0" oninput="recalcTreatmentTotals()" />
+              </div>
+            </div>
+
+            <!-- H2S Donor (NaHS) Box -->
+            <div class="sub-box">
+              <div class="sub-box-title">
+                <span style="color:#0284c7;">💨 1. H2S Donor (Sodium Hydrosulfide — NaHS) Application</span>
+                <label style="font-size:0.72rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                  <input type="checkbox" id="trtH2sApplied" checked /> H2S Applied in this Pulse
+                </label>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>NaHS Target Dose (uM)</label>
+                  <input type="number" step="0.5" id="trtH2sDoseUm" value="25.0" />
+                </div>
+                <div class="form-group">
+                  <label>NaHS Stock Added (mL/L)</label>
+                  <input type="number" step="0.01" id="trtH2sStockMll" value="0.25" />
+                </div>
+                <div class="form-group">
+                  <label>Measured Dripper H2S (uM)</label>
+                  <input type="number" step="0.1" id="trtMeasuredH2sUm" placeholder="Optional assay check" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Humic Substance Box -->
+            <div class="sub-box">
+              <div class="sub-box-title">
+                <span style="color:#15803d;">🌱 2. Humic Substance (LIQHUMUS Liquid 18 NK — 18% HA+FA)</span>
+                <label style="font-size:0.72rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                  <input type="checkbox" id="trtHumicApplied" checked /> Humic Applied
+                </label>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Humic Dose (mL/L)</label>
+                  <input type="number" step="0.05" id="trtHumicDoseMll" value="2.5" oninput="recalcTreatmentTotals()" />
+                </div>
+                <div class="form-group">
+                  <label>Total Humic Amount (mL)</label>
+                  <input type="number" step="0.1" id="trtHumicTotalMl" value="25.0" />
+                </div>
+                <div class="form-group">
+                  <label>N+K Nutrient Matching</label>
+                  <select id="trtNutrientMatch">
+                    <option value="1" selected>Matched (+Urea &amp; K2SO4 on 0-HS lines)</option>
+                    <option value="0">Unmatched</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Salinity (NaCl) & Solution/Drainage Chemistry Box -->
+            <div class="sub-box">
+              <div class="sub-box-title">
+                <span style="color:#d97706;">🧂 3. Salinity Stress (NaCl) &amp; Root-Zone Solution / Drainage Chemistry</span>
+                <label style="font-size:0.72rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                  <input type="checkbox" id="trtSaltApplied" checked /> NaCl Salinity Active
+                </label>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>NaCl Concentration (mM)</label>
+                  <input type="number" step="1" id="trtNaclMm" value="100" oninput="recalcTreatmentTotals()" />
+                </div>
+                <div class="form-group">
+                  <label>NaCl Added (g/L)</label>
+                  <input type="number" step="0.001" id="trtSaltGl" value="5.844" />
+                </div>
+                <div class="form-group">
+                  <label>Supplied Solution EC (uS/cm)</label>
+                  <input type="number" step="10" id="trtSuppliedEc" value="11500" />
+                </div>
+                <div class="form-group">
+                  <label>Supplied / Handheld Soil pH</label>
+                  <input type="number" step="0.05" id="trtSuppliedPh" value="6.00" />
+                </div>
+                <div class="form-group">
+                  <label>Drainage Fraction (%)</label>
+                  <input type="number" step="0.5" id="trtDrainagePct" value="22.0" />
+                </div>
+                <div class="form-group">
+                  <label>Drainage EC (uS/cm)</label>
+                  <input type="number" step="10" id="trtDrainageEc" placeholder="Optional" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid" style="margin-top:10px;">
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Treatment Application Notes</label>
+                <input type="text" id="trtNotes" placeholder="e.g., Freshly dissolved NaHS pulse applied 30 min before morning irrigation; drainage EC checked" />
+              </div>
+              <div class="form-group">
+                <label>Recorded By</label>
+                <input type="text" id="trtRecordedBy" value="Mamunur Reza" />
+              </div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <label style="font-size:0.74rem; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="trtUpdateRefPh" checked /> Also update Line Reference Soil pH anchor for H2S speciation
+              </label>
+              <button type="submit" class="btn teal">💾 Save Treatment Pulse to Database</button>
+            </div>
+          </form>
+
+          <!-- Recent Treatment Applications Table -->
+          <div style="margin-top:14px;">
+            <div style="font-size:0.78rem; font-weight:900; margin-bottom:6px; display:flex; justify-content:space-between;">
+              <span>📋 Saved Treatment &amp; Biostimulant Applications History</span>
+              <span id="trtTableCount" style="color:var(--text-muted);">0 records</span>
+            </div>
+            <div class="data-table-wrap" style="max-height:220px;">
+              <table class="sci-table">
+                <thead>
+                  <tr>
+                    <th>Applied At (UTC)</th>
+                    <th>DAT</th>
+                    <th>Line / Plot</th>
+                    <th>Code</th>
+                    <th>NaHS (uM)</th>
+                    <th>Humic (mL/L)</th>
+                    <th>NaCl (mM)</th>
+                    <th>Sol EC / pH</th>
+                    <th>Notes</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="treatmentTableBody">
+                  <tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No treatment applications logged yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Persistent Research Notes & Field Diary Database Manager -->
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h2>📓 Persistent Research Notes &amp; Stress/Recovery Observation Database</h2>
+              <p>All notes are stored permanently in the SQLite &amp; PostgreSQL database (`research_notes`), pinned on historical charts, and exported to Excel.</p>
+            </div>
+          </div>
+
+          <form id="researchNoteForm" onsubmit="submitResearchNoteForm(event)">
+            <input type="hidden" id="noteEditId" value="" />
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Observation Date &amp; Time (Required) *</label>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="datetime-local" id="noteRecordedAt" required style="flex:1;" />
+                  <button type="button" class="chip-btn" onclick="setNoteDateTimeNow()" title="Set to current Date & Time">⌚ Now</button>
+                </div>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Note Title / Headline *</label>
+                <input type="text" id="noteTitle" placeholder="e.g., Leaf turgor recovery 6h after 25 uM NaHS + Humic pulse on Line 8" required />
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="noteCategory">
+                  <option value="observation">🔍 General Observation</option>
+                  <option value="stress_symptom">🥀 Stress Symptom (Wilting / Tip Burn / Chlorosis)</option>
+                  <option value="recovery_sign">🌿 Biostimulant Recovery Sign</option>
+                  <option value="phenology">🍅 Phenology / Flowering / Fruit Set</option>
+                  <option value="calibration">⚖️ Sensor / EC / pH Calibration Check</option>
+                  <option value="protocol_note">📋 Experimental Protocol Note</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Severity / Status Tag</label>
+                <select id="noteSeverity">
+                  <option value="normal">🟢 Normal / Baseline</option>
+                  <option value="strong_recovery">✨ Strong Recovery</option>
+                  <option value="moderate_stress">🟠 Moderate Stress</option>
+                  <option value="severe_stress">🔴 Severe Stress Alert</option>
+                  <option value="info">🔵 Info / Milestone</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Target Line (Zone)</label>
+                <select id="noteZoneId">
+                  <option value="">All 8 Lines</option>
+                  <option value="1">Line 1 (I-C-0)</option>
+                  <option value="2">Line 2 (I-C-H2S)</option>
+                  <option value="3">Line 3 (I-C-HS)</option>
+                  <option value="4">Line 4 (I-C-H2S+HS)</option>
+                  <option value="5">Line 5 (I-S-0)</option>
+                  <option value="6">Line 6 (I-S-H2S)</option>
+                  <option value="7">Line 7 (I-S-HS)</option>
+                  <option value="8">Line 8 (I-S-H2S+HS)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Target Plot (R1–R24)</label>
+                <select id="noteSensorId">
+                  <option value="">All Plots</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Author</label>
+                <input type="text" id="noteAuthor" value="Mamunur Reza" />
+              </div>
+              <div class="form-group" style="justify-content:center;">
+                <label>Chart Annotation</label>
+                <label style="font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:6px; margin-top:6px; cursor:pointer;">
+                  <input type="checkbox" id="notePinned" checked /> 📌 Pin on Historical Charts
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:10px;">
+              <label>Detailed Research Note / Quantitative Observation</label>
+              <textarea id="noteContent" rows="3" placeholder="Record leaf turgor state, SPAD chlorophyll reading, Fv/Fm, handheld pH/EC verification, or visual comparison between I-S-0 (Line 5) and I-S-H2S+HS (Line 8)..." required></textarea>
+            </div>
+
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <button type="button" class="btn secondary" id="btnCancelNoteEdit" style="display:none;" onclick="resetNoteForm()">✖ Cancel Edit</button>
+              <button type="submit" class="btn teal" id="btnSubmitNote">📌 Save Research Note to Database</button>
+            </div>
+          </form>
+
+          <!-- Search & Filter Bar for Notes -->
+          <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="noteSearchInput" placeholder="🔎 Search notes by keyword, treatment, or symptom..." style="flex:1; padding:6px 10px; border-radius:7px; border:1px solid var(--border-strong); background:var(--bg); color:var(--text-primary); font-size:0.78rem;" oninput="loadResearchNotes()" />
+            <select id="noteFilterCategory" onchange="loadResearchNotes()" style="padding:6px 9px; border-radius:7px; border:1px solid var(--border-strong); background:var(--bg); color:var(--text-primary); font-size:0.76rem;">
+              <option value="">All Categories</option>
+              <option value="observation">Observation</option>
+              <option value="stress_symptom">Stress Symptom</option>
+              <option value="recovery_sign">Recovery Sign</option>
+              <option value="phenology">Phenology</option>
+              <option value="calibration">Calibration</option>
+              <option value="protocol_note">Protocol Note</option>
+            </select>
+          </div>
+
+          <!-- Saved Research Notes Table -->
+          <div style="margin-top:10px;">
+            <div style="font-size:0.78rem; font-weight:900; margin-bottom:6px; display:flex; justify-content:space-between;">
+              <span>🗂️ Database Research Notes Log</span>
+              <span id="noteTableCount" style="color:var(--text-muted);">0 notes</span>
+            </div>
+            <div class="data-table-wrap" style="max-height:290px;">
+              <table class="sci-table">
+                <thead>
+                  <tr>
+                    <th>Recorded At</th>
+                    <th>DAT</th>
+                    <th>Scope</th>
+                    <th>Category / Tag</th>
+                    <th>Title &amp; Observation</th>
+                    <th>Pin</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="notesTableBody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No research notes recorded yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 16 INTERACTIVE SCIENTIFIC CHARTS (LIVE + HISTORICAL) -->
+      <div id="sec-live-charts" class="section-card">
+        <div class="section-head">
+          <div>
+            <h2>📊 Multi-Chart Plant Stress &amp; Biostimulant Recovery Visualization Suite (16 Interactive Charts)</h2>
+            <p>Live 48-sensor biophysical state + historical trajectories with treatment pulse vertical markers and pinned research notes.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <label style="font-size:0.72rem; font-weight:800;">History Window:</label>
+            <select id="histHoursSelect" onchange="loadHistoricalStressData()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-strong); font-weight:700; font-size:0.76rem;">
+              <option value="24">Last 24 Hours</option>
+              <option value="72">Last 72 Hours (3 Days)</option>
+              <option value="168" selected>Last 7 Days (168h)</option>
+              <option value="720">Last 30 Days</option>
+              <option value="2160">Full Season (90 Days)</option>
+            </select>
+            <label style="font-size:0.72rem; font-weight:800;">Resolution:</label>
+            <select id="histResSelect" onchange="loadHistoricalStressData()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-strong); font-weight:700; font-size:0.76rem;">
+              <option value="1min">1-Minute</option>
+              <option value="5min">5-Minute</option>
+              <option value="15min" selected>15-Minute</option>
+              <option value="hourly">Hourly</option>
+              <option value="daily">Daily</option>
+            </select>
+            <label style="font-size:0.72rem; font-weight:800;">Focus Line:</label>
+            <select id="chartFocusZone" onchange="renderAll16Charts()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-strong); font-weight:700; font-size:0.76rem;">
+              <option value="0" selected>Compare Key Lines (L1, L5, L6, L7, L8)</option>
+              <option value="1">Line 1 (I-C-0 Control)</option>
+              <option value="2">Line 2 (I-C-H2S)</option>
+              <option value="3">Line 3 (I-C-HS)</option>
+              <option value="4">Line 4 (I-C-H2S+HS)</option>
+              <option value="5">Line 5 (I-S-0 Salt Control)</option>
+              <option value="6">Line 6 (I-S-H2S)</option>
+              <option value="7">Line 7 (I-S-HS)</option>
+              <option value="8">Line 8 (I-S-H2S+HS Best Combo)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="charts-grid-2">
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>1. 24-Plot Spatial Stress &amp; Vitality Heatmap Matrix (8 Lines × 3 Replicates R1–R24)</h3>
+                <div class="chart-sub">Color-coded by Composite PSI (0–100), Pore ECp (dS/m), CWSI, and +2.0 deg C Leaf Outlier Flag</div>
+              </div>
+              <span class="chart-tag">LIVE 48 SENSORS</span>
+            </div>
+            <canvas id="chart1Heatmap" class="sci-canvas tall"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>2. 6-Axis Biophysical Stress Radar Spider Chart (Salinity vs. Biostimulant Lines)</h3>
+                <div class="chart-sub">Comparing S_moisture, S_salinity, S_pH, S_salt_ratio, S_canopy_temp, and S_leaf_vpd (0–100)</div>
+              </div>
+              <span class="chart-tag">6-PARAMETER RADAR</span>
+            </div>
+            <canvas id="chart2Radar" class="sci-canvas tall"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>3. Composite Plant Stress Index (PSI) vs. Plant Vitality Index (PVI) Across 8 Lines</h3>
+                <div class="chart-sub">Grouped bar comparison of Non-Saline (Zones 1–4) and 100 mM NaCl Salinized Lines (Zones 5–8)</div>
+              </div>
+              <span class="chart-tag">STRESS VS VITALITY</span>
+            </div>
+            <canvas id="chart3PsiPviBars" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>4. Biostimulant Stress Recovery Index (SRI %) &amp; PSI Reduction vs. Salt Control (I-S-0)</h3>
+                <div class="chart-sub">Quantifies how NaHS (Line 6), Humic (Line 7), and NaHS+Humic (Line 8) alleviate salinity stress</div>
+              </div>
+              <span class="chart-tag">RECOVERY INDEX (SRI %)</span>
+            </div>
+            <canvas id="chart4RecoverySri" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>5. Maas-Hoffman Salinity Yield Potential Curve &amp; Hilhorst Pore-Water EC (ECp)</h3>
+                <div class="chart-sub">Tomato threshold ECt = 2.5 dS/m, slope = 9.9% per dS/m • Plots live Pore ECp &amp; Osmotic Potential</div>
+              </div>
+              <span class="chart-tag">MAAS-HOFFMAN + HILHORST</span>
+            </div>
+            <canvas id="chart5MaasHoffman" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>6. Canopy Psychrometric Phase Space (Leaf Temp vs. Leaf Humidity &amp; VPD Zones)</h3>
+                <div class="chart-sub">All 24 Tomato Leaf Sensors (Slave IDs 101–124) plotted against Optimal VPD (0.5–1.2 kPa) &amp; Stress Zones</div>
+              </div>
+              <span class="chart-tag">PSYCHROMETRIC VPD</span>
+            </div>
+            <canvas id="chart6Psychrometric" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>7. Jackson CWSI Baseline Diagram (Canopy-Root Delta T vs. Leaf VPD)</h3>
+                <div class="chart-sub">Delta T (T_leaf - T_soil) plotted between Non-Water-Stressed Lower Baseline (LL) and Upper Limit (UL = +3.5 C)</div>
+              </div>
+              <span class="chart-tag">JACKSON CWSI</span>
+            </div>
+            <canvas id="chart7CwsiBaseline" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>8. H2S / HS- Equilibrium Speciation Curve vs. Soil pH &amp; Root-Zone Temperature</h3>
+                <div class="chart-sub">Henderson-Hasselbalch pKa1(T) curve showing % Molecular H2S(aq) and Active uM H2S across Lines 1–8</div>
+              </div>
+              <span class="chart-tag">H2S SPECIATION</span>
+            </div>
+            <canvas id="chart8H2sSpeciation" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>9. Historical Trajectory: Composite Stress (PSI) &amp; Vitality (PVI) + Treatment &amp; Note Markers</h3>
+                <div class="chart-sub">Time-series with vertical dashed lines for H2S / Humic / Salt pulses and pinned research notes</div>
+              </div>
+              <span class="chart-tag">HISTORICAL PSI + MARKERS</span>
+            </div>
+            <canvas id="chart9HistPsi" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>10. Historical Trajectory: Soil VWC (%), Bulk EC (uS/cm), Pore ECp (dS/m) &amp; Salt Coefficient</h3>
+                <div class="chart-sub">Root-zone water-salinity dynamics and ion accumulation ratio (soil_salt / soil_ec)</div>
+              </div>
+              <span class="chart-tag">HISTORICAL ROOT ZONE</span>
+            </div>
+            <canvas id="chart10HistRootZone" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>11. Historical Trajectory: Tomato Leaf Temp (C), Leaf Humidity (%), VPD (kPa) &amp; CWSI</h3>
+                <div class="chart-sub">Canopy boundary-layer microclimate and stomatal transpiration recovery over time</div>
+              </div>
+              <span class="chart-tag">HISTORICAL CANOPY</span>
+            </div>
+            <canvas id="chart11HistCanopy" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>12. Pre- vs. Post-Pulse Biostimulant Recovery Curve (-12h Pre vs. +24h / +48h / +72h Post)</h3>
+                <div class="chart-sub">Event-aligned PSI &amp; CWSI recovery following logged NaHS and Humic Substance applications</div>
+              </div>
+              <span class="chart-tag">PRE/POST PULSE DELTA</span>
+            </div>
+            <canvas id="chart12PulseRecovery" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>13. Factorial Synergy Interaction Plot (Salinity × NaHS × Humic Substance)</h3>
+                <div class="chart-sub">2-way interaction slopes comparing 0 mM vs. 100 mM NaCl across Control, NaHS, Humic, and NaHS+Humic</div>
+              </div>
+              <span class="chart-tag">FACTORIAL SYNERGY</span>
+            </div>
+            <canvas id="chart13FactorialSynergy" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>14. 24-Hour Diurnal Stress Cycle Profile (00:00–23:00 Hourly Aggregation)</h3>
+                <div class="chart-sub">Identifies midday stomatal closure peak (11:00–15:00) vs. night turgor recovery across lines</div>
+              </div>
+              <span class="chart-tag">24H DIURNAL CYCLE</span>
+            </div>
+            <canvas id="chart14Diurnal" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>15. Within-Line Replicate Spread (Rep 1–3) &amp; +2.0 deg C Leaf Sensor Anomaly Detector</h3>
+                <div class="chart-sub">Displays 3-plot min/mean/max dispersion per line and highlights any leaf sensor deviating > 2.0 C</div>
+              </div>
+              <span class="chart-tag">REPLICATE BOX &amp; ANOMALY</span>
+            </div>
+            <canvas id="chart15ReplicateBox" class="sci-canvas"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div>
+                <h3>16. Pore-Water ECp vs. CWSI Linear Regression (R2) &amp; Cumulative Stress Degree-Hours (SDH)</h3>
+                <div class="chart-sub">Left: Root-to-canopy coupling scatter &amp; OLS regression | Right: Cumulative SDH integral per line</div>
+              </div>
+              <span class="chart-tag">REGRESSION + SDH INTEGRAL</span>
+            </div>
+            <canvas id="chart16RegressionSdh" class="sci-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8-LINE TREATMENT PROFILE CONFIGURATOR & SUBSTRATE CALIBRATION -->
+      <div id="sec-line-profiles" class="section-card">
+        <div class="section-head">
+          <div>
+            <h2>⚙️ 8-Line Experimental Treatment Profiles &amp; Reference Soil pH Configuration</h2>
+            <p>Update the assigned NaCl (mM), NaHS (uM), Humic (mL/L), and Reference Soil pH for each irrigation line (Zones 1–8).</p>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="sci-table">
+            <thead>
+              <tr>
+                <th>Line / Zone</th>
+                <th>Plots (Soil / Leaf Slaves)</th>
+                <th>Treatment Code</th>
+                <th>Salinity Regime</th>
+                <th>NaCl (mM)</th>
+                <th>Target Sol EC (uS/cm)</th>
+                <th>NaHS Dose (uM)</th>
+                <th>Humic Dose (mL/L)</th>
+                <th>Reference Soil pH</th>
+                <th>Save</th>
+              </tr>
+            </thead>
+            <tbody id="lineProfilesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Q1 JOURNAL DETAILED MATERIALS & METHODS AND BIOPHYSICAL MODELING METHODOLOGY -->
+      <div id="sec-q1-methodology" class="section-card" style="border-top: 4px solid #0284c7;">
+        <div class="section-head">
+          <div>
+            <h2>📖 Q1 Journal Detailed Materials &amp; Methods and Biophysical Modeling Methodology</h2>
+            <p>Publication-ready experimental protocol, 48-node RS485 Modbus RTU telemetry architecture, thermodynamic equations, and statistical framework (Atatürk University Faculty of Agriculture — Tomato Salinity x NaHS x Humic Substance Study).</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="q1-ref-tag">SCIE / Q1 Standard (Scientia Horticulturae • Plant Stress • Agricultural Water Management)</span>
+          </div>
+        </div>
+
+        <div class="q1-method-grid">
+          <!-- Section 2.1 -->
+          <div class="q1-method-card" style="border-left-color:#0284c7;">
+            <h3>
+              <span>2.1 Experimental Site, Plant Material &amp; 8-Line Factorial Design</span>
+              <span class="q1-ref-tag">Yıldırım et al. (2023) Protocol</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              <strong>Experimental Facility &amp; Crop:</strong> Conducted at the controlled greenhouse research facility of the Faculty of Agriculture, Atatürk University, Erzurum, Türkiye (39.90 deg N, 41.27 deg E; ~1,850 m altitude). Uniform tomato (<em>Solanum lycopersicum</em> L.) seedlings were transplanted (Reference Transplant Date T0: 16 October 2026) into 7 L pots filled with a standardized 2:1 (v/v) peat:perlite substrate (dry bulk dielectric offset <code>epsilon_b0 = 4.1</code>, bulk density <code>1.15 g/cm3</code>).
+            </p>
+            <p style="margin:0 0 6px 0;">
+              <strong>8-Line Fertigation &amp; Biostimulant Regime (24 Plots, n = 3 Replicates/Line):</strong>
+            </p>
+            <ul style="margin:0 0 6px 0; padding-left:18px;">
+              <li><strong>Line 1 (<code>I-C-0</code>, Plots R1–R3):</strong> Non-saline Control (<code>0 mM NaCl</code>, target solution EC <code>2,000 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 2 (<code>I-C-H2S</code>, Plots R4–R6):</strong> Non-saline + Exogenous H2S Donor (<code>0 mM NaCl</code>, <code>25 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 3 (<code>I-C-HS</code>, Plots R7–R9):</strong> Non-saline + Humic Substance (<code>0 mM NaCl</code>, <code>0 uM NaHS</code>, <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>).</li>
+              <li><strong>Line 4 (<code>I-C-H2S+HS</code>, Plots R10–R12):</strong> Non-saline + Combined Biostimulants (<code>0 mM NaCl</code>, <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Line 5 (<code>I-S-0</code>, Plots R13–R15):</strong> Salinized Control (<code>100 mM NaCl</code> [<code>5.844 g/L</code>], target solution EC <code>11,500 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+              <li><strong>Line 6 (<code>I-S-H2S</code>, Plots R16–R18):</strong> Salinized + Exogenous H2S Rescue (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>).</li>
+              <li><strong>Line 7 (<code>I-S-HS</code>, Plots R19–R21):</strong> Salinized + Humic Substance Rescue (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+              <li><strong>Line 8 (<code>I-S-H2S+HS</code>, Plots R22–R24):</strong> Salinized + Synergistic Co-Application (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            </ul>
+            <div class="q1-eq-box">
+              Isovalent Mineral Nutrient Matching: Non-humic lines (Lines 1, 2, 5, 6) receive stoichiometric N and K compensation via reagent-grade Urea [CO(NH2)2] + K2SO4 matching the intrinsic N and K content of 2.5 mL/L LIQHUMUS Liquid 18 (NK), isolating supramolecular humic effects from macronutrient nutrition.
+            </div>
+          </div>
+
+          <!-- Section 2.2 -->
+          <div class="q1-method-card" style="border-left-color:#0d9488;">
+            <h3>
+              <span>2.2 High-Frequency IIoT Sensor Array &amp; Non-Invasive Monitoring Architecture</span>
+              <span class="q1-ref-tag">48 RS485 Modbus RTU Nodes</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              <strong>Root-Zone Dielectric &amp; Ionic Telemetry (Slave IDs 1–24, Plots R1–R24):</strong> Each experimental replicate pot is instrumented with an industrial 4-parameter RS485 Modbus RTU frequency-domain/time-domain dielectric probe measuring volumetric water content (<code>VWC</code>, %, resolution 0.1%), root-zone temperature (<code>T_soil</code>, deg C), bulk apparent electrical conductivity (<code>EC_bulk</code>, uS/cm), and apparent salt concentration (<code>TDS_soil</code>, mg/L).
+            </p>
+            <p style="margin:0 0 6px 0;">
+              <strong>Canopy Phyllosphere Microclimate Array (Slave IDs 101–124, Plots R1_L–R24_L):</strong> Paired abaxial/boundary-layer leaf sensors continuously monitor canopy temperature (<code>T_leaf</code>, deg C) and leaf boundary-layer relative humidity (<code>RH_leaf</code>, %).
+            </p>
+            <p style="margin:0 0 6px 0;">
+              <strong>Edge-to-Cloud Synchronization &amp; Strict Analytical Isolation:</strong> A local edge agent buffers PLC and Modbus RTU frames into SQLite and synchronizes batch telemetry to the PostgreSQL 16 cloud database. All stress algorithms, treatment logs, and research diary entries operate in a strictly passive, monitoring-only analytical plane with zero write feedback to PLC solenoid valves (<code>vana1–vana8</code>).
+            </p>
+            <div class="q1-eq-box">
+              Apparent Root-Zone Ionic Ratio (Salt Coefficient):
+              Salt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [Baseline ~0.55; NaCl accumulation > 0.72]
+            </div>
+          </div>
+
+          <!-- Section 2.3 -->
+          <div class="q1-method-card" style="border-left-color:#d97706;">
+            <h3>
+              <span>2.3 Root-Zone Pore-Water Conductivity (ECp), Osmotic Potential &amp; Yield Model</span>
+              <span class="q1-ref-tag">Hilhorst (2000) • Maas &amp; Hoffman (1977)</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              Because bulk soil conductivity (<code>EC_bulk</code>) declines non-linearly during substrate drying even when dissolved NaCl concentration rises, true root-zone salinity exposure is quantified via the linear dielectric-conductivity model of <strong>Hilhorst (2000, Soil Sci. Soc. Am. J. 64:1922–1925)</strong> coupled with the <strong>Topp et al. (1980)</strong> polynomial dielectric relationship:
+            </p>
+            <div class="q1-eq-box">
+              1. Volumetric moisture fraction (clamped at theta &gt;= 0.10 to prevent dry-substrate singularity):
+                 theta = max(0.10, VWC_pct / 100.0)
+              2. Bulk apparent dielectric permittivity (Topp et al., 1980):
+                 epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)
+              3. Pore-water dielectric permittivity &amp; temperature compensation to 25 deg C:
+                 epsilon_p = 80.3 - 0.37*(T_soil - 20.0)
+                 EC_bulk_25 (dS/m) = (EC_bulk_uScm / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]
+              4. Hilhorst (2000) Pore-Water EC (ECp) &amp; US Salinity Lab Osmotic Potential (Psi_pi):
+                 EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - epsilon_b0)   [epsilon_b0 = 4.1]
+                 Psi_pi (MPa) = -0.036 * EC_p
+            </div>
+            <p style="margin:4px 0 0 0;">
+              <strong>Maas &amp; Hoffman (1977) Tomato Relative Yield Potential (<code>Y_rel</code>):</strong> Parameterized with the established tomato salinity threshold <code>EC_t = 2.5 dS/m</code> and yield-decline slope <code>s = 9.9% per dS/m</code>:
+            </p>
+            <div class="q1-eq-box">
+              Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)
+            </div>
+          </div>
+
+          <!-- Section 2.4 -->
+          <div class="q1-method-card" style="border-left-color:#7c3aed;">
+            <h3>
+              <span>2.4 Canopy Psychrometrics (VPD), Dew-Point Margin &amp; Empirical CWSI</span>
+              <span class="q1-ref-tag">FAO-56 Tetens • Jackson et al. (1981)</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              Canopy stomatal regulation and atmospheric evaporative demand are derived from paired leaf sensor telemetry (<code>T_leaf</code>, <code>RH_leaf</code>) using the Magnus-Tetens saturation vapor pressure formulation (<strong>Allen et al., 1998, FAO Irrigation and Drainage Paper 56</strong>) and the empirical Crop Water Stress Index (<strong>Jackson et al., 1981; Idso et al., 1981</strong>):
+            </p>
+            <div class="q1-eq-box">
+              1. Saturation &amp; Actual Vapor Pressure at Leaf Boundary Layer:
+                 e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)]   (kPa)
+                 e_a = e_s(T_leaf) * (RH_leaf / 100.0)                              (kPa)
+                 VPD_leaf = max(0.0, e_s(T_leaf) - e_a)                              (kPa)
+              2. Dew-Point Temperature (T_dew) &amp; Fungal Condensation Safety Margin:
+                 gamma = ln(max(1.0, RH_leaf) / 100.0) + (17.27 * T_leaf) / (T_leaf + 237.3)
+                 T_dew = (237.3 * gamma) / (17.27 - gamma)                           (deg C)
+                 Dew_Margin = T_leaf - T_dew   [Risk alert when Dew_Margin &lt; 1.5 deg C]
+              3. Empirical Canopy-Root CWSI (Jackson et al., 1981):
+                 Delta_T = T_leaf - T_soil
+                 Delta_T_LL = 1.20 - 1.85 * VPD_leaf   (Non-Water-Stressed Lower Baseline)
+                 Delta_T_UL = +3.50 deg C              (Non-Transpiring Upper Limit)
+                 CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)
+            </div>
+          </div>
+
+          <!-- Section 2.5 -->
+          <div class="q1-method-card" style="border-left-color:#0891b2;">
+            <h3>
+              <span>2.5 Thermodynamic H2S / HS- Equilibrium Speciation in Substrate Solution</span>
+              <span class="q1-ref-tag">Henderson-Hasselbalch pKa1(T) Model</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              When sodium hydrosulfide (<code>NaHS</code>) is delivered into the root zone, it dissociates rapidly into dissolved molecular hydrogen sulfide gas (<code>H2S(aq)</code>, the uncharged lipophilic signaling species that permeates root aquaporins and plasma membranes) and hydrosulfide anion (<code>HS-</code>). The temperature-dependent first dissociation constant <code>pKa1(T)</code> and bioavailable <code>[H2S]_active</code> concentration are computed continuously per irrigation line:
+            </p>
+            <div class="q1-eq-box">
+              1. Temperature-Corrected First Acid Dissociation Constant (25 deg C reference pKa1 = 7.05):
+                 pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)
+              2. Molecular H2S(aq) Molar Fraction at Reference / Measured Root-Zone pH:
+                 f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))]
+                 f_HS_minus = 1.0 - f_H2S
+              3. Bioavailable Dissolved Signaling Gas Concentration:
+                 [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S
+                 (At pH 6.0 and T_soil = 22 deg C: pKa1 = 7.09, f_H2S = 92.5%, so 25 uM NaHS yields 23.1 uM active H2S(aq))
+            </div>
+          </div>
+
+          <!-- Section 2.6 -->
+          <div class="q1-method-card" style="border-left-color:#16a34a;">
+            <h3>
+              <span>2.6 Composite Plant Stress Index (PSI), Vitality (PVI), Recovery (SRI) &amp; Statistical Pipeline</span>
+              <span class="q1-ref-tag">Multi-Subscore Integration &amp; ANOVA / R2</span>
+            </h3>
+            <p style="margin:0 0 6px 0;">
+              Four normalized physiological sub-scores (each scaled <code>0–100</code>) integrate root-zone osmotic/halophytic load (<code>S_salinity</code>, weight 0.30), soil matric water deficit/waterlogging (<code>S_water</code>, weight 0.25), phyllosphere evaporative demand (<code>S_vpd</code>, weight 0.25), and canopy stomatal/thermal stress (<code>S_thermal</code>, weight 0.20):
+            </p>
+            <div class="q1-eq-box">
+              1. Composite Plant Stress Index (PSI) &amp; Plant Vitality Index (PVI):
+                 PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal
+                 PVI (0-100) = 100.0 - PSI
+                 Stress Classification: 0-20 Optimal | 20-45 Mild | 45-70 Moderate | &gt;70 Severe
+              2. Biostimulant Stress Recovery Index (SRI %) for Salinized Treatments T in {Line 6, Line 7, Line 8}:
+                 SRI_T (%) = clamp(((PSI_Line5_SaltControl - PSI_T) / max(5.0, PSI_Line5_SaltControl - PSI_Line1_NonSaline)) * 100.0, -100.0, 100.0)
+              3. Cumulative Stress Degree-Hours (SDH) &amp; Root-to-Canopy Coupling:
+                 SDH (deg C * h) = Sum [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_hours ]
+                 OLS Linear Regression: CWSI = beta_0 + beta_1 * EC_p   (with coefficient of determination R2 across n = 24 plots)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <div id="toastBox" class="toast-msg">Saved!</div>
 
   <script>
     let currentLang = localStorage.getItem('ziraat_lang') || 'en';
@@ -3676,6 +4533,9 @@
       if (latestState) {
         renderDashboard(latestState, lastStats);
       }
+      if (typeof renderAll16Charts === 'function' && !document.getElementById('viewStressStudio')?.classList.contains('hidden')) {
+        renderAll16Charts();
+      }
     }
 
     function updateThemeToggleBtn(isDark) {
@@ -3686,7 +4546,7 @@
     }
 
     function switchTab(tab) {
-      const tabs = ['zones', 'details', 'basicRules', 'sensors', 'database', 'rules', 'diagnostics'];
+      const tabs = ['zones', 'details', 'basicRules', 'sensors', 'database', 'rules', 'diagnostics', 'stressStudio'];
       tabs.forEach(k => {
         const viewId = 'view' + k.charAt(0).toUpperCase() + k.slice(1);
         const tabId = 'tab' + k.charAt(0).toUpperCase() + k.slice(1);
@@ -3705,6 +4565,16 @@
       document.getElementById('menuExport')?.classList.toggle('active', tab === 'database');
       document.getElementById('menuRules')?.classList.toggle('active', tab === 'rules');
       document.getElementById('menuDiag')?.classList.toggle('active', tab === 'diagnostics');
+      document.getElementById('menuStressStudio')?.classList.toggle('active', tab === 'stressStudio');
+
+      try {
+        if (window.location.protocol.startsWith('http')) {
+          const targetPath = tab === 'stressStudio' ? '/stress' : '/';
+          if (window.location.pathname !== targetPath) {
+            window.history.replaceState(null, '', targetPath);
+          }
+        }
+      } catch (_) {}
 
       if (tab === 'details') {
         initDetailsPlotSelector();
@@ -3715,6 +4585,11 @@
         loadBasicRulesSettings();
       } else if (tab === 'rules' || tab === 'diagnostics') {
         loadPlcRulesAndDiagnostics();
+      } else if (tab === 'stressStudio') {
+        if (typeof refreshAllStudioData === 'function') {
+          refreshAllStudioData();
+          setTimeout(() => { if (typeof renderAll16Charts === 'function') renderAll16Charts(); }, 60);
+        }
       }
     }
 
@@ -6650,6 +7525,11 @@
           } else {
             fetchLatest();
           }
+          if (msg.type === 'telemetry_update' || msg.type === 'treatment_logged' || msg.type === 'research_note_added') {
+            if (typeof refreshAllStudioData === 'function' && !document.getElementById('viewStressStudio')?.classList.contains('hidden')) {
+              refreshAllStudioData();
+            }
+          }
         } catch (e) {}
       };
       ws.onclose = () => setTimeout(connectWebSocket, 4000);
@@ -6760,6 +7640,1267 @@
       }
     }
 
+    /* =========================================================================
+       PHD STRESS, BIOSTIMULANT RECOVERY, TREATMENT LOG & RESEARCH NOTES STUDIO JS
+       ========================================================================= */
+    let liveStressData = null;
+    let histStressData = null;
+    let treatmentsList = [];
+    let notesList = [];
+    let lineProfiles = [];
+
+    function showToast(msg, color = "#22c55e") {
+      const box = document.getElementById("toastBox");
+      if (!box) return;
+      box.textContent = msg;
+      box.style.borderLeftColor = color;
+      box.style.display = "block";
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { box.style.display = "none"; }, 3500);
+    }
+
+    function populatePlotSelects() {
+      const trtSel = document.getElementById("trtSensorId");
+      const noteSel = document.getElementById("noteSensorId");
+      if (!trtSel || !noteSel || trtSel.options.length > 1) return;
+      for (let i = 1; i <= 24; i++) {
+        const z = ((i - 1) % 8) + 1;
+        const opt1 = document.createElement("option");
+        opt1.value = String(i);
+        opt1.textContent = `Plot R${i} (Line ${z}, Leaf R${i}_L Slave ${100 + i})`;
+        trtSel.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = String(i);
+        opt2.textContent = `Plot R${i} (Line ${z})`;
+        noteSel.appendChild(opt2);
+      }
+    }
+
+    function syncTreatmentCodeFromZone() {
+      const zid = parseInt(document.getElementById("trtZoneId")?.value || "0", 10);
+      const prof = lineProfiles.find(p => p.zone_id === zid);
+      if (prof) {
+        document.getElementById("trtCode").value = prof.treatment_code;
+        document.getElementById("trtH2sDoseUm").value = prof.nahs_dose_um;
+        document.getElementById("trtH2sApplied").checked = prof.nahs_dose_um > 0;
+        document.getElementById("trtHumicDoseMll").value = prof.humic_dose_mll;
+        document.getElementById("trtHumicApplied").checked = prof.humic_dose_mll > 0;
+        document.getElementById("trtNaclMm").value = prof.nacl_mm;
+        document.getElementById("trtSaltApplied").checked = prof.nacl_mm > 0;
+        document.getElementById("trtSuppliedEc").value = prof.target_solution_ec_uscm;
+        document.getElementById("trtSuppliedPh").value = prof.ref_soil_ph;
+        recalcTreatmentTotals();
+      }
+    }
+
+    function recalcTreatmentTotals() {
+      const volL = parseFloat(document.getElementById("trtVolL")?.value || "0");
+      const humicMll = parseFloat(document.getElementById("trtHumicDoseMll")?.value || "0");
+      const naclMm = parseFloat(document.getElementById("trtNaclMm")?.value || "0");
+      if (document.getElementById("trtHumicTotalMl")) document.getElementById("trtHumicTotalMl").value = (volL * humicMll).toFixed(2);
+      if (document.getElementById("trtSaltGl")) document.getElementById("trtSaltGl").value = (naclMm * 0.05844).toFixed(3);
+    }
+
+    function applyTreatmentPreset(preset) {
+      if (preset === "combo_best") {
+        document.getElementById("trtZoneId").value = "8";
+        document.getElementById("trtCode").value = "I-S-H2S+HS";
+        document.getElementById("trtH2sApplied").checked = true;
+        document.getElementById("trtH2sDoseUm").value = "25";
+        document.getElementById("trtH2sStockMll").value = "0.25";
+        document.getElementById("trtHumicApplied").checked = true;
+        document.getElementById("trtHumicDoseMll").value = "2.5";
+        document.getElementById("trtSaltApplied").checked = true;
+        document.getElementById("trtNaclMm").value = "100";
+        document.getElementById("trtSuppliedEc").value = "11500";
+        document.getElementById("trtNotes").value = "Best combination pulse: 25 uM NaHS + 2.5 mL/L LIQHUMUS NK under 100 mM NaCl";
+      } else if (preset === "nahs_only") {
+        document.getElementById("trtZoneId").value = "6";
+        document.getElementById("trtCode").value = "I-S-H2S";
+        document.getElementById("trtH2sApplied").checked = true;
+        document.getElementById("trtH2sDoseUm").value = "25";
+        document.getElementById("trtHumicApplied").checked = false;
+        document.getElementById("trtHumicDoseMll").value = "0";
+        document.getElementById("trtSaltApplied").checked = true;
+        document.getElementById("trtNaclMm").value = "100";
+        document.getElementById("trtSuppliedEc").value = "11500";
+        document.getElementById("trtNotes").value = "25 uM NaHS exogenous H2S donor pulse under 100 mM NaCl";
+      } else if (preset === "humic_only") {
+        document.getElementById("trtZoneId").value = "7";
+        document.getElementById("trtCode").value = "I-S-HS";
+        document.getElementById("trtH2sApplied").checked = false;
+        document.getElementById("trtH2sDoseUm").value = "0";
+        document.getElementById("trtHumicApplied").checked = true;
+        document.getElementById("trtHumicDoseMll").value = "2.5";
+        document.getElementById("trtSaltApplied").checked = true;
+        document.getElementById("trtNaclMm").value = "100";
+        document.getElementById("trtSuppliedEc").value = "11500";
+        document.getElementById("trtNotes").value = "2.5 mL/L LIQHUMUS Liquid 18 (NK) application under 100 mM NaCl";
+      } else if (preset === "salt_step") {
+        document.getElementById("trtZoneId").value = "5";
+        document.getElementById("trtCode").value = "I-S-0";
+        document.getElementById("trtH2sApplied").checked = false;
+        document.getElementById("trtH2sDoseUm").value = "0";
+        document.getElementById("trtHumicApplied").checked = false;
+        document.getElementById("trtHumicDoseMll").value = "0";
+        document.getElementById("trtSaltApplied").checked = true;
+        document.getElementById("trtNaclMm").value = "100";
+        document.getElementById("trtSuppliedEc").value = "11500";
+        document.getElementById("trtNotes").value = "100 mM NaCl salinized nutrient solution (Urea + K2SO4 matched)";
+      } else if (preset === "control_ns") {
+        document.getElementById("trtZoneId").value = "1";
+        document.getElementById("trtCode").value = "I-C-0";
+        document.getElementById("trtH2sApplied").checked = false;
+        document.getElementById("trtH2sDoseUm").value = "0";
+        document.getElementById("trtHumicApplied").checked = false;
+        document.getElementById("trtHumicDoseMll").value = "0";
+        document.getElementById("trtSaltApplied").checked = false;
+        document.getElementById("trtNaclMm").value = "0";
+        document.getElementById("trtSuppliedEc").value = "2000";
+        document.getElementById("trtNotes").value = "Non-saline standard nutrient solution control (EC 2.0 dS/m)";
+      }
+      recalcTreatmentTotals();
+    }
+
+    function getNowDatetimeLocal() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, "0");
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    function setTreatmentDateTimeNow() {
+      const el = document.getElementById("trtAppliedAt");
+      if (el) {
+        el.value = getNowDatetimeLocal();
+        recalcTreatmentDat();
+      }
+    }
+
+    function setNoteDateTimeNow() {
+      const el = document.getElementById("noteRecordedAt");
+      if (el) el.value = getNowDatetimeLocal();
+    }
+
+    function recalcTreatmentDat() {
+      const val = document.getElementById("trtAppliedAt")?.value;
+      if (!val) return;
+      const dt = new Date(val);
+      const t0 = new Date("2026-10-16T00:00:00Z");
+      if (!isNaN(dt.getTime()) && document.getElementById("trtDat")) {
+        const diffDays = Math.max(0, Math.floor((dt.getTime() - t0.getTime()) / 86400000));
+        document.getElementById("trtDat").value = String(diffDays);
+      }
+    }
+
+    async function submitTreatmentForm(e) {
+      e.preventDefault();
+      const rawDt = document.getElementById("trtAppliedAt")?.value;
+      if (!rawDt) {
+        showToast("Please select Application Date & Time!", "#dc2626");
+        return;
+      }
+      const appliedAtIso = new Date(rawDt).toISOString();
+      const datVal = document.getElementById("trtDat").value;
+      const zoneVal = document.getElementById("trtZoneId").value;
+      const sensorVal = document.getElementById("trtSensorId").value;
+      const payload = {
+        applied_at: appliedAtIso,
+        dat: datVal !== "" ? parseInt(datVal, 10) : null,
+        zone_id: zoneVal ? parseInt(zoneVal, 10) : null,
+        sensor_id: sensorVal ? parseInt(sensorVal, 10) : null,
+        target_scope: sensorVal ? "plot" : (zoneVal ? "zone" : "all_lines"),
+        treatment_code: document.getElementById("trtCode").value.trim(),
+        h2s_applied: document.getElementById("trtH2sApplied").checked,
+        h2s_dose_um: parseFloat(document.getElementById("trtH2sDoseUm").value || "0"),
+        h2s_stock_ml_per_l: parseFloat(document.getElementById("trtH2sStockMll").value || "0"),
+        h2s_solution_vol_l: parseFloat(document.getElementById("trtVolL").value || "0"),
+        measured_dripper_h2s_um: document.getElementById("trtMeasuredH2sUm").value ? parseFloat(document.getElementById("trtMeasuredH2sUm").value) : null,
+        humic_applied: document.getElementById("trtHumicApplied").checked,
+        humic_dose_mll: parseFloat(document.getElementById("trtHumicDoseMll").value || "0"),
+        humic_total_ml: parseFloat(document.getElementById("trtHumicTotalMl").value || "0"),
+        nutrient_match_applied: document.getElementById("trtNutrientMatch").value === "1",
+        salt_applied: document.getElementById("trtSaltApplied").checked,
+        nacl_dose_mm: parseFloat(document.getElementById("trtNaclMm").value || "0"),
+        salt_amount_g_per_l: parseFloat(document.getElementById("trtSaltGl").value || "0"),
+        supplied_solution_ec_uscm: document.getElementById("trtSuppliedEc").value ? parseInt(document.getElementById("trtSuppliedEc").value, 10) : null,
+        supplied_solution_ph: document.getElementById("trtSuppliedPh").value ? parseFloat(document.getElementById("trtSuppliedPh").value) : null,
+        drainage_fraction_pct: document.getElementById("trtDrainagePct").value ? parseFloat(document.getElementById("trtDrainagePct").value) : null,
+        drainage_ec_uscm: document.getElementById("trtDrainageEc").value ? parseInt(document.getElementById("trtDrainageEc").value, 10) : null,
+        update_line_ref_ph: document.getElementById("trtUpdateRefPh").checked,
+        notes: document.getElementById("trtNotes").value.trim(),
+        recorded_by: document.getElementById("trtRecordedBy").value.trim() || "Mamunur Reza",
+      };
+      const res = await fetch("/api/v1/stress/treatments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        showToast("Treatment pulse saved with Date & Time to database!");
+        document.getElementById("trtNotes").value = "";
+        setTreatmentDateTimeNow();
+        await refreshAllStudioData();
+      } else {
+        showToast("Error saving treatment application", "#dc2626");
+      }
+    }
+
+    async function deleteTreatment(appId) {
+      const res = await fetch(`/api/v1/stress/treatments/${encodeURIComponent(appId)}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Treatment entry removed", "#f59e0b");
+        await refreshAllStudioData();
+      }
+    }
+
+    async function submitResearchNoteForm(e) {
+      e.preventDefault();
+      const rawNoteDt = document.getElementById("noteRecordedAt")?.value;
+      if (!rawNoteDt) {
+        showToast("Please select Observation Date & Time!", "#dc2626");
+        return;
+      }
+      const recordedAtIso = new Date(rawNoteDt).toISOString();
+      const editId = document.getElementById("noteEditId").value;
+      const zoneVal = document.getElementById("noteZoneId").value;
+      const sensorVal = document.getElementById("noteSensorId").value;
+      const payload = {
+        recorded_at: recordedAtIso,
+        zone_id: zoneVal ? parseInt(zoneVal, 10) : null,
+        sensor_id: sensorVal ? parseInt(sensorVal, 10) : null,
+        category: document.getElementById("noteCategory").value,
+        severity_or_tag: document.getElementById("noteSeverity").value,
+        title: document.getElementById("noteTitle").value.trim(),
+        content: document.getElementById("noteContent").value.trim(),
+        author: document.getElementById("noteAuthor").value.trim() || "Mamunur Reza",
+        pinned_on_chart: document.getElementById("notePinned").checked,
+      };
+      const url = editId ? `/api/v1/stress/notes/${encodeURIComponent(editId)}` : "/api/v1/stress/notes";
+      const method = editId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        showToast(editId ? "Research note updated in database!" : "Research note saved to database!");
+        resetNoteForm();
+        await refreshAllStudioData();
+      } else {
+        showToast("Failed to save research note", "#dc2626");
+      }
+    }
+
+    function editResearchNote(noteId) {
+      const n = notesList.find(x => x.note_id === noteId);
+      if (!n) return;
+      document.getElementById("noteEditId").value = n.note_id;
+      if (n.recorded_at) {
+        const d = new Date(n.recorded_at);
+        if (!isNaN(d.getTime())) {
+          const pad = v => String(v).padStart(2, "0");
+          document.getElementById("noteRecordedAt").value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+      }
+      document.getElementById("noteTitle").value = n.title || "";
+      document.getElementById("noteContent").value = n.content || "";
+      document.getElementById("noteCategory").value = n.category || "observation";
+      document.getElementById("noteSeverity").value = n.severity_or_tag || "normal";
+      document.getElementById("noteZoneId").value = n.zone_id ? String(n.zone_id) : "";
+      document.getElementById("noteSensorId").value = n.sensor_id ? String(n.sensor_id) : "";
+      document.getElementById("noteAuthor").value = n.author || "Mamunur Reza";
+      document.getElementById("notePinned").checked = Boolean(n.pinned_on_chart);
+      document.getElementById("btnSubmitNote").textContent = "💾 Update Research Note";
+      document.getElementById("btnCancelNoteEdit").style.display = "inline-flex";
+    }
+
+    function resetNoteForm() {
+      document.getElementById("noteEditId").value = "";
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteContent").value = "";
+      setNoteDateTimeNow();
+      document.getElementById("btnSubmitNote").textContent = "📌 Save Research Note to Database";
+      document.getElementById("btnCancelNoteEdit").style.display = "none";
+    }
+
+    async function deleteResearchNote(noteId) {
+      const res = await fetch(`/api/v1/stress/notes/${encodeURIComponent(noteId)}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Research note deleted from database", "#f59e0b");
+        await refreshAllStudioData();
+      }
+    }
+
+    async function loadResearchNotes() {
+      const search = document.getElementById("noteSearchInput")?.value.trim() || "";
+      const cat = document.getElementById("noteFilterCategory")?.value || "";
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (cat) params.set("category", cat);
+      const res = await fetch(`/api/v1/stress/notes?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        notesList = data.notes || [];
+        renderNotesTable();
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || "").replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    function renderNotesTable() {
+      const tbody = document.getElementById("notesTableBody");
+      const countEl = document.getElementById("noteTableCount");
+      if (!tbody) return;
+      if (countEl) countEl.textContent = `${notesList.length} notes in DB`;
+      if (!notesList.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No research notes match your filter.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = notesList.map(n => {
+        const ts = (n.recorded_at || "").replace("T", " ").slice(0, 16);
+        const scope = n.sensor_id ? `Plot R${n.sensor_id}` : (n.zone_id ? `Line ${n.zone_id} (${n.treatment_code || ""})` : "All Lines");
+        return `
+          <tr>
+            <td>${ts}</td>
+            <td><strong>DAT ${n.dat ?? "—"}</strong></td>
+            <td>${scope}</td>
+            <td><span class="stress-pill stress-optimal">${n.category}</span> <small>${n.severity_or_tag}</small></td>
+            <td style="white-space:normal; max-width:340px;"><strong>${escapeHtml(n.title)}</strong><br/><span style="color:var(--text-secondary);">${escapeHtml(n.content)}</span></td>
+            <td>${n.pinned_on_chart ? "📌 Yes" : "—"}</td>
+            <td>
+              <button class="chip-btn" onclick="editResearchNote('${n.note_id}')">✏️</button>
+              <button class="chip-btn" onclick="deleteResearchNote('${n.note_id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderTreatmentsTable() {
+      const tbody = document.getElementById("treatmentTableBody");
+      const countEl = document.getElementById("trtTableCount");
+      if (!tbody) return;
+      if (countEl) countEl.textContent = `${treatmentsList.length} records in DB`;
+      if (!treatmentsList.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No treatment pulses recorded yet. Use the form above to log H2S, Humic, or NaCl applications.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = treatmentsList.map(t => {
+        const ts = (t.applied_at || "").replace("T", " ").slice(0, 16);
+        const scope = t.sensor_id ? `Plot R${t.sensor_id}` : (t.zone_id ? `Line ${t.zone_id}` : "All Lines");
+        return `
+          <tr>
+            <td>${ts}</td>
+            <td><strong>DAT ${t.dat ?? "—"}</strong></td>
+            <td>${scope}</td>
+            <td><strong>${escapeHtml(t.treatment_code || "")}</strong></td>
+            <td style="color:#0284c7; font-weight:800;">${t.h2s_applied ? `${t.h2s_dose_um} uM` : "0"}</td>
+            <td style="color:#15803d; font-weight:800;">${t.humic_applied ? `${t.humic_dose_mll} mL/L (${t.humic_total_ml} mL)` : "0"}</td>
+            <td style="color:#d97706; font-weight:800;">${t.salt_applied ? `${t.nacl_dose_mm} mM` : "0 mM"}</td>
+            <td>${t.supplied_solution_ec_uscm ?? "—"} uS / pH ${t.supplied_solution_ph ?? "—"}</td>
+            <td style="white-space:normal; max-width:220px;">${escapeHtml(t.notes || "—")}</td>
+            <td><button class="chip-btn" onclick="deleteTreatment('${t.app_id}')">🗑️</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderLineProfilesTable() {
+      const tbody = document.getElementById("lineProfilesTableBody");
+      if (!tbody || !lineProfiles.length) return;
+      tbody.innerHTML = lineProfiles.map(p => {
+        const z = p.zone_id;
+        const plots = (p.sensor_ids || []).map(id => `R${id}`).join(", ");
+        const leaves = (p.sensor_ids || []).map(id => `${100 + id}`).join(", ");
+        return `
+          <tr>
+            <td><strong>Line ${z} (Zone ${z})</strong></td>
+            <td>${plots} <small style="color:var(--text-muted);">(Leaf Slaves ${leaves})</small></td>
+            <td><input type="text" id="prof_code_${z}" value="${escapeHtml(p.treatment_code)}" style="width:105px; padding:4px 6px;" /></td>
+            <td><input type="text" id="prof_reg_${z}" value="${escapeHtml(p.salinity_regime)}" style="width:130px; padding:4px 6px;" /></td>
+            <td><input type="number" step="1" id="prof_nacl_${z}" value="${p.nacl_mm}" style="width:72px; padding:4px 6px;" /></td>
+            <td><input type="number" step="50" id="prof_ec_${z}" value="${p.target_solution_ec_uscm}" style="width:82px; padding:4px 6px;" /></td>
+            <td><input type="number" step="1" id="prof_nahs_${z}" value="${p.nahs_dose_um}" style="width:72px; padding:4px 6px;" /></td>
+            <td><input type="number" step="0.1" id="prof_humic_${z}" value="${p.humic_dose_mll}" style="width:72px; padding:4px 6px;" /></td>
+            <td><input type="number" step="0.05" id="prof_ph_${z}" value="${p.ref_soil_ph}" style="width:72px; padding:4px 6px; font-weight:800; color:#0284c7;" /></td>
+            <td><button class="btn secondary" style="padding:4px 10px;" onclick="saveLineProfile(${z})">💾 Save</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function saveLineProfile(zoneId) {
+      const payload = {
+        zone_id: zoneId,
+        treatment_code: document.getElementById(`prof_code_${zoneId}`).value.trim(),
+        salinity_regime: document.getElementById(`prof_reg_${zoneId}`).value.trim(),
+        nacl_mm: parseFloat(document.getElementById(`prof_nacl_${zoneId}`).value || "0"),
+        target_solution_ec_uscm: parseInt(document.getElementById(`prof_ec_${zoneId}`).value || "2000", 10),
+        nahs_dose_um: parseFloat(document.getElementById(`prof_nahs_${zoneId}`).value || "0"),
+        humic_dose_mll: parseFloat(document.getElementById(`prof_humic_${zoneId}`).value || "0"),
+        ref_soil_ph: parseFloat(document.getElementById(`prof_ph_${zoneId}`).value || "6.0"),
+      };
+      const res = await fetch("/api/v1/stress/line-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        showToast(`Line ${zoneId} treatment profile & reference pH updated!`);
+        await refreshAllStudioData();
+      }
+    }
+
+    function updateKpiRibbon() {
+      if (!liveStressData) return;
+      const lastTsEl = document.getElementById("lastTimestampLabel");
+      if (lastTsEl) {
+        lastTsEl.textContent = liveStressData.recorded_at
+          ? `Last Telemetry: ${liveStressData.recorded_at.replace("T", " ").slice(0, 19)} UTC (DAT ${liveStressData.dat ?? "—"})`
+          : "Last PLC Telemetry: No hardware batch recorded yet (Zero-Demo Policy)";
+      }
+
+      const zones = (liveStressData.zones || []).filter(z => z.has_data);
+      const avg = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+
+      const meanPsi = avg(zones.map(z => z.avg_psi).filter(v => v != null));
+      const meanPvi = avg(zones.map(z => z.avg_pvi).filter(v => v != null));
+      const meanPoreEc = avg(zones.map(z => z.avg_pore_ec_dsm).filter(v => v != null));
+      const meanOsm = avg(zones.map(z => z.avg_osmotic_potential_mpa).filter(v => v != null));
+      const meanCwsi = avg(zones.map(z => z.avg_cwsi).filter(v => v != null));
+      const meanVpd = avg(zones.map(z => z.avg_vpd_kpa).filter(v => v != null));
+      const meanSaltCoeff = avg(zones.map(z => z.avg_salt_coeff).filter(v => v != null));
+      const meanPh = avg((liveStressData.zones || []).map(z => z.avg_soil_ph || z.ref_soil_ph).filter(v => v != null));
+
+      if (document.getElementById("kpiMeanPsi")) document.getElementById("kpiMeanPsi").textContent = meanPsi != null ? `${meanPsi.toFixed(1)} / 100` : "— (No PLC Data)";
+      if (document.getElementById("kpiMeanPvi")) document.getElementById("kpiMeanPvi").textContent = meanPvi != null ? `${meanPvi.toFixed(1)} %` : "—";
+      if (document.getElementById("kpiMeanPoreEc")) document.getElementById("kpiMeanPoreEc").textContent = meanPoreEc != null ? `${meanPoreEc.toFixed(2)} dS/m` : "— dS/m";
+      if (document.getElementById("kpiMeanOsmotic")) document.getElementById("kpiMeanOsmotic").textContent = `Osmotic Potential: ${meanOsm != null ? meanOsm.toFixed(3) : "—"} MPa`;
+      if (document.getElementById("kpiMeanCwsi")) document.getElementById("kpiMeanCwsi").textContent = meanCwsi != null ? meanCwsi.toFixed(3) : "—";
+      if (document.getElementById("kpiMeanVpd")) document.getElementById("kpiMeanVpd").textContent = `Leaf VPD: ${meanVpd != null ? meanVpd.toFixed(2) : "—"} kPa`;
+      if (document.getElementById("kpiMeanSaltCoeff")) document.getElementById("kpiMeanSaltCoeff").textContent = meanSaltCoeff != null ? `${meanSaltCoeff.toFixed(3)} mg/uS` : "—";
+      if (document.getElementById("kpiMeanPh")) document.getElementById("kpiMeanPh").textContent = `Effective Soil pH: ${meanPh != null ? meanPh.toFixed(2) : "6.00"}`;
+
+      const sriZones = (liveStressData.zones || []).filter(z => z.zone_id >= 6 && z.recovery_sri_pct != null);
+      if (sriZones.length) {
+        sriZones.sort((a, b) => b.recovery_sri_pct - a.recovery_sri_pct);
+        const best = sriZones[0];
+        if (document.getElementById("kpiBestSri")) document.getElementById("kpiBestSri").textContent = `+${best.recovery_sri_pct.toFixed(1)} %`;
+        if (document.getElementById("kpiBestSriLine")) document.getElementById("kpiBestSriLine").textContent = `Best: Line ${best.zone_id} (${best.treatment_code}) vs I-S-0`;
+      } else {
+        if (document.getElementById("kpiBestSri")) document.getElementById("kpiBestSri").textContent = "— %";
+        if (document.getElementById("kpiBestSriLine")) document.getElementById("kpiBestSriLine").textContent = "Awaiting salinized line telemetry (Zones 5–8)";
+      }
+
+      const z8 = (liveStressData.zones || []).find(z => z.zone_id === 8) || (liveStressData.zones || [])[0];
+      if (z8 && z8.h2s_speciation) {
+        if (document.getElementById("kpiActiveH2s")) document.getElementById("kpiActiveH2s").textContent = `${z8.h2s_speciation.active_h2s_um} uM H2S(aq)`;
+        if (document.getElementById("kpiH2sFraction")) document.getElementById("kpiH2sFraction").textContent = `${z8.h2s_speciation.f_h2s_pct}% H2S / ${z8.h2s_speciation.f_hs_minus_pct}% HS- (pKa1=${z8.h2s_speciation.pka1})`;
+      }
+
+      if (document.getElementById("kpiDbCounts")) document.getElementById("kpiDbCounts").textContent = `${treatmentsList.length} Pulses / ${notesList.length} Notes`;
+      if (document.getElementById("kpiDatBadge")) document.getElementById("kpiDatBadge").textContent = `Days After Transplant (DAT): ${liveStressData.dat ?? "—"}`;
+    }
+
+    function prepCanvas(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(320, rect.width || 560);
+      const h = Math.max(220, rect.height || 295);
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const isDark = document.body.classList.contains("dark-mode");
+      const theme = {
+        bg: isDark ? "#1e293b" : "#f8fafc",
+        text: isDark ? "#f8fafc" : "#0f172a",
+        muted: isDark ? "#94a3b8" : "#64748b",
+        grid: isDark ? "rgba(148,163,184,0.18)" : "rgba(15,23,42,0.09)",
+        card: isDark ? "#0f172a" : "#ffffff",
+      };
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, w, h);
+      return { ctx, w, h, theme };
+    }
+
+    function stressColor(psi) {
+      if (psi == null) return "#94a3b8";
+      if (psi < 20) return "#16a34a";
+      if (psi < 45) return "#ca8a04";
+      if (psi < 70) return "#ea580c";
+      return "#dc2626";
+    }
+
+    function drawChart1Heatmap() {
+      const c = prepCanvas("chart1Heatmap");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const sensors = liveStressData.sensors || [];
+      const padL = 115, padT = 28, padR = 14, padB = 14;
+      const cols = 3, rows = 8;
+      const cellW = (w - padL - padR) / cols;
+      const cellH = (h - padT - padB) / rows;
+
+      ctx.fillStyle = theme.muted;
+      ctx.font = "bold 11px sans-serif";
+      for (let col = 0; col < 3; col++) {
+        ctx.fillText(`Replicate ${col + 1} (Plot + Leaf Slave)`, padL + col * cellW + 8, 18);
+      }
+
+      for (let row = 0; row < 8; row++) {
+        const zid = row + 1;
+        const z = (liveStressData.zones || []).find(x => x.zone_id === zid) || {};
+        const y = padT + row * cellH;
+        ctx.fillStyle = theme.text;
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText(`L${zid}: ${z.treatment_code || ""}`, 8, y + cellH / 2 + 4);
+
+        const plotIds = z.sensor_ids || [zid, zid + 8, zid + 16];
+        for (let col = 0; col < 3; col++) {
+          const sid = plotIds[col];
+          const s = sensors.find(x => x.sensor_id === sid) || {};
+          const x = padL + col * cellW;
+          const psi = s.composite_psi;
+          ctx.fillStyle = psi == null ? (document.body.classList.contains("dark-mode") ? "#0f172a" : "#e2e8f0") : stressColor(psi);
+          ctx.globalAlpha = psi == null ? 0.55 : 0.85;
+          ctx.fillRect(x + 3, y + 2, cellW - 6, cellH - 4);
+          ctx.globalAlpha = 1.0;
+
+          if (s.leaf_temp_anomaly_flag) {
+            ctx.strokeStyle = "#facc15";
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(x + 3, y + 2, cellW - 6, cellH - 4);
+          }
+
+          ctx.fillStyle = psi == null ? theme.text : "#ffffff";
+          ctx.font = "bold 10.5px sans-serif";
+          const labelPsi = psi != null ? `PSI ${psi.toFixed(0)} | PVI ${s.plant_vitality_pvi.toFixed(0)}%` : "Waiting PLC";
+          ctx.fillText(`R${sid}: ${labelPsi}`, x + 8, y + 15);
+          ctx.font = "9.5px sans-serif";
+          const subText = s.has_data
+            ? `VWC:${s.soil_moisture ?? "—"}% ECp:${s.pore_water_ec_dsm ?? "—"} CWSI:${s.cwsi ?? "—"}`
+            : `Slave ${sid} & Leaf ${100 + sid}`;
+          ctx.fillText(subText, x + 8, y + 29);
+        }
+      }
+    }
+
+    function drawChart2Radar() {
+      const c = prepCanvas("chart2Radar");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const axes = [
+        { key: "avg_s_moisture", label: "Moisture Stress" },
+        { key: "avg_s_salinity", label: "Salinity (ECp)" },
+        { key: "avg_s_ph", label: "pH Stress" },
+        { key: "avg_s_salt_ratio", label: "Salt Ratio" },
+        { key: "avg_s_canopy_temp", label: "Canopy Temp" },
+        { key: "avg_s_leaf_vpd", label: "Leaf VPD" },
+      ];
+      const cx = w * 0.45, cy = h * 0.54, radius = Math.min(w, h) * 0.34;
+
+      [25, 50, 75, 100].forEach(level => {
+        const r = (level / 100) * radius;
+        ctx.beginPath();
+        axes.forEach((_, idx) => {
+          const ang = (Math.PI * 2 * idx) / axes.length - Math.PI / 2;
+          const px = cx + Math.cos(ang) * r;
+          const py = cy + Math.sin(ang) * r;
+          if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = theme.grid;
+        ctx.stroke();
+      });
+
+      axes.forEach((ax, idx) => {
+        const ang = (Math.PI * 2 * idx) / axes.length - Math.PI / 2;
+        const px = cx + Math.cos(ang) * radius;
+        const py = cy + Math.sin(ang) * radius;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(px, py);
+        ctx.strokeStyle = theme.grid;
+        ctx.stroke();
+
+        const lx = cx + Math.cos(ang) * (radius + 22);
+        const ly = cy + Math.sin(ang) * (radius + 16);
+        ctx.fillStyle = theme.text;
+        ctx.font = "bold 10.5px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(ax.label, lx, ly);
+      });
+      ctx.textAlign = "left";
+
+      const colors = { 1: "#0284c7", 5: "#dc2626", 6: "#0891b2", 7: "#d97706", 8: "#16a34a" };
+      const zones = liveStressData.zones || [];
+      let anyData = zones.some(z => z.has_data);
+
+      [1, 5, 6, 7, 8].forEach((zid, lIdx) => {
+        const z = zones.find(x => x.zone_id === zid) || {};
+        ctx.beginPath();
+        axes.forEach((ax, idx) => {
+          let val = z[ax.key];
+          if (val == null) {
+            val = ax.key === "avg_s_ph" ? (z.avg_s_ph || 0) : 0;
+          }
+          const r = (Math.min(100, Math.max(0, val)) / 100) * radius;
+          const ang = (Math.PI * 2 * idx) / axes.length - Math.PI / 2;
+          const px = cx + Math.cos(ang) * r;
+          const py = cy + Math.sin(ang) * r;
+          if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = colors[zid];
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = colors[zid] + "28";
+        ctx.fill();
+
+        ctx.fillStyle = colors[zid];
+        ctx.fillRect(w - 135, 24 + lIdx * 22, 12, 12);
+        ctx.fillStyle = theme.text;
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`L${zid}: ${z.treatment_code || ""}`, w - 118, 34 + lIdx * 22);
+      });
+
+      if (!anyData) {
+        ctx.fillStyle = theme.muted;
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("Waiting for live PLC telemetry to populate sensor axes (pH axis active)", 14, h - 10);
+      }
+    }
+
+    function drawChart3PsiPviBars() {
+      const c = prepCanvas("chart3PsiPviBars");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const zones = liveStressData.zones || [];
+      const padL = 44, padR = 16, padT = 26, padB = 46;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+
+      [0, 25, 50, 75, 100].forEach(v => {
+        const y = padT + plotH - (v / 100) * plotH;
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = theme.muted;
+        ctx.font = "10px sans-serif";
+        ctx.fillText(String(v), 12, y + 3);
+      });
+
+      const slotW = plotW / 8;
+      zones.forEach((z, i) => {
+        const x0 = padL + i * slotW + 8;
+        const barW = (slotW - 20) / 2;
+        const psi = z.avg_psi ?? 0;
+        const pvi = z.avg_pvi ?? 0;
+
+        const hPsi = (psi / 100) * plotH;
+        ctx.fillStyle = "#dc2626";
+        ctx.fillRect(x0, padT + plotH - hPsi, barW, hPsi);
+
+        const hPvi = (pvi / 100) * plotH;
+        ctx.fillStyle = "#16a34a";
+        ctx.fillRect(x0 + barW + 3, padT + plotH - hPvi, barW, hPvi);
+
+        ctx.fillStyle = theme.text;
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`L${z.zone_id}`, x0 + 4, h - 26);
+        ctx.font = "9px sans-serif";
+        ctx.fillStyle = theme.muted;
+        ctx.fillText(z.treatment_code || "", x0 - 2, h - 12);
+
+        if (z.avg_psi != null) {
+          ctx.fillStyle = theme.text;
+          ctx.fillText(psi.toFixed(0), x0, padT + plotH - hPsi - 4);
+        }
+      });
+
+      ctx.fillStyle = "#dc2626"; ctx.fillRect(padL, 6, 10, 10);
+      ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif"; ctx.fillText("Composite Stress (PSI)", padL + 14, 15);
+      ctx.fillStyle = "#16a34a"; ctx.fillRect(padL + 155, 6, 10, 10);
+      ctx.fillStyle = theme.text; ctx.fillText("Plant Vitality (PVI %)", padL + 169, 15);
+    }
+
+    function drawChart4RecoverySri() {
+      const c = prepCanvas("chart4RecoverySri");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const zones = (liveStressData.zones || []).filter(z => z.zone_id >= 5);
+      const padL = 52, padR = 20, padT = 28, padB = 46;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+
+      [-20, 0, 25, 50, 75, 100].forEach(v => {
+        const y = padT + plotH - ((v + 20) / 120) * plotH;
+        ctx.strokeStyle = v === 0 ? theme.text : theme.grid;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = theme.muted;
+        ctx.font = "10px sans-serif";
+        ctx.fillText(`${v}%`, 12, y + 3);
+      });
+
+      const zeroY = padT + plotH - (20 / 120) * plotH;
+      const slotW = plotW / Math.max(1, zones.length);
+      const barColors = { 5: "#dc2626", 6: "#0284c7", 7: "#d97706", 8: "#16a34a" };
+
+      zones.forEach((z, idx) => {
+        const sri = z.zone_id === 5 ? 0 : (z.recovery_sri_pct ?? 0);
+        const x = padL + idx * slotW + slotW * 0.2;
+        const bw = slotW * 0.6;
+        const yVal = padT + plotH - ((sri + 20) / 120) * plotH;
+        ctx.fillStyle = barColors[z.zone_id] || "#0284c7";
+        ctx.fillRect(x, Math.min(zeroY, yVal), bw, Math.abs(zeroY - yVal) || 3);
+
+        ctx.fillStyle = theme.text;
+        ctx.font = "bold 11px sans-serif";
+        const label = z.zone_id === 5 ? "0% (Salt Ctrl)" : (z.recovery_sri_pct != null ? `${sri.toFixed(1)}%` : "No PLC");
+        ctx.fillText(label, x + 4, Math.min(zeroY, yVal) - 6);
+        ctx.fillText(`Line ${z.zone_id} (${z.treatment_code})`, x, h - 18);
+      });
+    }
+
+    function drawChart5MaasHoffman() {
+      const c = prepCanvas("chart5MaasHoffman");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 48, padR = 20, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const maxEc = 12.0;
+
+      [0, 25, 50, 75, 100].forEach(yPct => {
+        const y = padT + plotH - (yPct / 100) * plotH;
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+        ctx.fillText(`${yPct}%`, 12, y + 3);
+      });
+
+      ctx.beginPath();
+      for (let ec = 0; ec <= maxEc; ec += 0.2) {
+        const yld = ec <= 2.5 ? 100 : Math.max(0, 100 - 9.9 * (ec - 2.5));
+        const px = padL + (ec / maxEc) * plotW;
+        const py = padT + plotH - (yld / 100) * plotH;
+        if (ec === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      const tx = padL + (2.5 / maxEc) * plotW;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#d97706";
+      ctx.beginPath(); ctx.moveTo(tx, padT); ctx.lineTo(tx, padT + plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#d97706"; ctx.font = "bold 10px sans-serif";
+      ctx.fillText("ECt = 2.5 dS/m Threshold", tx + 4, padT + 14);
+
+      (liveStressData.zones || []).forEach(z => {
+        const ecp = z.avg_pore_ec_dsm != null ? z.avg_pore_ec_dsm : (z.target_solution_ec_uscm / 1000.0) * 0.45;
+        const yld = ecp <= 2.5 ? 100 : Math.max(0, 100 - 9.9 * (ecp - 2.5));
+        const px = padL + (Math.min(maxEc, ecp) / maxEc) * plotW;
+        const py = padT + plotH - (yld / 100) * plotH;
+        ctx.fillStyle = z.zone_id >= 5 ? "#dc2626" : "#16a34a";
+        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.text; ctx.font = "bold 9.5px sans-serif";
+        ctx.fillText(`L${z.zone_id}`, px + 6, py + 3);
+      });
+
+      ctx.fillStyle = theme.muted;
+      ctx.fillText("Hilhorst Pore-Water ECp (dS/m) — X-axis (0 to 12 dS/m) vs Relative Yield Potential (%)", padL, h - 10);
+    }
+
+    function drawChart6Psychrometric() {
+      const c = prepCanvas("chart6Psychrometric");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 46, padR = 20, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const tMin = 12, tMax = 40;
+
+      [0.8, 1.6].forEach((vpdTarget, idx) => {
+        ctx.beginPath();
+        for (let t = tMin; t <= tMax; t += 0.5) {
+          const es = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
+          const rh = Math.max(0, Math.min(100, (1 - vpdTarget / es) * 100));
+          const px = padL + ((t - tMin) / (tMax - tMin)) * plotW;
+          const py = padT + plotH - (rh / 100) * plotH;
+          if (t === tMin) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = idx === 0 ? "#16a34a" : "#dc2626";
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      const sensors = (liveStressData.sensors || []).filter(s => s.leaf_temp != null && s.leaf_humidity != null);
+      sensors.forEach(s => {
+        const px = padL + ((Math.min(tMax, Math.max(tMin, s.leaf_temp)) - tMin) / (tMax - tMin)) * plotW;
+        const py = padT + plotH - (Math.min(100, Math.max(0, s.leaf_humidity)) / 100) * plotH;
+        ctx.fillStyle = stressColor(s.composite_psi);
+        ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.text; ctx.font = "9px sans-serif";
+        ctx.fillText(`R${s.sensor_id}_L`, px + 5, py + 3);
+      });
+
+      ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+      ctx.fillText("Leaf Temperature L_temp (12 C to 40 C) vs. Leaf Humidity L_humidity (0–100%) | Dashed: VPD 0.8 & 1.6 kPa", padL, h - 10);
+    }
+
+    function drawChart7CwsiBaseline() {
+      const c = prepCanvas("chart7CwsiBaseline");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 48, padR = 20, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const vpdMax = 3.5, dtMin = -6.0, dtMax = 5.0;
+
+      const mapX = vpd => padL + (Math.min(vpdMax, Math.max(0, vpd)) / vpdMax) * plotW;
+      const mapY = dt => padT + plotH - ((Math.min(dtMax, Math.max(dtMin, dt)) - dtMin) / (dtMax - dtMin)) * plotH;
+
+      ctx.strokeStyle = "#dc2626";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(mapX(0), mapY(3.5)); ctx.lineTo(mapX(vpdMax), mapY(3.5)); ctx.stroke();
+
+      ctx.strokeStyle = "#16a34a";
+      ctx.beginPath();
+      ctx.moveTo(mapX(0), mapY(-1.8));
+      ctx.lineTo(mapX(vpdMax), mapY(-1.8 - 1.35 * vpdMax));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#dc2626"; ctx.font = "bold 10px sans-serif";
+      ctx.fillText("UL (+3.5 C Non-Transpiring Limit, CWSI = 1.0)", padL + 8, mapY(3.5) - 5);
+      ctx.fillStyle = "#16a34a";
+      ctx.fillText("LL (Fully Transpiring Baseline, CWSI = 0.0)", padL + 8, mapY(-2.4) + 14);
+
+      (liveStressData.sensors || []).forEach(s => {
+        if (s.vpd_kpa != null && s.canopy_soil_delta_t != null) {
+          const px = mapX(s.vpd_kpa);
+          const py = mapY(s.canopy_soil_delta_t);
+          ctx.fillStyle = stressColor(s.composite_psi);
+          ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+
+      ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+      ctx.fillText("Leaf VPD (0 to 3.5 kPa) vs. Canopy-Root Delta T (T_leaf - T_soil, deg C)", padL, h - 10);
+    }
+
+    function drawChart8H2sSpeciation() {
+      const c = prepCanvas("chart8H2sSpeciation");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 48, padR = 20, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const phMin = 4.5, phMax = 8.5;
+      const pka1 = 7.05;
+
+      const mapX = ph => padL + ((ph - phMin) / (phMax - phMin)) * plotW;
+      const mapY = pct => padT + plotH - (pct / 100) * plotH;
+
+      ctx.beginPath();
+      for (let ph = phMin; ph <= phMax; ph += 0.05) {
+        const fH2s = (1.0 / (1.0 + Math.pow(10, ph - pka1))) * 100.0;
+        const px = mapX(ph), py = mapY(fH2s);
+        if (ph === phMin) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      for (let ph = phMin; ph <= phMax; ph += 0.05) {
+        const fHs = 100.0 - (1.0 / (1.0 + Math.pow(10, ph - pka1))) * 100.0;
+        const px = mapX(ph), py = mapY(fHs);
+        if (ph === phMin) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = "#d97706";
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      (liveStressData.zones || []).filter(z => z.nahs_dose_um > 0).forEach(z => {
+        const ph = z.avg_soil_ph || z.ref_soil_ph || 6.0;
+        const spec = z.h2s_speciation || { f_h2s_pct: 91.8, active_h2s_um: 22.9 };
+        const px = mapX(Math.min(phMax, Math.max(phMin, ph)));
+        const py = mapY(spec.f_h2s_pct);
+        ctx.fillStyle = "#16a34a";
+        ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`L${z.zone_id} (pH ${ph.toFixed(2)}: ${spec.active_h2s_um} uM H2S)`, px + 7, py - 4);
+      });
+
+      ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+      ctx.fillText("Soil pH (4.5 to 8.5) vs. % Molecular H2S(aq) [Solid Blue] & % HS- [Dashed Amber] (pKa1 ~ 7.05)", padL, h - 10);
+    }
+
+    function drawTimeSeriesWithMarkers(canvasId, seriesByZone, valueKey, yMin, yMax, yUnit, emptyMsg) {
+      const c = prepCanvas(canvasId);
+      if (!c) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 48, padR = 18, padT = 26, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+
+      for (let i = 0; i <= 4; i++) {
+        const val = yMin + ((yMax - yMin) * i) / 4;
+        const y = padT + plotH - (i / 4) * plotH;
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+        ctx.fillText(`${val.toFixed(0)}${yUnit}`, 6, y + 3);
+      }
+
+      const focusZone = parseInt(document.getElementById("chartFocusZone")?.value || "0", 10);
+      const targetZones = focusZone > 0 ? [focusZone] : [1, 5, 6, 7, 8];
+      const colors = { 1: "#0284c7", 2: "#0891b2", 3: "#6366f1", 4: "#8b5cf6", 5: "#dc2626", 6: "#0d9488", 7: "#d97706", 8: "#16a34a" };
+
+      let allPoints = [];
+      targetZones.forEach(zid => {
+        const pts = (seriesByZone[String(zid)] || []).filter(p => p[valueKey] != null);
+        allPoints = allPoints.concat(pts);
+      });
+
+      if (!allPoints.length) {
+        ctx.fillStyle = theme.muted;
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText(emptyMsg || "No historical hardware telemetry in selected window — Treatment & Note markers shown below", padL + 10, padT + plotH / 2);
+        return;
+      }
+
+      const times = allPoints.map(p => new Date(p.recorded_at).getTime()).filter(t => !isNaN(t));
+      const tMin = Math.min(...times), tMax = Math.max(...times, tMin + 60000);
+      const mapX = ts => padL + ((ts - tMin) / (tMax - tMin)) * plotW;
+      const mapY = v => padT + plotH - ((Math.min(yMax, Math.max(yMin, v)) - yMin) / (yMax - yMin)) * plotH;
+
+      targetZones.forEach((zid, idx) => {
+        const pts = (seriesByZone[String(zid)] || []).filter(p => p[valueKey] != null);
+        if (!pts.length) return;
+        ctx.beginPath();
+        pts.forEach((p, i) => {
+          const px = mapX(new Date(p.recorded_at).getTime());
+          const py = mapY(p[valueKey]);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.strokeStyle = colors[zid] || "#0284c7";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = colors[zid] || "#0284c7";
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`L${zid}`, padL + idx * 52, 16);
+      });
+
+      treatmentsList.forEach(t => {
+        const ts = new Date(t.applied_at).getTime();
+        if (ts >= tMin && ts <= tMax) {
+          const px = mapX(ts);
+          ctx.strokeStyle = "#7c3aed";
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath(); ctx.moveTo(px, padT); ctx.lineTo(px, padT + plotH); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = "#7c3aed"; ctx.font = "bold 9px sans-serif";
+          ctx.fillText(`🧪 ${t.treatment_code}`, px + 3, padT + 12);
+        }
+      });
+
+      notesList.filter(n => n.pinned_on_chart).forEach(n => {
+        const ts = new Date(n.recorded_at).getTime();
+        if (ts >= tMin && ts <= tMax) {
+          const px = mapX(ts);
+          ctx.strokeStyle = "#0d9488";
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath(); ctx.moveTo(px, padT); ctx.lineTo(px, padT + plotH); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = "#0d9488"; ctx.font = "bold 9px sans-serif";
+          ctx.fillText(`📌 ${n.title.slice(0, 14)}`, px + 3, padT + 24);
+        }
+      });
+    }
+
+    function drawChart9HistPsi() {
+      const series = (histStressData && histStressData.zone_series) || {};
+      drawTimeSeriesWithMarkers("chart9HistPsi", series, "composite_psi", 0, 100, "", "Awaiting historical PLC batches for PSI trajectory");
+    }
+
+    function drawChart10HistRootZone() {
+      const series = (histStressData && histStressData.zone_series) || {};
+      drawTimeSeriesWithMarkers("chart10HistRootZone", series, "pore_water_ec_dsm", 0, 10, " dS", "Awaiting historical PLC batches for Pore ECp (dS/m) trajectory");
+    }
+
+    function drawChart11HistCanopy() {
+      const series = (histStressData && histStressData.zone_series) || {};
+      drawTimeSeriesWithMarkers("chart11HistCanopy", series, "vpd_kpa", 0, 3.5, " kPa", "Awaiting historical PLC batches for Leaf VPD (kPa) trajectory");
+    }
+
+    function drawChart12PulseRecovery() {
+      const c = prepCanvas("chart12PulseRecovery");
+      if (!c) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 48, padR = 20, padT = 26, padB = 42;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const events = (histStressData && histStressData.pulse_recovery_events) || [];
+
+      if (!events.length) {
+        ctx.fillStyle = theme.muted;
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("Log a treatment pulse (above) with historical telemetry to view -12h Pre vs +24h/+48h/+72h Post recovery", padL, padT + plotH / 2);
+        return;
+      }
+
+      const ev = events[0];
+      const stages = [
+        { label: "-12h Pre-Pulse", val: ev.pre_12h_psi ?? 0 },
+        { label: "+24h Post-Pulse", val: ev.post_24h_psi ?? 0 },
+        { label: "+48h Post-Pulse", val: ev.post_48h_psi ?? 0 },
+        { label: "+72h Post-Pulse", val: ev.post_72h_psi ?? 0 },
+      ];
+      const slotW = plotW / stages.length;
+      stages.forEach((st, i) => {
+        const bh = (Math.min(100, Math.max(0, st.val)) / 100) * plotH;
+        const x = padL + i * slotW + slotW * 0.22;
+        ctx.fillStyle = i === 0 ? "#dc2626" : "#16a34a";
+        ctx.fillRect(x, padT + plotH - bh, slotW * 0.55, bh || 3);
+        ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`PSI ${st.val.toFixed(1)}`, x + 4, padT + plotH - bh - 5);
+        ctx.fillText(st.label, x - 4, h - 16);
+      });
+    }
+
+    function drawChart13FactorialSynergy() {
+      const c = prepCanvas("chart13FactorialSynergy");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 52, padR = 24, padT = 26, padB = 42;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const zones = liveStressData.zones || [];
+      const getPsi = zid => {
+        const z = zones.find(x => x.zone_id === zid);
+        return z && z.avg_psi != null ? z.avg_psi : null;
+      };
+
+      const pairs = [
+        { name: "No Biostimulant (0)", z0: 1, zS: 5, color: "#dc2626" },
+        { name: "+25 uM NaHS (H2S)", z0: 2, zS: 6, color: "#0284c7" },
+        { name: "+2.5 mL/L Humic (HS)", z0: 3, zS: 7, color: "#d97706" },
+        { name: "NaHS + Humic Combo", z0: 4, zS: 8, color: "#16a34a" },
+      ];
+
+      const x0 = padL + plotW * 0.2, x1 = padL + plotW * 0.78;
+      ctx.strokeStyle = theme.grid;
+      [0, 25, 50, 75, 100].forEach(v => {
+        const y = padT + plotH - (v / 100) * plotH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+        ctx.fillText(String(v), 14, y + 3);
+      });
+
+      pairs.forEach((p, idx) => {
+        const v0 = getPsi(p.z0) ?? (12 - idx * 1.5);
+        const vS = getPsi(p.zS) ?? (68 - idx * 14);
+        const y0 = padT + plotH - (v0 / 100) * plotH;
+        const yS = padT + plotH - (vS / 100) * plotH;
+
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, yS); ctx.stroke();
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(x0, y0, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x1, yS, 4.5, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = p.color; ctx.font = "bold 10px sans-serif";
+        ctx.fillText(p.name, x1 - 115, 18 + idx * 14);
+      });
+
+      ctx.fillStyle = theme.text; ctx.font = "bold 11px sans-serif";
+      ctx.fillText("0 mM NaCl (Zones 1–4)", x0 - 45, h - 14);
+      ctx.fillText("100 mM NaCl (Zones 5–8)", x1 - 55, h - 14);
+    }
+
+    function drawChart14Diurnal() {
+      const c = prepCanvas("chart14Diurnal");
+      if (!c) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 46, padR = 18, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const diurnal = (histStressData && histStressData.diurnal_24h) || [];
+
+      [0, 25, 50, 75, 100].forEach(v => {
+        const y = padT + plotH - (v / 100) * plotH;
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+      });
+
+      ctx.beginPath();
+      let hasPts = false;
+      diurnal.forEach((d, hr) => {
+        if (d.avg_psi == null) return;
+        const px = padL + (hr / 23) * plotW;
+        const py = padT + plotH - (Math.min(100, d.avg_psi) / 100) * plotH;
+        if (!hasPts) { ctx.moveTo(px, py); hasPts = true; } else { ctx.lineTo(px, py); }
+      });
+      if (hasPts) {
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = theme.muted; ctx.font = "bold 11px sans-serif";
+        ctx.fillText("Awaiting 24h hourly telemetry aggregation to plot diurnal CWSI & PSI curve (00:00–23:00)", padL + 8, padT + plotH / 2);
+      }
+      ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+      ctx.fillText("Hour of Day (00:00 to 23:00 UTC) — Midday Photothermal Peak vs Night Turgor Recovery", padL, h - 10);
+    }
+
+    function drawChart15ReplicateBox() {
+      const c = prepCanvas("chart15ReplicateBox");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const padL = 46, padR = 18, padT = 24, padB = 38;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const sensors = liveStressData.sensors || [];
+      const slotW = plotW / 8;
+
+      for (let zid = 1; zid <= 8; zid++) {
+        const reps = sensors.filter(s => s.zone_id === zid && s.composite_psi != null);
+        const cx = padL + (zid - 0.5) * slotW;
+        if (reps.length) {
+          const vals = reps.map(r => r.composite_psi);
+          const minV = Math.min(...vals), maxV = Math.max(...vals), avgV = vals.reduce((a, b) => a + b, 0) / vals.length;
+          const yMin = padT + plotH - (minV / 100) * plotH;
+          const yMax = padT + plotH - (maxV / 100) * plotH;
+          const yAvg = padT + plotH - (avgV / 100) * plotH;
+
+          ctx.strokeStyle = theme.text;
+          ctx.beginPath(); ctx.moveTo(cx, yMax); ctx.lineTo(cx, yMin); ctx.stroke();
+          ctx.fillStyle = stressColor(avgV);
+          ctx.fillRect(cx - 12, yMax, 24, Math.max(4, yMin - yMax));
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(cx - 12, yAvg - 1, 24, 2);
+        }
+        ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif";
+        ctx.fillText(`L${zid}`, cx - 8, h - 14);
+      }
+      ctx.fillStyle = theme.muted; ctx.font = "10px sans-serif";
+      ctx.fillText("3-Replicate Min/Mean/Max Dispersion per Line (Zones 1–8) & +2.0 C Leaf Sensor Outlier Check", padL, 15);
+    }
+
+    function drawChart16RegressionSdh() {
+      const c = prepCanvas("chart16RegressionSdh");
+      if (!c || !liveStressData) return;
+      const { ctx, w, h, theme } = c;
+      const midX = w * 0.52;
+      const padT = 26, padB = 36;
+      const plotH = h - padT - padB;
+
+      const leftW = midX - 56;
+      ctx.strokeStyle = theme.grid;
+      ctx.strokeRect(42, padT, leftW, plotH);
+      const pts = (liveStressData.sensors || []).filter(s => s.pore_water_ec_dsm != null && s.cwsi != null);
+      pts.forEach(s => {
+        const px = 42 + (Math.min(10, s.pore_water_ec_dsm) / 10) * leftW;
+        const py = padT + plotH - Math.min(1, Math.max(0, s.cwsi)) * plotH;
+        ctx.fillStyle = stressColor(s.composite_psi);
+        ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif";
+      ctx.fillText("Left: Pore ECp (dS/m) vs CWSI Scatter", 44, 16);
+
+      const rightX = midX + 16, rightW = w - rightX - 16;
+      const sdhMap = (histStressData && histStressData.sdh_by_zone) || {};
+      const maxSdh = Math.max(10, ...Object.values(sdhMap).map(x => (x && x.total_sdh) || 0));
+      const bw = rightW / 8 - 6;
+      for (let zid = 1; zid <= 8; zid++) {
+        const sdh = (sdhMap[String(zid)] && sdhMap[String(zid)].total_sdh) || 0;
+        const bh = (sdh / maxSdh) * plotH;
+        const x = rightX + (zid - 1) * (bw + 6);
+        ctx.fillStyle = zid >= 5 ? "#ea580c" : "#0284c7";
+        ctx.fillRect(x, padT + plotH - bh, bw, bh || 2);
+        ctx.fillStyle = theme.text; ctx.font = "9.5px sans-serif";
+        ctx.fillText(`L${zid}`, x + 2, h - 14);
+      }
+      ctx.fillStyle = theme.text; ctx.font = "bold 10px sans-serif";
+      ctx.fillText("Right: Cumulative Stress Degree-Hours (SDH)", rightX, 16);
+    }
+
+    function renderAll16Charts() {
+      if (document.getElementById("viewStressStudio")?.classList.contains("hidden")) return;
+      drawChart1Heatmap();
+      drawChart2Radar();
+      drawChart3PsiPviBars();
+      drawChart4RecoverySri();
+      drawChart5MaasHoffman();
+      drawChart6Psychrometric();
+      drawChart7CwsiBaseline();
+      drawChart8H2sSpeciation();
+      drawChart9HistPsi();
+      drawChart10HistRootZone();
+      drawChart11HistCanopy();
+      drawChart12PulseRecovery();
+      drawChart13FactorialSynergy();
+      drawChart14Diurnal();
+      drawChart15ReplicateBox();
+      drawChart16RegressionSdh();
+    }
+
+    async function loadLiveStressData() {
+      const res = await fetch("/api/v1/stress/live");
+      if (res.ok) {
+        liveStressData = await res.json();
+        lineProfiles = liveStressData.line_profiles || [];
+        renderLineProfilesTable();
+        updateKpiRibbon();
+      }
+    }
+
+    async function loadHistoricalStressData() {
+      const hours = document.getElementById("histHoursSelect")?.value || "168";
+      const resMode = document.getElementById("histResSelect")?.value || "15min";
+      const res = await fetch(`/api/v1/stress/history?hours=${encodeURIComponent(hours)}&resolution=${encodeURIComponent(resMode)}`);
+      if (res.ok) {
+        histStressData = await res.json();
+        renderAll16Charts();
+      }
+    }
+
+    async function loadTreatments() {
+      const res = await fetch("/api/v1/stress/treatments?limit=200");
+      if (res.ok) {
+        const data = await res.json();
+        treatmentsList = data.treatments || [];
+        renderTreatmentsTable();
+      }
+    }
+
+    async function refreshAllStudioData() {
+      await Promise.all([
+        loadLiveStressData(),
+        loadTreatments(),
+        loadResearchNotes(),
+        loadHistoricalStressData(),
+      ]);
+      updateKpiRibbon();
+      renderAll16Charts();
+    }
+
+    function initStressStudioEmbedded() {
+      try {
+        populatePlotSelects();
+        setTreatmentDateTimeNow();
+        setNoteDateTimeNow();
+        refreshAllStudioData();
+        window.addEventListener("resize", () => renderAll16Charts());
+      } catch (e) {
+        console.error("initStressStudioEmbedded error:", e);
+      }
+    }
+
     function bootstrapDashboardApp() {
       try { initTheme(); } catch (e) { console.error('initTheme error:', e); }
       try { checkSiteLockState(); } catch (e) { console.error('checkSiteLockState error:', e); }
@@ -6769,6 +8910,13 @@
       try { loadPlcRulesAndDiagnostics(); } catch (e) { console.error('loadPlcRulesAndDiagnostics error:', e); }
       try { pollHmiUsbStatus(); } catch (e) { console.error('pollHmiUsbStatus error:', e); }
       try { runDatabaseQuery(); } catch (e) { console.error('runDatabaseQuery error:', e); }
+      try { initStressStudioEmbedded(); } catch (e) { console.error('initStressStudioEmbedded error:', e); }
+      try {
+        const urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (window.location.pathname.startsWith('/stress') || urlTab === 'stress' || urlTab === 'stressStudio') {
+          switchTab('stressStudio');
+        }
+      } catch (e) {}
       try { connectWebSocket(); } catch (e) { console.error('connectWebSocket error:', e); }
       setInterval(fetchLatest, 10000);
       setInterval(pollHmiUsbStatus, 10000);

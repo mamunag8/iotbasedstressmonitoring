@@ -1628,8 +1628,8 @@ async def web_scada_dashboard():
 @app.get("/stress", response_class=HTMLResponse)
 @app.get("/stress-studio", response_class=HTMLResponse)
 async def web_stress_recovery_studio():
-    """Dedicated PhD Plant Stress, Biostimulant Recovery, Treatment Logging & Research Notes Studio Page."""
-    html_path = __file__.replace("main.py", "stress_studio.html")
+    """Dedicated PhD Plant Stress, Biostimulant Recovery, Treatment Logging & Research Notes Studio Page (Unified Single-Website Header)."""
+    html_path = __file__.replace("main.py", "dashboard.html")
     try:
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(

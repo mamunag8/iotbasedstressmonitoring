@@ -386,6 +386,66 @@
     .stress-moderate { background: #ffedd5; color: #9a3412; }
     .stress-severe { background: #fee2e2; color: #991b1b; }
     .stress-no_data { background: #e2e8f0; color: #475569; }
+    .q1-method-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media (max-width: 1100px) {
+      .q1-method-grid { grid-template-columns: 1fr; }
+    }
+    .q1-method-card {
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-left: 4px solid #0284c7;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.78rem;
+      line-height: 1.58;
+      color: var(--text-primary);
+    }
+    .q1-method-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.88rem;
+      font-weight: 900;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    body.dark-mode .q1-method-card h3 {
+      color: #38bdf8;
+    }
+    .q1-eq-box {
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: 7px;
+      padding: 8px 11px;
+      margin: 7px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #0f766e;
+      overflow-x: auto;
+    }
+    body.dark-mode .q1-eq-box {
+      color: #2dd4bf;
+    }
+    .q1-ref-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(2, 132, 199, 0.12);
+      color: #0284c7;
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+    body.dark-mode .q1-ref-tag {
+      color: #38bdf8;
+    }
     .toast-msg {
       position: fixed;
       bottom: 20px;
@@ -414,23 +474,31 @@
           onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2247%22 fill=%22%230f172a%22 stroke=%22%230284c7%22 stroke-width=%224%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%2338bdf8%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2216%22>ATAUNI</text></svg>';"
         />
         <div class="brand-title">
-          <h1>🧬 PhD Plant Stress, Biostimulant Recovery, Treatment Log &amp; Research Notes Studio</h1>
-          <p>Atatürk University • Tomato Salinity (NaCl) × H2S Donor (NaHS) × Humic Substance (LIQHUMUS NK) • 8 Lines (Zones 1–8) × 3 Replicates (R1–R24 Soil + R1_L–R24_L Leaf Sensors)</p>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+            <span style="font-size:0.68rem; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;">
+              🏛️ ATATÜRK ÜNİVERSİTESİ (1957) • ZİRAAT FAKÜLTESİ
+            </span>
+            <span style="font-size:0.68rem; font-weight:800; color:var(--teal);">
+              📍 Erzurum, Türkiye (1890m Elevation)
+            </span>
+          </div>
+          <h1>Atatürk University Faculty of Agriculture — Continuous IoT-based Stress Monitoring and Automatic Fertigation Controlling System</h1>
+          <p>Experimental Design: 8 Drip Irrigation &amp; Fertigation Lines (Zones 1–8) × 3 Replications = 24 Experimental Plots (R1–R24) • 48 RS485 Sensors (24 Soil Moisture/Temp/EC/Salt/pH + 24 Leaf Humidity &amp; Temp Stress Sensors)</p>
         </div>
       </div>
       <div class="top-badges">
-        <span class="badge monitor-only">🔒 PASSIVE MONITORING &amp; LOGGING ONLY (NO VALVE CONTROL)</span>
         <span id="plcStatusBadge" class="badge offline">🔴 PLC OFFLINE</span>
         <button class="btn secondary" onclick="toggleDarkMode()" id="btnDarkToggle">🌙 Dark Mode</button>
-        <button class="btn teal" onclick="refreshAllStudioData()">🔄 Refresh Live &amp; History</button>
+        <button class="btn teal" onclick="refreshAllStudioData()">🔄 Sync / Refresh</button>
       </div>
     </div>
     <nav class="nav-strip">
-      <a class="btn secondary" href="/">⬅️ Back to Main SCADA Dashboard</a>
-      <a class="btn" href="#sec-live-charts">📊 16 Stress &amp; Recovery Charts</a>
-      <a class="btn teal" href="#sec-inputs-notes">🧪 Log H2S / Humic / Salt Pulse &amp; Notes</a>
-      <a class="btn secondary" href="#sec-line-profiles">⚙️ 8-Line Factorial Profiles &amp; Calibration</a>
-      <a class="btn green" href="/api/v1/export/excel?resolution=5min" target="_blank">📥 Export 7-Sheet PhD Excel (.xlsx)</a>
+      <a class="btn secondary" href="/">🌿 Dashboard</a>
+      <a class="btn secondary" href="/?tab=details">📈 Graphs</a>
+      <a class="btn secondary" href="/?tab=basicRules">🎛️ Settings</a>
+      <a class="btn secondary" href="/?tab=sensors">📡 Sensors</a>
+      <a class="btn secondary" href="/?tab=database">🗄️ Export</a>
+      <a class="btn" href="/stress">🧬 Stress, Recovery &amp; Notes</a>
     </nav>
   </header>
 
@@ -1075,6 +1143,167 @@
           </thead>
           <tbody id="lineProfilesTableBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Q1 JOURNAL DETAILED MATERIALS & METHODS AND BIOPHYSICAL MODELING METHODOLOGY -->
+    <div id="sec-q1-methodology" class="section-card" style="border-top: 4px solid #0284c7;">
+      <div class="section-head">
+        <div>
+          <h2>📖 Q1 Journal Detailed Materials &amp; Methods and Biophysical Modeling Methodology</h2>
+          <p>Publication-ready experimental protocol, 48-node RS485 Modbus RTU telemetry architecture, thermodynamic equations, and statistical framework (Atatürk University Faculty of Agriculture — Tomato Salinity x NaHS x Humic Substance Study).</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span class="q1-ref-tag">SCIE / Q1 Standard (Scientia Horticulturae • Plant Stress • Agricultural Water Management)</span>
+        </div>
+      </div>
+
+      <div class="q1-method-grid">
+        <!-- Section 2.1 -->
+        <div class="q1-method-card" style="border-left-color:#0284c7;">
+          <h3>
+            <span>2.1 Experimental Site, Plant Material &amp; 8-Line Factorial Design</span>
+            <span class="q1-ref-tag">Yıldırım et al. (2023) Protocol</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            <strong>Experimental Facility &amp; Crop:</strong> Conducted at the controlled greenhouse research facility of the Faculty of Agriculture, Atatürk University, Erzurum, Türkiye (39.90 deg N, 41.27 deg E; ~1,850 m altitude). Uniform tomato (<em>Solanum lycopersicum</em> L.) seedlings were transplanted (Reference Transplant Date T0: 16 October 2026) into 7 L pots filled with a standardized 2:1 (v/v) peat:perlite substrate (dry bulk dielectric offset <code>epsilon_b0 = 4.1</code>, bulk density <code>1.15 g/cm3</code>).
+          </p>
+          <p style="margin:0 0 6px 0;">
+            <strong>8-Line Fertigation &amp; Biostimulant Regime (24 Plots, n = 3 Replicates/Line):</strong>
+          </p>
+          <ul style="margin:0 0 6px 0; padding-left:18px;">
+            <li><strong>Line 1 (<code>I-C-0</code>, Plots R1–R3):</strong> Non-saline Control (<code>0 mM NaCl</code>, target solution EC <code>2,000 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+            <li><strong>Line 2 (<code>I-C-H2S</code>, Plots R4–R6):</strong> Non-saline + Exogenous H2S Donor (<code>0 mM NaCl</code>, <code>25 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+            <li><strong>Line 3 (<code>I-C-HS</code>, Plots R7–R9):</strong> Non-saline + Humic Substance (<code>0 mM NaCl</code>, <code>0 uM NaHS</code>, <code>2.5 mL/L LIQHUMUS Liquid 18 NK</code>).</li>
+            <li><strong>Line 4 (<code>I-C-H2S+HS</code>, Plots R10–R12):</strong> Non-saline + Combined Biostimulants (<code>0 mM NaCl</code>, <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            <li><strong>Line 5 (<code>I-S-0</code>, Plots R13–R15):</strong> Salinized Control (<code>100 mM NaCl</code> [<code>5.844 g/L</code>], target solution EC <code>11,500 uS/cm</code>, <code>0 uM NaHS</code>, <code>0 mL/L Humic</code>).</li>
+            <li><strong>Line 6 (<code>I-S-H2S</code>, Plots R16–R18):</strong> Salinized + Exogenous H2S Rescue (<code>100 mM NaCl</code> + <code>25 uM NaHS</code>).</li>
+            <li><strong>Line 7 (<code>I-S-HS</code>, Plots R19–R21):</strong> Salinized + Humic Substance Rescue (<code>100 mM NaCl</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+            <li><strong>Line 8 (<code>I-S-H2S+HS</code>, Plots R22–R24):</strong> Salinized + Synergistic Co-Application (<code>100 mM NaCl</code> + <code>25 uM NaHS</code> + <code>2.5 mL/L LIQHUMUS NK</code>).</li>
+          </ul>
+          <div class="q1-eq-box">
+            Isovalent Mineral Nutrient Matching: Non-humic lines (Lines 1, 2, 5, 6) receive stoichiometric N and K compensation via reagent-grade Urea [CO(NH2)2] + K2SO4 matching the intrinsic N and K content of 2.5 mL/L LIQHUMUS Liquid 18 (NK), isolating supramolecular humic effects from macronutrient nutrition.
+          </div>
+        </div>
+
+        <!-- Section 2.2 -->
+        <div class="q1-method-card" style="border-left-color:#0d9488;">
+          <h3>
+            <span>2.2 High-Frequency IIoT Sensor Array &amp; Non-Invasive Monitoring Architecture</span>
+            <span class="q1-ref-tag">48 RS485 Modbus RTU Nodes</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            <strong>Root-Zone Dielectric &amp; Ionic Telemetry (Slave IDs 1–24, Plots R1–R24):</strong> Each experimental replicate pot is instrumented with an industrial 4-parameter RS485 Modbus RTU frequency-domain/time-domain dielectric probe measuring volumetric water content (<code>VWC</code>, %, resolution 0.1%), root-zone temperature (<code>T_soil</code>, deg C), bulk apparent electrical conductivity (<code>EC_bulk</code>, uS/cm), and apparent salt concentration (<code>TDS_soil</code>, mg/L).
+          </p>
+          <p style="margin:0 0 6px 0;">
+            <strong>Canopy Phyllosphere Microclimate Array (Slave IDs 101–124, Plots R1_L–R24_L):</strong> Paired abaxial/boundary-layer leaf sensors continuously monitor canopy temperature (<code>T_leaf</code>, deg C) and leaf boundary-layer relative humidity (<code>RH_leaf</code>, %).
+          </p>
+          <p style="margin:0 0 6px 0;">
+            <strong>Edge-to-Cloud Synchronization &amp; Strict Analytical Isolation:</strong> A local edge agent buffers PLC and Modbus RTU frames into SQLite and synchronizes batch telemetry to the PostgreSQL 16 cloud database. All stress algorithms, treatment logs, and research diary entries operate in a strictly passive, monitoring-only analytical plane with zero write feedback to PLC solenoid valves (<code>vana1–vana8</code>).
+          </p>
+          <div class="q1-eq-box">
+            Apparent Root-Zone Ionic Ratio (Salt Coefficient):
+            Salt_Coeff = TDS_soil (mg/L) / max(1, EC_bulk (uS/cm))   [Baseline ~0.55; NaCl accumulation &gt; 0.72]
+          </div>
+        </div>
+
+        <!-- Section 2.3 -->
+        <div class="q1-method-card" style="border-left-color:#d97706;">
+          <h3>
+            <span>2.3 Root-Zone Pore-Water Conductivity (ECp), Osmotic Potential &amp; Yield Model</span>
+            <span class="q1-ref-tag">Hilhorst (2000) • Maas &amp; Hoffman (1977)</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            Because bulk soil conductivity (<code>EC_bulk</code>) declines non-linearly during substrate drying even when dissolved NaCl concentration rises, true root-zone salinity exposure is quantified via the linear dielectric-conductivity model of <strong>Hilhorst (2000, Soil Sci. Soc. Am. J. 64:1922–1925)</strong> coupled with the <strong>Topp et al. (1980)</strong> polynomial dielectric relationship:
+          </p>
+          <div class="q1-eq-box">
+            1. Volumetric moisture fraction (clamped at theta &gt;= 0.10 to prevent dry-substrate singularity):
+               theta = max(0.10, VWC_pct / 100.0)
+            2. Bulk apparent dielectric permittivity (Topp et al., 1980):
+               epsilon_b = 3.03 + 9.3*theta + 146.0*(theta^2) - 76.7*(theta^3)
+            3. Pore-water dielectric permittivity &amp; temperature compensation to 25 deg C:
+               epsilon_p = 80.3 - 0.37*(T_soil - 20.0)
+               EC_bulk_25 (dS/m) = (EC_bulk_uScm / 1000.0) * [1.0 - 0.020*(T_soil - 25.0)]
+            4. Hilhorst (2000) Pore-Water EC (ECp) &amp; US Salinity Lab Osmotic Potential (Psi_pi):
+               EC_p (dS/m) = (epsilon_p * EC_bulk_25) / max(0.5, epsilon_b - epsilon_b0)   [epsilon_b0 = 4.1]
+               Psi_pi (MPa) = -0.036 * EC_p
+          </div>
+          <p style="margin:4px 0 0 0;">
+            <strong>Maas &amp; Hoffman (1977) Tomato Relative Yield Potential (<code>Y_rel</code>):</strong> Parameterized with the established tomato salinity threshold <code>EC_t = 2.5 dS/m</code> and yield-decline slope <code>s = 9.9% per dS/m</code>:
+          </p>
+          <div class="q1-eq-box">
+            Y_rel (%) = clamp(100.0 - 9.9 * max(0.0, EC_p - 2.5), 0.0, 100.0)
+          </div>
+        </div>
+
+        <!-- Section 2.4 -->
+        <div class="q1-method-card" style="border-left-color:#7c3aed;">
+          <h3>
+            <span>2.4 Canopy Psychrometrics (VPD), Dew-Point Margin &amp; Empirical CWSI</span>
+            <span class="q1-ref-tag">FAO-56 Tetens • Jackson et al. (1981)</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            Canopy stomatal regulation and atmospheric evaporative demand are derived from paired leaf sensor telemetry (<code>T_leaf</code>, <code>RH_leaf</code>) using the Magnus-Tetens saturation vapor pressure formulation (<strong>Allen et al., 1998, FAO Irrigation and Drainage Paper 56</strong>) and the empirical Crop Water Stress Index (<strong>Jackson et al., 1981; Idso et al., 1981</strong>):
+          </p>
+          <div class="q1-eq-box">
+            1. Saturation &amp; Actual Vapor Pressure at Leaf Boundary Layer:
+               e_s(T_leaf) = 0.61078 * exp[(17.27 * T_leaf) / (T_leaf + 237.3)]   (kPa)
+               e_a = e_s(T_leaf) * (RH_leaf / 100.0)                              (kPa)
+               VPD_leaf = max(0.0, e_s(T_leaf) - e_a)                              (kPa)
+            2. Dew-Point Temperature (T_dew) &amp; Fungal Condensation Safety Margin:
+               gamma = ln(max(1.0, RH_leaf) / 100.0) + (17.27 * T_leaf) / (T_leaf + 237.3)
+               T_dew = (237.3 * gamma) / (17.27 - gamma)                           (deg C)
+               Dew_Margin = T_leaf - T_dew   [Risk alert when Dew_Margin &lt; 1.5 deg C]
+            3. Empirical Canopy-Root CWSI (Jackson et al., 1981):
+               Delta_T = T_leaf - T_soil
+               Delta_T_LL = 1.20 - 1.85 * VPD_leaf   (Non-Water-Stressed Lower Baseline)
+               Delta_T_UL = +3.50 deg C              (Non-Transpiring Upper Limit)
+               CWSI = clamp((Delta_T - Delta_T_LL) / (Delta_T_UL - Delta_T_LL), 0.0, 1.0)
+          </div>
+        </div>
+
+        <!-- Section 2.5 -->
+        <div class="q1-method-card" style="border-left-color:#0891b2;">
+          <h3>
+            <span>2.5 Thermodynamic H2S / HS- Equilibrium Speciation in Substrate Solution</span>
+            <span class="q1-ref-tag">Henderson-Hasselbalch pKa1(T) Model</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            When sodium hydrosulfide (<code>NaHS</code>) is delivered into the root zone, it dissociates rapidly into dissolved molecular hydrogen sulfide gas (<code>H2S(aq)</code>, the uncharged lipophilic signaling species that permeates root aquaporins and plasma membranes) and hydrosulfide anion (<code>HS-</code>). The temperature-dependent first dissociation constant <code>pKa1(T)</code> and bioavailable <code>[H2S]_active</code> concentration are computed continuously per irrigation line:
+          </p>
+          <div class="q1-eq-box">
+            1. Temperature-Corrected First Acid Dissociation Constant (25 deg C reference pKa1 = 7.05):
+               pKa1(T_soil) = 7.05 - 0.014 * (T_soil - 25.0)
+            2. Molecular H2S(aq) Molar Fraction at Reference / Measured Root-Zone pH:
+               f_H2S = 1.0 / [1.0 + 10^(pH_soil - pKa1(T_soil))]
+               f_HS_minus = 1.0 - f_H2S
+            3. Bioavailable Dissolved Signaling Gas Concentration:
+               [H2S]_active (uM) = [NaHS]_applied (uM) * f_H2S
+               (At pH 6.0 and T_soil = 22 deg C: pKa1 = 7.09, f_H2S = 92.5%, so 25 uM NaHS yields 23.1 uM active H2S(aq))
+          </div>
+        </div>
+
+        <!-- Section 2.6 -->
+        <div class="q1-method-card" style="border-left-color:#16a34a;">
+          <h3>
+            <span>2.6 Composite Plant Stress Index (PSI), Vitality (PVI), Recovery (SRI) &amp; Statistical Pipeline</span>
+            <span class="q1-ref-tag">Multi-Subscore Integration &amp; ANOVA / R2</span>
+          </h3>
+          <p style="margin:0 0 6px 0;">
+            Four normalized physiological sub-scores (each scaled <code>0–100</code>) integrate root-zone osmotic/halophytic load (<code>S_salinity</code>, weight 0.30), soil matric water deficit/waterlogging (<code>S_water</code>, weight 0.25), phyllosphere evaporative demand (<code>S_vpd</code>, weight 0.25), and canopy stomatal/thermal stress (<code>S_thermal</code>, weight 0.20):
+          </p>
+          <div class="q1-eq-box">
+            1. Composite Plant Stress Index (PSI) &amp; Plant Vitality Index (PVI):
+               PSI (0-100) = 0.30*S_salinity + 0.25*S_water + 0.25*S_vpd + 0.20*S_thermal
+               PVI (0-100) = 100.0 - PSI
+               Stress Classification: 0-20 Optimal | 20-45 Mild | 45-70 Moderate | &gt;70 Severe
+            2. Biostimulant Stress Recovery Index (SRI %) for Salinized Treatments T in {Line 6, Line 7, Line 8}:
+               SRI_T (%) = clamp(((PSI_Line5_SaltControl - PSI_T) / max(5.0, PSI_Line5_SaltControl - PSI_Line1_NonSaline)) * 100.0, -100.0, 100.0)
+            3. Cumulative Stress Degree-Hours (SDH) &amp; Root-to-Canopy Coupling:
+               SDH (deg C * h) = Sum [ max(0.0, (T_leaf - T_soil) - 1.0) * Delta_t_hours ]
+               OLS Linear Regression: CWSI = beta_0 + beta_1 * EC_p   (with coefficient of determination R2 across n = 24 plots)
+          </div>
+        </div>
       </div>
     </div>
   </div>
