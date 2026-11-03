@@ -1,0 +1,18 @@
+# Ignore Python cache and temporary DB lock files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.db-shm
+*.db-wal
+*.bak*
+
+# Exclude non-website / legacy / HMI project / backup folders
+.agent/
+99_Versions/
+backups/
+origianl/
+mcp_server/
+Sensor_Dashboard/
+Ziraat*/
+*.pdf
+*.bat
