@@ -1757,12 +1757,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
+      gap: 4px;
       background: linear-gradient(180deg, #f0f9ff 0%, #ecfdf5 72%, #fef3c7 100%);
       border: 1px solid rgba(14, 165, 233, 0.28);
       border-radius: 7px;
-      padding: 3px 6px;
-      height: 54px;
+      padding: 4px 6px;
+      min-height: 54px;
       position: relative;
       overflow: hidden;
     }
@@ -1778,40 +1778,73 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: flex-end;
       gap: 2px;
-      font-size: 0.57rem;
-      line-height: 1.15;
+      font-size: 0.6rem;
+      line-height: 1.2;
       text-align: right;
+      min-width: 0;
+      flex-shrink: 0;
     }
     .spc-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 3px 6px;
-      line-height: 1.25;
+      gap: 4px;
+      margin-top: 2px;
     }
     .spc-item {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1px;
       background: var(--surface-muted);
-      padding: 2px 5px;
-      border-radius: 4px;
-      border: 1px solid rgba(148, 163, 184, 0.18);
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      min-width: 0;
+      overflow: hidden;
     }
     .spc-lbl {
       font-size: 0.58rem;
       color: var(--text-secondary);
-      font-weight: 700;
+      font-weight: 800;
       white-space: nowrap;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
     }
     .spc-val {
-      font-size: 0.64rem;
+      font-size: 0.78rem;
       font-weight: 900;
       color: var(--text-primary);
       white-space: nowrap;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
     }
     .spc-val.moist {
-      color: var(--primary);
+      color: #0284c7;
+    }
+    body.dark-mode .spc-val.moist {
+      color: #38bdf8;
+    }
+    .spc-val.temp {
+      color: #d97706;
+    }
+    body.dark-mode .spc-val.temp {
+      color: #fbbf24;
+    }
+    .spc-val.ec {
+      color: #7c3aed;
+    }
+    body.dark-mode .spc-val.ec {
+      color: #c084fc;
+    }
+    .spc-val.salt {
+      color: #0f766e;
+    }
+    body.dark-mode .spc-val.salt {
+      color: #2dd4bf;
     }
     .spc-val.leaf {
       color: #15803d;
@@ -2232,6 +2265,12 @@
             <span style="font-size:0.7rem; font-weight:800; color:#2dd4bf;">
               📍 Erzurum (1890m) • Smart Greenhouse IoT
             </span>
+            <div class="lang-switcher" style="margin-left:auto;" title="Language / Dil / ভাষা / اللغة">
+              <button class="lang-btn" id="lockLangEn" onclick="setLanguage('en')">EN</button>
+              <button class="lang-btn" id="lockLangTr" onclick="setLanguage('tr')">TR</button>
+              <button class="lang-btn" id="lockLangBn" onclick="setLanguage('bn')">BN</button>
+              <button class="lang-btn" id="lockLangAr" onclick="setLanguage('ar')">AR</button>
+            </div>
           </div>
           <h2 style="font-size:1.22rem; font-weight:900; color:#ffffff; margin-top:3px;">
             Faculty of Agriculture — Continuous IoT-based Stress Monitoring and Automatic Fertigation Controlling System
@@ -4351,10 +4390,10 @@
       localStorage.setItem('ziraat_lang', lang);
       document.documentElement.lang = lang;
       document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
-      document.getElementById('langEn')?.classList.toggle('active', lang === 'en');
-      document.getElementById('langTr')?.classList.toggle('active', lang === 'tr');
-      document.getElementById('langBn')?.classList.toggle('active', lang === 'bn');
-      document.getElementById('langAr')?.classList.toggle('active', lang === 'ar');
+      ['langEn', 'lockLangEn'].forEach(id => document.getElementById(id)?.classList.toggle('active', lang === 'en'));
+      ['langTr', 'lockLangTr'].forEach(id => document.getElementById(id)?.classList.toggle('active', lang === 'tr'));
+      ['langBn', 'lockLangBn'].forEach(id => document.getElementById(id)?.classList.toggle('active', lang === 'bn'));
+      ['langAr', 'lockLangAr'].forEach(id => document.getElementById(id)?.classList.toggle('active', lang === 'ar'));
 
       setElText('txtTitle', t('title'));
       setElText('txtSubtitle', t('subtitle'));
@@ -4389,6 +4428,12 @@
       renderDashboard(latestState, lastStats);
       if (plcRulesData || diagnosticsData) {
         renderPlcRulesAndDiagnostics();
+      }
+      if (detailsSeriesCache && detailsSeriesCache.length) {
+        drawDetailsHistoryChart(detailsSeriesCache, detailsHoverIdx);
+      }
+      if (typeof applyFullSiteTranslations === 'function') {
+        applyFullSiteTranslations(lang);
       }
     }
 
@@ -4953,9 +4998,9 @@
 
               <div class="spc-grid">
                 <div class="spc-item"><span class="spc-lbl">💧 Moist</span><span class="spc-val moist">${fmtVal(s.soil_moisture, '%', 1)}</span></div>
-                <div class="spc-item"><span class="spc-lbl">🌡️ Temp</span><span class="spc-val">${fmtVal(s.soil_temp, '°C', 1)}</span></div>
-                <div class="spc-item"><span class="spc-lbl">⚡ EC</span><span class="spc-val">${fmtVal(s.soil_ec, '', 0)}</span></div>
-                <div class="spc-item"><span class="spc-lbl">🧂 Salt</span><span class="spc-val">${fmtVal(s.soil_salt, '', 0)}</span></div>
+                <div class="spc-item"><span class="spc-lbl">🌡️ Temp</span><span class="spc-val temp">${fmtVal(s.soil_temp, '°C', 1)}</span></div>
+                <div class="spc-item"><span class="spc-lbl">⚡ EC (µS)</span><span class="spc-val ec">${fmtVal(s.soil_ec, '', 0)}</span></div>
+                <div class="spc-item"><span class="spc-lbl">🧂 Salt (mg/L)</span><span class="spc-val salt">${fmtVal(s.soil_salt, '', 0)}</span></div>
                 <div class="spc-item"><span class="spc-lbl">🌿 L_Hum</span><span class="spc-val leaf">${fmtVal(s.leaf_humidity, '%', 1)}</span></div>
                 <div class="spc-item"><span class="spc-lbl">🌿 L_Temp</span><span class="spc-val leaf">${fmtVal(s.leaf_temp, '°C', 1)}</span></div>
               </div>
@@ -9406,6 +9451,861 @@
           card.innerHTML = `<h3><span>${mc.title}</span><span class="q1-ref-tag">${mc.tag}</span></h3>${mc.body}`;
         });
       }
+    }
+
+    // =========================================================================
+    // UNIVERSAL FULL-SITE MULTI-LANGUAGE TRANSLATION ENGINE (EN / TR / BN / AR)
+    // Translates 100% of static & dynamic DOM text nodes, placeholders, titles,
+    // buttons, tables, lock screen, graphs studio, settings, export & modals
+    // =========================================================================
+    const FULL_SITE_EXACT_MAP = {
+      // Lock Screen & Header
+      "🏛️ ATATÜRK ÜNİVERSİTESİ • ZİRAAT FAKÜLTESİ": {
+        tr: "🏛️ ATATÜRK ÜNİVERSİTESİ • ZİRAAT FAKÜLTESİ",
+        bn: "🏛️ আতাতুর্ক বিশ্ববিদ্যালয় • কৃষি অনুষদ",
+        ar: "🏛️ جامعة أتاتورك • كلية الزراعة"
+      },
+      "🏛️ ATATÜRK ÜNİVERSİTESİ (1957) • ZİRAAT FAKÜLTESİ": {
+        tr: "🏛️ ATATÜRK ÜNİVERSİTESİ (1957) • ZİRAAT FAKÜLTESİ",
+        bn: "🏛️ আতাতুর্ক বিশ্ববিদ্যালয় (১৯৫৭) • কৃষি অনুষদ",
+        ar: "🏛️ جامعة أتاتورك (1957) • كلية الزراعة"
+      },
+      "📍 Erzurum (1890m) • Smart Greenhouse IoT": {
+        tr: "📍 Erzurum (1890m) • Akıllı Sera IoT",
+        bn: "📍 এরজুরুম (১৮৯০ মি.) • স্মার্ট গ্রিনহাউস আইওটি",
+        ar: "📍 أرضروم (1890م) • الدفيئة الذكية IoT"
+      },
+      "📍 Erzurum, Türkiye (1890m Elevation)": {
+        tr: "📍 Erzurum, Türkiye (1890m Rakım)",
+        bn: "📍 এরজুরুম, তুরস্ক (১৮৯০ মিটার উচ্চতা)",
+        ar: "📍 أرضروم، تركيا (ارتفاع 1890م)"
+      },
+      "Faculty of Agriculture — Continuous IoT-based Stress Monitoring and Automatic Fertigation Controlling System": {
+        tr: "Ziraat Fakültesi — Sürekli IoT Tabanlı Stres İzleme ve Otomatik Fertigasyon Kontrol Sistemi",
+        bn: "কৃষি অনুষদ — সার্বক্ষণিক আইওটি-ভিত্তিক স্ট্রেস মনিটরিং ও স্বয়ংক্রিয় ফার্টিগেশন নিয়ন্ত্রণ সিস্টেম",
+        ar: "كلية الزراعة — نظام المراقبة المستمرة للإجهاد والتحكم التلقائي في التسميد بالري عبر إنترنت الأشياء"
+      },
+      "Experimental Design: 8 Drip Irrigation Lines (Zones 1–8) × 3 Replications = 24 Experimental Plots (R1–R24) • 48 RS485 Sensors (24 Soil + 24 Leaf Microclimate)": {
+        tr: "Deneysel Tasarım: 8 Damla Sulama Hattı (Bölge 1–8) × 3 Tekerrür = 24 Deney Parseli (R1–R24) • 48 RS485 Sensör (24 Toprak + 24 Yaprak Mikroklima)",
+        bn: "পরীক্ষামূলক নকশা: ৮টি ড্রিপ সেচ লাইন (জোন ১–৮) × ৩টি রেপ্লিকেশন = ২৪টি প্লট (R1–R24) • ৪৮টি RS485 সেন্সর (২৪টি মাটি + ২৪টি পাতার মাইক্রোক্লাইমেট)",
+        ar: "التصميم التجريبي: 8 خطوط ري بالتنقيط (مناطق 1–8) × 3 مكررات = 24 قطعة تجريبية (R1–R24) • 48 حساس RS485 (24 تربة + 24 مناخ ورقة)"
+      },
+      "👁️ PUBLIC VIEW MODE: 8 DRIP LINES BASIC STATUS": {
+        tr: "👁️ GENEL GÖRÜNÜM MODU: 8 DAMLA SULAMA HATTI TEMEL DURUMU",
+        bn: "👁️ পাবলিক ভিউ মোড: ৮টি ড্রিপ লাইনের প্রাথমিক অবস্থা",
+        ar: "👁️ وضع العرض العام: الحالة الأساسية لخطوط الري الـ 8"
+      },
+      "Real PLC (GLC-196R) Telemetry & Standby Mode": {
+        tr: "Gerçek PLC (GLC-196R) Telemetri ve Bekleme Modu",
+        bn: "আসল PLC (GLC-196R) টেলিমেট্রি ও স্ট্যান্ডবাই মোড",
+        ar: "قياس PLC الحقيقي (GLC-196R) ووضع الاستعداد"
+      },
+      "🔒 Enter Security PIN to Access Full Interactive Site": {
+        tr: "🔒 Tam İnteraktif Siteye Erişmek İçin Güvenlik PIN Kodunu Girin",
+        bn: "🔒 সম্পূর্ণ ইন্টারঅ্যাক্টিভ সাইটে প্রবেশ করতে সিকিউরিটি পিন দিন",
+        ar: "🔒 أدخل رمز PIN الأمني للوصول إلى الموقع التفاعلي الكامل"
+      },
+      "Enter PIN to view all 48 sensor graphs, manual valve controls, rules editor, and data exports.": {
+        tr: "48 sensör grafiğini, manuel vana kontrolünü, kural düzenleyiciyi ve veri indirmeyi görmek için PIN girin.",
+        bn: "৪৮টি সেন্সর গ্রাফ, ম্যানুয়াল ভালভ কন্ট্রোল, রুলস এডিটর এবং ডাটা এক্সপোর্ট দেখতে পিন প্রবেশ করান।",
+        ar: "أدخل رمز PIN لعرض جميع رسوم 48 حساساً والتحكم اليدوي بالصمامات وتصدير البيانات."
+      },
+      "Enter Security PIN": {
+        tr: "Güvenlik PIN Kodunu Girin",
+        bn: "সিকিউরিটি পিন লিখুন",
+        ar: "أدخل رمز PIN الأمني"
+      },
+      "🔓 Enter Full Site": {
+        tr: "🔓 Tam Siteye Gir",
+        bn: "🔓 সম্পূর্ণ সাইটে প্রবেশ করুন",
+        ar: "🔓 دخول الموقع الكامل"
+      },
+      "❌ Incorrect PIN. Please enter the valid PIN to access the full site.": {
+        tr: "❌ Hatalı PIN. Tam siteye erişmek için lütfen geçerli PIN kodunu girin.",
+        bn: "❌ ভুল পিন। সম্পূর্ণ সাইটে প্রবেশের জন্য সঠিক পিন দিন।",
+        ar: "❌ رمز PIN غير صحيح. يرجى إدخال الرمز الصحيح."
+      },
+      "🔴 PLC OFFLINE": {
+        tr: "🔴 PLC ÇEVRİMDIŞI",
+        bn: "🔴 PLC অফলাইন",
+        ar: "🔴 PLC غير متصل"
+      },
+      "🟢 PLC ONLINE": {
+        tr: "🟢 PLC ÇEVRİMİÇİ",
+        bn: "🟢 PLC অনলাইন",
+        ar: "🟢 PLC متصل"
+      },
+      "Sync": {
+        tr: "Senkronize Et",
+        bn: "সিঙ্ক করুন",
+        ar: "مزامنة"
+      },
+
+      // Main 8-Line Summary Panel & Cards
+      "⚡ 8 DRIP FERTIGATION & IRRIGATION LINES": {
+        tr: "⚡ 8 DAMLA FERTİGASYON VE SULAMA HATTI",
+        bn: "⚡ ৮টি ড্রিপ ফার্টিগেশন ও সেচ লাইন",
+        ar: "⚡ 8 خطوط للتسميد والري بالتنقيط"
+      },
+      "(3 Sensor Plots + 1 Drip-Only Plot per Line)": {
+        tr: "(Hat Başına 3 Sensörlü Parsel + 1 Sadece Damla Sulama Parseli)",
+        bn: "(প্রতি লাইনে ৩টি সেন্সর প্লট + ১টি শুধু ড্রিপ সেচ প্লট)",
+        ar: "(3 قطع بحساسات + 1 قطعة ري فقط لكل خط)"
+      },
+      "🚰 Total Water:": {
+        tr: "🚰 Toplam Su:",
+        bn: "🚰 মোট পানি:",
+        ar: "🚰 إجمالي المياه:"
+      },
+      "🤖 All 8 AUTO": {
+        tr: "🤖 8 Hat OTOMATİK",
+        bn: "🤖 সব ৮টি অটো",
+        ar: "🤖 كل الـ 8 تلقائي"
+      },
+      "🖐️ All 8 MANUAL": {
+        tr: "🖐️ 8 Hat MANUEL",
+        bn: "🖐️ সব ৮টি ম্যানুয়াল",
+        ar: "🖐️ كل الـ 8 يدوي"
+      },
+      "⚠️ NO LIVE PLC / HMI CONNECTION:": {
+        tr: "⚠️ CANLI PLC / HMI BAĞLANTISI YOK:",
+        bn: "⚠️ লাইভ PLC / HMI সংযোগ নেই:",
+        ar: "⚠️ لا يوجد اتصال مباشر بـ PLC / HMI:"
+      },
+      "Showing last saved database telemetry": {
+        tr: "Veritabanındaki son kaydedilen veriler gösteriliyor",
+        bn: "ডাটাবেসে সর্বশেষ সংরক্ষিত টেলিমেট্রি দেখানো হচ্ছে",
+        ar: "يتم عرض آخر بيانات محفوظة في قاعدة البيانات"
+      },
+      "Values hidden (—) while hardware is offline": {
+        tr: "Donanım çevrimdışıyken değerler gizlendi (—)",
+        bn: "হার্ডওয়্যার অফলাইনে থাকায় মানগুলো ফাঁকা (—) রাখা হয়েছে",
+        ar: "القيم مخفية (—) أثناء عدم اتصال الجهاز"
+      },
+      "⬜ Keep Data Blank (—) When Offline": {
+        tr: "⬜ Çevrimdışıyken Verileri Boş (—) Tut",
+        bn: "⬜ অফলাইনে ডাটা ফাঁকা (—) রাখুন",
+        ar: "⬜ إبقاء البيانات فارغة (—) عند عدم الاتصال"
+      },
+      "👁️ Show Last Saved Data": {
+        tr: "👁️ Son Kaydedilen Verileri Göster",
+        bn: "👁️ সর্বশেষ সংরক্ষিত ডাটা দেখান",
+        ar: "👁️ إظهار آخر بيانات محفوظة"
+      },
+      "Avg Moist:": {
+        tr: "Ort. Nem:",
+        bn: "গড় আর্দ্রতা:",
+        ar: "متوسط الرطوبة:"
+      },
+      "Flow:": {
+        tr: "Debi:",
+        bn: "প্রবাহ:",
+        ar: "التدفق:"
+      },
+      "💧 Total:": {
+        tr: "💧 Toplam:",
+        bn: "💧 মোট:",
+        ar: "💧 الإجمالي:"
+      },
+      "🤖 AUTO RUNNING": {
+        tr: "🤖 OTOMATİK ÇALIŞIYOR",
+        bn: "🤖 অটো মোড চালু",
+        ar: "🤖 وضع تلقائي نشط"
+      },
+      "🔄 Click → Manual": {
+        tr: "🔄 Tıkla → Manuel",
+        bn: "🔄 ক্লিক → ম্যানুয়াল",
+        ar: "🔄 انقر ← يدوي"
+      },
+      "🖐️ MANUAL RUNNING": {
+        tr: "🖐️ MANUEL ÇALIŞIYOR",
+        bn: "🖐️ ম্যানুয়াল মোড চালু",
+        ar: "🖐️ وضع يدوي نشط"
+      },
+      "🔄 Click → Auto": {
+        tr: "🔄 Tıkla → Otomatik",
+        bn: "🔄 ক্লিক → অটো",
+        ar: "🔄 انقر ← تلقائي"
+      },
+      "💧 Valve is ON": {
+        tr: "💧 Vana AÇIK",
+        bn: "💧 ভালভ চালু (ON)",
+        ar: "💧 الصمام مفتوح"
+      },
+      "⏹️ Valve is OFF": {
+        tr: "⏹️ Vana KAPALI",
+        bn: "⏹️ ভালভ বন্ধ (OFF)",
+        ar: "⏹️ الصمام مغلق"
+      },
+      "ON": {
+        tr: "AÇIK",
+        bn: "চালু",
+        ar: "تشغيل"
+      },
+      "OFF": {
+        tr: "KAPALI",
+        bn: "বন্ধ",
+        ar: "إيقاف"
+      },
+      "💧 Side Drip ON": {
+        tr: "💧 Yan Damla AÇIK",
+        bn: "💧 সাইড ড্রিপ চালু",
+        ar: "💧 تنقيط جانبي نشط"
+      },
+      "⏸️ Drip OFF": {
+        tr: "⏸️ Damla KAPALI",
+        bn: "⏸️ ড্রিপ বন্ধ",
+        ar: "⏸️ التنقيط متوقف"
+      },
+      "🟢 Live": {
+        tr: "🟢 Canlı",
+        bn: "🟢 লাইভ",
+        ar: "🟢 مباشر"
+      },
+      "⚪ Blank": {
+        tr: "⚪ Boş",
+        bn: "⚪ ফাঁকা",
+        ar: "⚪ فارغ"
+      },
+      "💧 Moist": {
+        tr: "💧 Nem",
+        bn: "💧 আর্দ্রতা",
+        ar: "💧 رطوبة"
+      },
+      "🌡️ Temp": {
+        tr: "🌡️ Sıcaklık",
+        bn: "🌡️ তাপমাত্রা",
+        ar: "🌡️ حرارة"
+      },
+      "⚡ EC": {
+        tr: "⚡ EC",
+        bn: "⚡ EC",
+        ar: "⚡ توصيل EC"
+      },
+      "⚡ EC (µS)": {
+        tr: "⚡ EC (µS)",
+        bn: "⚡ EC (µS)",
+        ar: "⚡ توصيل (µS)"
+      },
+      "🧂 Salt": {
+        tr: "🧂 Tuz",
+        bn: "🧂 লবণ",
+        ar: "🧂 ملوحة"
+      },
+      "🧂 Salt (mg/L)": {
+        tr: "🧂 Tuz (mg/L)",
+        bn: "🧂 লবণ (mg/L)",
+        ar: "🧂 ملوحة (mg/L)"
+      },
+      "🌿 L_Hum": {
+        tr: "🌿 Y_Nem",
+        bn: "🌿 পাতা আর্দ্রতা",
+        ar: "🌿 رطوبة ورقة"
+      },
+      "🌿 L_Temp": {
+        tr: "🌿 Y_Sıc",
+        bn: "🌿 পাতা তাপ",
+        ar: "🌿 حرارة ورقة"
+      },
+      "Drip Only": {
+        tr: "Sadece Damla",
+        bn: "শুধু ড্রিপ",
+        ar: "تنقيط فقط"
+      },
+      "Drip Irrigation Only": {
+        tr: "Sadece Damla Sulama",
+        bn: "শুধুমাত্র ড্রিপ সেচ",
+        ar: "ري بالتنقيط فقط"
+      },
+      "No Sensor • 2 Side Drippers at Base": {
+        tr: "Sensör Yok • Kök Yanında 2 Damlatıcı",
+        bn: "সেন্সর নেই • গাছের গোড়ার দুই পাশে ২টি ড্রিপার",
+        ar: "بدون حساس • منقطان جانبيان عند القاعدة"
+      },
+
+      // Outside vs Inside Climate Section
+      "🌤️ OUTSIDE CLIMATE — ERZURUM CAMPUS METEOROLOGICAL STATION": {
+        tr: "🌤️ DIŞ İKLİM — ERZURUM KAMPÜS METEOROLOJİ İSTASYONU",
+        bn: "🌤️ বাইরের আবহাওয়া — এরজুরুম ক্যাম্পাস আবহাওয়া স্টেশন",
+        ar: "🌤️ المناخ الخارجي — محطة أرصاد حرم أرضروم"
+      },
+      "Atatürk University Campus Outdoor Weather (": {
+        tr: "Atatürk Üniversitesi Kampüsü Dış Hava Durumu (",
+        bn: "আতাতুর্ক বিশ্ববিদ্যালয় ক্যাম্পাসের বাইরের আবহাওয়া (",
+        ar: "طقس حرم جامعة أتاتورك الخارجي ("
+      },
+      "Loading live Erzurum weather...": {
+        tr: "Erzurum canlı hava durumu yükleniyor...",
+        bn: "এরজুরুমের লাইভ আবহাওয়া লোড হচ্ছে...",
+        ar: "جاري تحميل طقس أرضروم المباشر..."
+      },
+      "🌡️ Outside Air Temp": {
+        tr: "🌡️ Dış Hava Sıcaklığı",
+        bn: "🌡️ বাইরের বায়ুর তাপমাত্রা",
+        ar: "🌡️ حرارة الهواء الخارجي"
+      },
+      "💧 Outside Humidity": {
+        tr: "💧 Dış Bağıl Nem",
+        bn: "💧 বাইরের আর্দ্রতা",
+        ar: "💧 الرطوبة الخارجية"
+      },
+      "☀️ Solar Radiation": {
+        tr: "☀️ Güneş Radyasyonu",
+        bn: "☀️ সৌর বিকিরণ",
+        ar: "☀️ الإشعاع الشمسي"
+      },
+      "💨 Wind Speed & Dir": {
+        tr: "💨 Rüzgar Hızı ve Yönü",
+        bn: "💨 বাতাসের গতি ও দিক",
+        ar: "💨 سرعة واتجاه الرياح"
+      },
+      "🧭 Surface Pressure": {
+        tr: "🧭 Yüzey Basıncı",
+        bn: "🧭 পৃষ্ঠের বায়ুচাপ",
+        ar: "🧭 الضغط السطحي"
+      },
+      "Highland 1890m ASL": {
+        tr: "Yüksek Rakım 1890m",
+        bn: "উচ্চভূমি ১৮৯০ মিটার",
+        ar: "مرتفعات 1890م فوق سطح البحر"
+      },
+      "🌧️ Precipitation": {
+        tr: "🌧️ Yağış Miktarı",
+        bn: "🌧️ বৃষ্টিপাত",
+        ar: "🌧️ الهطول"
+      },
+      "🏠 GREENHOUSE INSIDE CLIMATE — CANOPY & ROOT-ZONE LIVE SENSORS": {
+        tr: "🏠 SERA İÇİ MİKROKLİMA — KANOPİ VE KÖK BÖLGESİ CANLI SENSÖRLERİ",
+        bn: "🏠 গ্রিনহাউসের ভেতরের জলবায়ু — ক্যানোপি ও রুট-জোন লাইভ সেন্সর",
+        ar: "🏠 المناخ الداخلي للدفيئة — حساسات المجموع الخضري والجذور"
+      },
+      "Internal Microclimate (24 Canopy Sensors Slave 101–124 & 24 Soil Sensors Slave 1–24)": {
+        tr: "İç Mikroklima (24 Yaprak Sensörü Slave 101–124 ve 24 Toprak Sensörü Slave 1–24)",
+        bn: "অভ্যন্তরীণ মাইক্রোক্লাইমেট (২৪টি পাতার সেন্সর Slave 101–124 ও ২৪টি মাটির সেন্সর Slave 1–24)",
+        ar: "المناخ الدقيق الداخلي (24 حساس أوراق 101–124 و 24 حساس تربة 1–24)"
+      },
+      "🌿 Live Greenhouse Microclimate": {
+        tr: "🌿 Canlı Sera Mikrokliması",
+        bn: "🌿 লাইভ গ্রিনহাউস মাইক্রোক্লাইমেট",
+        ar: "🌿 المناخ الدقيق المباشر للدفيئة"
+      },
+      "🌡️ Inside Canopy Temp": {
+        tr: "🌡️ Sera İçi Yaprak Sıcaklığı",
+        bn: "🌡️ ভেতরের পাতার তাপমাত্রা",
+        ar: "🌡️ حرارة المجموع الخضري بالداخل"
+      },
+      "🌿 Inside Leaf Humidity": {
+        tr: "🌿 Sera İçi Yaprak Nemi",
+        bn: "🌿 ভেতরের পাতার আর্দ্রতা",
+        ar: "🌿 رطوبة الورقة بالداخل"
+      },
+      "💨 Inside VPD & Dew Pt": {
+        tr: "💨 İç VPD ve Çiğ Noktası",
+        bn: "💨 ভেতরের VPD ও শিশিরাঙ্ক",
+        ar: "💨 VPD الداخلي ونقطة الندى"
+      },
+      "🌱 Root-Zone Soil Temp": {
+        tr: "🌱 Kök Bölgesi Toprak Sıcaklığı",
+        bn: "🌱 মাটির তাপমাত্রা (রুট-জোন)",
+        ar: "🌱 حرارة تربة منطقة الجذور"
+      },
+      "💧 Root-Zone Moisture": {
+        tr: "💧 Kök Bölgesi Toprak Nemi",
+        bn: "💧 মাটির আর্দ্রতা (রুট-জোন)",
+        ar: "💧 رطوبة منطقة الجذور"
+      },
+      "🔄 Inside vs. Outside Δ": {
+        tr: "🔄 İç vs. Dış Fark (Δ)",
+        bn: "🔄 ভেতর বনাম বাইরের পার্থক্য (Δ)",
+        ar: "🔄 الفرق بين الداخل والخارج (Δ)"
+      },
+      "🔧 Show Extended HMI Touch Screen Mirror & Detailed Engineering Zone Panels (Optional)": {
+        tr: "🔧 Genişletilmiş HMI Dokunmatik Ekran Aynasını ve Mühendislik Panellerini Göster (İsteğe Bağlı)",
+        bn: "🔧 বর্ধিত HMI টাচ স্ক্রিন মিরর ও বিস্তারিত ইঞ্জিনিয়ারিং জোন প্যানেল দেখুন (ঐচ্ছিক)",
+        ar: "🔧 إظهار مرآة شاشة اللمس HMI ولوحات المناطق الهندسية التفصيلية (اختياري)"
+      },
+
+      // Graphs Page (#viewDetails)
+      "⬅️ Back to Main 8-Line Dashboard": {
+        tr: "⬅️ Ana 8 Hat Gösterge Paneline Dön",
+        bn: "⬅️ মূল ৮-লাইন ড্যাশবোর্ডে ফিরে যান",
+        ar: "⬅️ العودة إلى لوحة الخطوط الـ 8 الرئيسية"
+      },
+      "⚙️ Dripper Flow (8 × 4 L/h = Max 32 L/h)": {
+        tr: "⚙️ Damlatıcı Debisi (8 × 4 L/sa = Maks 32 L/sa)",
+        bn: "⚙️ ড্রিপার প্রবাহ (৮ × ৪ লি./ঘণ্টা = সর্বোচ্চ ৩২ লি./ঘণ্টা)",
+        ar: "⚙️ تدفق المنقطات (8 × 4 لتر/ساعة = أقصى 32 لتر/ساعة)"
+      },
+      "⚙️ Calibrate": {
+        tr: "⚙️ Kalibre Et",
+        bn: "⚙️ ক্যালিব্রেট",
+        ar: "⚙️ معايرة"
+      },
+      "🚰 Select Line (1–8):": {
+        tr: "🚰 Hat Seçin (1–8):",
+        bn: "🚰 লাইন নির্বাচন করুন (১–৮):",
+        ar: "🚰 اختر الخط (1–8):"
+      },
+      "🌱 Or Single Plot (R1–R24):": {
+        tr: "🌱 Veya Tek Parsel (R1–R24):",
+        bn: "🌱 অথবা একক প্লট (R1–R24):",
+        ar: "🌱 أو قطعة مفردة (R1–R24):"
+      },
+      "◀ Prev": {
+        tr: "◀ Önceki",
+        bn: "◀ পূর্ববর্তী",
+        ar: "◀ السابق"
+      },
+      "Next ▶": {
+        tr: "Sonraki ▶",
+        bn: "পরবর্তী ▶",
+        ar: "التالي ▶"
+      },
+      "📅 1. Historical Time Window (Duration):": {
+        tr: "📅 1. Geçmiş Zaman Aralığı (Süre):",
+        bn: "📅 ১. ঐতিহাসিক সময়সীমা (ব্যাপ্তি):",
+        ar: "📅 1. النافذة الزمنية التاريخية (المدة):"
+      },
+      "⏱️ 2. Data Interval / Resolution:": {
+        tr: "⏱️ 2. Veri Zaman Aralığı / Çözünürlük:",
+        bn: "⏱️ ২. ডাটা ব্যবধান / রেজোলিউশন:",
+        ar: "⏱️ 2. الفاصل الزمني للبيانات / الدقة:"
+      },
+      "Last 15m": { tr: "Son 15dk", bn: "গত ১৫ মি.", ar: "آخر 15 د" },
+      "Last 30m": { tr: "Son 30dk", bn: "গত ৩০ মি.", ar: "آخر 30 د" },
+      "Last 1H": { tr: "Son 1 Saat", bn: "গত ১ ঘণ্টা", ar: "آخر 1 س" },
+      "Last 3H": { tr: "Son 3 Saat", bn: "গত ৩ ঘণ্টা", ar: "آخر 3 س" },
+      "Last 6H": { tr: "Son 6 Saat", bn: "গত ৬ ঘণ্টা", ar: "آخر 6 س" },
+      "Last 12H": { tr: "Son 12 Saat", bn: "গত ১২ ঘণ্টা", ar: "آخر 12 س" },
+      "Last 24H": { tr: "Son 24 Saat", bn: "গত ২৪ ঘণ্টা", ar: "آخر 24 س" },
+      "Last 3D": { tr: "Son 3 Gün", bn: "গত ৩ দিন", ar: "آخر 3 أيام" },
+      "Last 7D": { tr: "Son 7 Gün", bn: "গত ৭ দিন", ar: "آخر 7 أيام" },
+      "Last 30D": { tr: "Son 30 Gün", bn: "গত ৩০ দিন", ar: "آخر 30 يوماً" },
+      "All Data": { tr: "Tüm Veriler", bn: "সব ডাটা", ar: "كل البيانات" },
+      "All Data / Reset": { tr: "Tüm Veriler / Sıfırla", bn: "সব ডাটা / রিসেট", ar: "كل البيانات / إعادة تعيين" },
+      "Every 1 Min": { tr: "Her 1 Dk", bn: "প্রতি ১ মিনিট", ar: "كل 1 دقيقة" },
+      "Every 2 Min": { tr: "Her 2 Dk", bn: "প্রতি ২ মিনিট", ar: "كل 2 دقيقة" },
+      "Every 5 Min": { tr: "Her 5 Dk", bn: "প্রতি ৫ মিনিট", ar: "كل 5 دقائق" },
+      "Every 10 Min": { tr: "Her 10 Dk", bn: "প্রতি ১০ মিনিট", ar: "كل 10 دقائق" },
+      "Every 15 Min": { tr: "Her 15 Dk", bn: "প্রতি ১৫ মিনিট", ar: "كل 15 دقيقة" },
+      "Every 30 Min": { tr: "Her 30 Dk", bn: "প্রতি ৩০ মিনিট", ar: "كل 30 دقيقة" },
+      "Hourly": { tr: "Saatlik", bn: "ঘণ্টায়", ar: "كل ساعة" },
+      "Daily": { tr: "Günlük", bn: "দৈনিক", ar: "يومياً" },
+      "Raw Snapshots": { tr: "Ham Kayıtlar", bn: "সরাসরি স্ন্যাপশট", ar: "اللقطات الخام" },
+      "Custom From:": { tr: "Başlangıç:", bn: "শুরু:", ar: "من تاريخ:" },
+      "To:": { tr: "Bitiş:", bn: "শেষ:", ar: "إلى:" },
+      "🔍 Apply Dates": { tr: "🔍 Tarihleri Uygula", bn: "🔍 তারিখ প্রয়োগ", ar: "🔍 تطبيق التواريخ" },
+      "🔄 Refresh": { tr: "🔄 Yenile", bn: "🔄 রিফ্রেশ", ar: "🔄 تحديث" },
+      "📊 Excel (.xlsx)": { tr: "📊 Excel (.xlsx)", bn: "📊 এক্সেল (.xlsx)", ar: "📊 إكسل (.xlsx)" },
+      "📄 CSV": { tr: "📄 CSV", bn: "📄 CSV", ar: "📄 CSV" },
+      "✨ Interactive Multi-Mode Historical Graph Studio • Peak & Threshold Highlights": {
+        tr: "✨ İnteraktif Çok Modlu Geçmiş Grafik Stüdyosu • Zirve ve Eşik Vurgulamaları",
+        bn: "✨ ইন্টারঅ্যাক্টিভ মাল্টি-মোড ঐতিহাসিক গ্রাফ স্টুডিও • পিক ও থ্রেশহোল্ড হাইলাইট",
+        ar: "✨ استوديو الرسوم البيانية التاريخية متعدد الأنماط • إبراز القمم والعتبات"
+      },
+      "📈 Smooth Area": { tr: "📈 Yumuşak Alan", bn: "📈 স্মুথ এরিয়া", ar: "📈 مساحة ناعمة" },
+      "📉 Line Graph": { tr: "📉 Çizgi Grafik", bn: "📉 লাইন গ্রাফ", ar: "📉 رسم خطي" },
+      "📊 Bar Graph": { tr: "📊 Sütun (Bar) Grafik", bn: "📊 বার গ্রাফ", ar: "📊 رسم أعمدة" },
+      "🌡️ Combo (Bar + Line)": { tr: "🌡️ Kombo (Sütun + Çizgi)", bn: "🌡️ কম্বো (বার + লাইন)", ar: "🌡️ مدمج (أعمدة + خط)" },
+      "📶 Step Graph": { tr: "📶 Basamak Grafik", bn: "📶 স্টেপ গ্রাফ", ar: "📶 رسم متدرج" },
+      "🔵 Scatter + Trend": { tr: "🔵 Dağılım + Trend", bn: "🔵 স্ক্যাটার + ট্রেন্ড", ar: "🔵 تشتت + اتجاه" },
+      "⛶ Expand Height (640px)": { tr: "⛶ Yüksekliği Büyüt (640px)", bn: "⛶ উচ্চতা বাড়ান (640px)", ar: "⛶ توسيع الارتفاع (640px)" },
+      "🗗 Standard Height (460px)": { tr: "🗗 Standart Yükseklik (460px)", bn: "🗗 স্বাভাবিক উচ্চতা (460px)", ar: "🗗 الارتفاع القياسي (460px)" },
+      "▲ HIGHEST MOISTURE PEAK": { tr: "▲ EN YÜKSEK NEM ZİRVESİ", bn: "▲ সর্বোচ্চ আর্দ্রতা পিক", ar: "▲ أعلى ذروة لرطوبة التربة" },
+      "▼ LOWEST MOISTURE DIP": { tr: "▼ EN DÜŞÜK NEM SEVİYESİ", bn: "▼ সর্বনিম্ন আর্দ্রতা", ar: "▼ أدنى مستوى لرطوبة التربة" },
+      "📐 WINDOW TREND & AVERAGE": { tr: "📐 DÖNEM TRENDİ VE ORTALAMA", bn: "📐 সময়ের ট্রেন্ড ও গড়", ar: "📐 اتجاه النافذة والمتوسط" },
+      "💧 IRRIGATION & TELEMETRY": { tr: "💧 SULAMA VE TELEMETRİ", bn: "💧 সেচ ও টেলিমেট্রি", ar: "💧 الري والقياس عن بعد" },
+      "Sensors:": { tr: "Sensörler:", bn: "সেন্সর:", ar: "الحساسات:" },
+      "● Soil Moisture (%)": { tr: "● Toprak Nemi (%)", bn: "● মাটির আর্দ্রতা (%)", ar: "● رطوبة التربة (%)" },
+      "● Soil Temp (°C)": { tr: "● Toprak Sıcaklığı (°C)", bn: "● মাটির তাপমাত্রা (°C)", ar: "● حرارة التربة (°C)" },
+      "● Leaf Humidity (%)": { tr: "● Yaprak Nemi (%)", bn: "● পাতার আর্দ্রতা (%)", ar: "● رطوبة الورقة (%)" },
+      "● Leaf Temp (°C)": { tr: "● Yaprak Sıcaklığı (°C)", bn: "● পাতার তাপমাত্রা (°C)", ar: "● حرارة الورقة (°C)" },
+      "● Soil EC (÷20)": { tr: "● Toprak EC (÷20)", bn: "● মাটির EC (÷20)", ar: "● توصيل التربة EC (÷20)" },
+      "● Soil pH (×10)": { tr: "● Toprak pH (×10)", bn: "● মাটির pH (×10)", ar: "● حموضة التربة pH (×10)" },
+      "Highlights:": { tr: "Vurgular:", bn: "হাইলাইট:", ar: "الإبرازات:" },
+      "🎯 Peak / Min Badges": { tr: "🎯 Maks / Min Etiketleri", bn: "🎯 সর্বোচ্চ / সর্বনিম্ন ব্যাজ", ar: "🎯 شارات القمة / القاع" },
+      "🟩 45%–80% Target Band": { tr: "🟩 %45–%80 Hedef Bandı", bn: "🟩 ৪৫%–৮০% লক্ষ্যমাত্রা ব্যান্ড", ar: "🟩 نطاق الهدف 45%–80%" },
+      "💧 Valve-ON Shading": { tr: "💧 Vana-AÇIK Gölgeleme", bn: "💧 ভালভ-চালু শেডিং", ar: "💧 تظليل فتح الصمام" },
+      "🔢 Value Labels": { tr: "🔢 Değer Etiketleri", bn: "🔢 সংখ্যার লেবেল", ar: "🔢 تسميات القيم" },
+      "💡 Hover anywhere on the high-contrast graph below to inspect exact timestamp, sensor telemetry, and floating HUD card.": {
+        tr: "💡 Tam zaman damgasını, sensör verilerini ve yüzen bilgi kartını görmek için grafiğin üzerinde gezinin.",
+        bn: "💡 সঠিক সময়, সেন্সর ডাটা এবং ভাসমান HUD কার্ড দেখতে নিচের গ্রাফের যেকোনো স্থানে মাউস রাখুন।",
+        ar: "💡 مرر المؤشر فوق أي مكان في الرسم البياني لعرض التوقيت الدقيق وقراءات الحساسات."
+      },
+      "Recorded Time (Local)": { tr: "Kayıt Zamanı (Yerel)", bn: "রেকর্ডের সময় (স্থানীয়)", ar: "وقت التسجيل (محلي)" },
+      "Target & Samples": { tr: "Hedef ve Örnek Sayısı", bn: "লক্ষ্য ও নমুনা সংখ্যা", ar: "الهدف والعينات" },
+      "Valve Status": { tr: "Vana Durumu", bn: "ভালভের অবস্থা", ar: "حالة الصمام" },
+      "💧 Soil Moisture (%)": { tr: "💧 Toprak Nemi (%)", bn: "💧 মাটির আর্দ্রতা (%)", ar: "💧 رطوبة التربة (%)" },
+      "🌡️ Soil Temp (°C)": { tr: "🌡️ Toprak Sıcaklığı (°C)", bn: "🌡️ মাটির তাপমাত্রা (°C)", ar: "🌡️ حرارة التربة (°C)" },
+      "⚡ Soil EC (µS/cm)": { tr: "⚡ Toprak EC (µS/cm)", bn: "⚡ মাটির EC (µS/cm)", ar: "⚡ توصيل التربة EC (µS/cm)" },
+      "🧂 Salinity (mg/L)": { tr: "🧂 Tuzluluk (mg/L)", bn: "🧂 লবণাক্ততা (mg/L)", ar: "🧂 الملوحة (mg/L)" },
+      "🧪 Soil pH": { tr: "🧪 Toprak pH", bn: "🧪 মাটির pH", ar: "🧪 pH التربة" },
+      "🌿 Leaf L_humidity (%)": { tr: "🌿 Yaprak Nemi L_humidity (%)", bn: "🌿 পাতার আর্দ্রতা L_humidity (%)", ar: "🌿 رطوبة الورقة L_humidity (%)" },
+      "🌿 Leaf L_temp (°C)": { tr: "🌿 Yaprak Sıcaklığı L_temp (°C)", bn: "🌿 পাতার তাপমাত্রা L_temp (°C)", ar: "🌿 حرارة الورقة L_temp (°C)" },
+
+      // 48-Sensor Matrix (#viewSensors)
+      "📡 Complete 48-Sensor Matrix: 24 Soil Sensors (Slave ID 1–24) + 24 Leaf Sensors (Slave ID 101–124)": {
+        tr: "📡 Tam 48 Sensör Matrisi: 24 Toprak Sensörü (Slave ID 1–24) + 24 Yaprak Sensörü (Slave ID 101–124)",
+        bn: "📡 সম্পূর্ণ ৪৮-সেন্সর ম্যাট্রিক্স: ২৪টি মাটির সেন্সর (Slave ID 1–24) + ২৪টি পাতার সেন্সর (Slave ID 101–124)",
+        ar: "📡 مصفوفة الـ 48 حساساً الكاملة: 24 حساس تربة (1–24) + 24 حساس أوراق (101–124)"
+      },
+      "Soil Tag": { tr: "Toprak Etiketi", bn: "মাটির ট্যাগ", ar: "رمز التربة" },
+      "Soil Slave ID": { tr: "Toprak Slave ID", bn: "মাটির Slave ID", ar: "معرف حساس التربة" },
+      "Zone": { tr: "Bölge (Hat)", bn: "জোন (লাইন)", ar: "المنطقة (الخط)" },
+      "Soil Moisture (%)": { tr: "Toprak Nemi (%)", bn: "মাটির আর্দ্রতা (%)", ar: "رطوبة التربة (%)" },
+      "Soil Temp (°C)": { tr: "Toprak Sıcaklığı (°C)", bn: "মাটির তাপমাত্রা (°C)", ar: "حرارة التربة (°C)" },
+      "Soil EC (µS/cm)": { tr: "Toprak EC (µS/cm)", bn: "মাটির EC (µS/cm)", ar: "توصيل التربة EC (µS/cm)" },
+      "Salinity (mg/L)": { tr: "Tuzluluk (mg/L)", bn: "লবণাক্ততা (mg/L)", ar: "الملوحة (mg/L)" },
+      "Soil pH": { tr: "Toprak pH", bn: "মাটির pH", ar: "pH التربة" },
+      "Leaf Tag": { tr: "Yaprak Etiketi", bn: "পাতার ট্যাগ", ar: "رمز الورقة" },
+      "Leaf Slave ID": { tr: "Yaprak Slave ID", bn: "পাতার Slave ID", ar: "معرف حساس الورقة" },
+
+      // Database & Export Studio (#viewDatabase)
+      "🗄️ High-Resolution Time-Series Database & Powerful Excel / CSV Export Studio": {
+        tr: "🗄️ Yüksek Çözünürlüklü Zaman Serisi Veritabanı ve Excel / CSV İndirme Stüdyosu",
+        bn: "🗄️ হাই-রেজোলিউশন টাইম-সিরিজ ডাটাবেস এবং শক্তিশালী Excel / CSV এক্সপোর্ট স্টুডিও",
+        ar: "🗄️ قاعدة بيانات السلاسل الزمنية عالية الدقة واستوديو تصدير Excel / CSV"
+      },
+      "HMI USB Flash Drive Datalogger Auto-Sync": {
+        tr: "HMI USB Bellek Veri Kaydedici Otomatik Senkronizasyon",
+        bn: "HMI USB পেনড্রাইভ ডাটালগার অটো-সিঙ্ক",
+        ar: "المزامنة التلقائية لذاكرة فلاش USB لشاشة HMI"
+      },
+      "🟢 Auto-Watcher Active": { tr: "🟢 Otomatik İzleyici Aktif", bn: "🟢 অটো-ওয়াচার সক্রিয়", ar: "🟢 المراقب التلقائي نشط" },
+      "📥 Scan USB Drive Now": { tr: "📥 USB Belleği Şimdi Tara", bn: "📥 এখনই USB ড্রাইভ স্ক্যান করুন", ar: "📥 فحص ذاكرة USB الآن" },
+      "📁 Upload HMI CSV": { tr: "📁 HMI CSV Dosyası Yükle", bn: "📁 HMI CSV আপলোড করুন", ar: "📁 رفع ملف CSV من HMI" },
+      "🌱 Quick Experimental Block / Line Filter:": {
+        tr: "🌱 Hızlı Deney Bloğu / Hat Filtresi:",
+        bn: "🌱 দ্রুত এক্সপেরিমেন্টাল ব্লক / লাইন ফিল্টার:",
+        ar: "🌱 تصفية سريعة للقطاعات / الخطوط التجريبية:"
+      },
+      "All 8 Lines (R1–R24)": { tr: "Tüm 8 Hat (R1–R24)", bn: "সব ৮টি লাইন (R1–R24)", ar: "كل الخطوط الـ 8 (R1–R24)" },
+      "From Date/Time (Local)": { tr: "Başlangıç Tarihi/Saati (Yerel)", bn: "শুরুর তারিখ/সময় (স্থানীয়)", ar: "من التاريخ/الوقت (محلي)" },
+      "To Date/Time (Local)": { tr: "Bitiş Tarihi/Saati (Yerel)", bn: "শেষের তারিখ/সময় (স্থানীয়)", ar: "إلى التاريخ/الوقت (محلي)" },
+      "Dataset View & Export Target": { tr: "Veri Kümesi Görünümü ve İndirme Hedefi", bn: "ডাটাসেট ভিউ ও এক্সপোর্ট টার্গেট", ar: "عرض البيانات وهدف التصدير" },
+      "8 Greenhouse Lines / Zones Summary (Soil + Leaf)": { tr: "8 Sera Hattı / Bölge Özeti (Toprak + Yaprak)", bn: "৮টি গ্রিনহাউস লাইন / জোন সারাংশ (মাটি + পাতা)", ar: "ملخص خطوط/مناطق الدفيئة الـ 8 (تربة + أوراق)" },
+      "All 48 Sensors / 24 Plots (Soil Slave 1–24 & Leaf 101–124)": { tr: "Tüm 48 Sensör / 24 Parsel (Toprak 1–24 ve Yaprak 101–124)", bn: "সব ৪৮টি সেন্সর / ২৪টি প্লট (মাটি ১–২৪ ও পাতা ১০১–১২৪)", ar: "جميع الـ 48 حساساً / 24 قطعة (تربة 1–24 وأوراق 101–124)" },
+      "Solenoid Valve Control Events Log": { tr: "Solenoid Vana Kontrol Olay Kayıtları", bn: "সোলেনয়েড ভালভ কন্ট্রোল ইভেন্ট লগ", ar: "سجل أحداث التحكم بصمامات السولينويد" },
+      "Time Interval Resolution": { tr: "Zaman Aralığı Çözünürlüğü", bn: "সময়ের ব্যবধান রেজোলিউশন", ar: "دقة الفاصل الزمني" },
+      "Lines / Zones (e.g. 1,2,5 or All)": { tr: "Hatlar / Bölgeler (örn. 1,2,5 veya Tümü)", bn: "লাইন / জোন (যেমন 1,2,5 বা সব)", ar: "الخطوط / المناطق (مثل 1,2,5 أو الكل)" },
+      "Plots / Sensors (e.g. R1,R9,R17 or All)": { tr: "Parseller / Sensörler (örn. R1,R9,R17 veya Tümü)", bn: "প্লট / সেন্সর (যেমন R1,R9,R17 বা সব)", ar: "القطع / الحساسات (مثل R1,R9,R17 أو الكل)" },
+      "Soil Moisture (%) Min / Max": { tr: "Toprak Nemi (%) Min / Maks", bn: "মাটির আর্দ্রতা (%) সর্বনিম্ন / সর্বোচ্চ", ar: "رطوبة التربة (%) أدنى / أقصى" },
+      "Soil EC (µS/cm) Min / Max": { tr: "Toprak EC (µS/cm) Min / Maks", bn: "মাটির EC (µS/cm) সর্বনিম্ন / সর্বোচ্চ", ar: "توصيل التربة EC أدنى / أقصى" },
+      "Solenoid Valve Status": { tr: "Solenoid Vana Durumu", bn: "সোলেনয়েড ভালভের অবস্থা", ar: "حالة صمام السولينويد" },
+      "All States (Open & Closed)": { tr: "Tüm Durumlar (Açık ve Kapalı)", bn: "সব অবস্থা (খোলা ও বন্ধ)", ar: "جميع الحالات (مفتوح ومغلق)" },
+      "Only Irrigating (OPEN)": { tr: "Sadece Sulama Yapanlar (AÇIK)", bn: "শুধু সেচ চালু (OPEN)", ar: "الري النشط فقط (مفتوح)" },
+      "Only Standby (CLOSED)": { tr: "Sadece Beklemede Olanlar (KAPALI)", bn: "শুধু বন্ধ (CLOSED)", ar: "في وضع الاستعداد فقط (مغلق)" },
+      "Apply Filter": { tr: "Filtreyi Uygula", bn: "ফিল্টার প্রয়োগ করুন", ar: "تطبيق التصفية" },
+      "Download Multi-Sheet Excel (.xlsx)": { tr: "Çok Sayfalı Excel İndir (.xlsx)", bn: "মাল্টি-শিট এক্সেল ডাউনলোড (.xlsx)", ar: "تحميل ملف إكسل متعدد الأوراق (.xlsx)" },
+      "Download 8-Lines CSV": { tr: "8 Hat CSV İndir", bn: "৮-লাইন CSV ডাউনলোড", ar: "تحميل CSV للخطوط الـ 8" },
+      "Download 24-Plots (48-Sensors) CSV": { tr: "24 Parsel (48 Sensör) CSV İndir", bn: "২৪-প্লট (৪৮ সেন্সর) CSV ডাউনলোড", ar: "تحميل CSV لـ 24 قطعة (48 حساساً)" },
+      "Download Valve Events CSV": { tr: "Vana Olayları CSV İndir", bn: "ভালভ ইভেন্ট CSV ডাউনলোড", ar: "تحميل CSV لأحداث الصمامات" },
+
+      // Settings Page (#viewBasicRules)
+      "🎛️ Basic Irrigation Rules, Auto/Manual Thresholds & Data Recording Settings": {
+        tr: "🎛️ Temel Sulama Kuralları, Otomatik/Manuel Eşikleri ve Veri Kayıt Ayarları",
+        bn: "🎛️ মৌলিক সেচ নিয়মাবলী, অটো/ম্যানুয়াল সীমা এবং ডাটা রেকর্ডিং সেটিংস",
+        ar: "🎛️ قواعد الري الأساسية وعتبات التشغيل التلقائي/اليدوي وإعدادات التسجيل"
+      },
+      "Configure when valves automatically turn ON and OFF, set the database recording interval (Every 1 Min, 5 Min, 10 Min, 15 Min, 30 Min, 1 Hour), and manage each of the 8 Greenhouse Drip Lines individually or all at once.": {
+        tr: "Vanaların ne zaman otomatik olarak AÇILIP KAPANACAĞINI ayarlayın, veritabanı kayıt aralığını (1 Dk, 5 Dk, 10 Dk, 15 Dk, 30 Dk, 1 Saat) seçin ve 8 Sera Damla Sulama Hattını tek tek veya topluca yönetin.",
+        bn: "ভালভগুলো কখন স্বয়ংক্রিয়ভাবে চালু ও বন্ধ হবে তা নির্ধারণ করুন, ডাটাবেস রেকর্ডিং ব্যবধান (১ মিনিট, ৫ মিনিট, ১০ মিনিট, ১৫ মিনিট, ৩০ মিনিট, ১ ঘণ্টা) সেট করুন এবং ৮টি গ্রিনহাউস ড্রিপ লাইন নিয়ন্ত্রণ করুন।",
+        ar: "قم بضبط عتبات فتح وإغلاق الصمامات تلقائياً، وتحديد فاصل التسجيل في قاعدة البيانات، وإدارة خطوط الري الـ 8 بشكل فردي أو جماعي."
+      },
+      "🔄 Reload Settings": { tr: "🔄 Ayarları Yenile", bn: "🔄 সেটিংস রিলোড করুন", ar: "🔄 إعادة تحميل الإعدادات" },
+      "💾 Save & Apply to All 8 Lines": { tr: "💾 Kaydet ve 8 Hatta Uygula", bn: "💾 সেভ ও সব ৮টি লাইনে প্রয়োগ করুন", ar: "💾 حفظ وتطبيق على جميع الخطوط الـ 8" },
+      "💧 Auto Start Irrigation When Moisture ≤ (%)": { tr: "💧 Nem ≤ (%) Olduğunda Sulamayı Otomatik Başlat", bn: "💧 আর্দ্রতা ≤ (%) হলে অটো সেচ শুরু", ar: "💧 بدء الري تلقائياً عندما تكون الرطوبة ≤ (%)" },
+      "⏹️ Auto Stop Irrigation When Moisture ≥ (%)": { tr: "⏹️ Nem ≥ (%) Olduğunda Sulamayı Otomatik Durdur", bn: "⏹️ আর্দ্রতা ≥ (%) হলে অটো সেচ বন্ধ", ar: "⏹️ إيقاف الري تلقائياً عندما تكون الرطوبة ≥ (%)" },
+      "⏱️ Historical Data Recording Interval": { tr: "⏱️ Geçmiş Veri Kayıt Aralığı", bn: "⏱️ ঐতিহাসিক ডাটা রেকর্ডিং ব্যবধান", ar: "⏱️ الفاصل الزمني لتسجيل البيانات" },
+      "🤖 Global Default Operation Mode": { tr: "🤖 Genel Varsayılan Çalışma Modu", bn: "🤖 গ্লোবাল ডিফল্ট অপারেশন মোড", ar: "🤖 وضع التشغيل الافتراضي العام" },
+      "⚡ High Soil EC Warning Threshold (µS/cm)": { tr: "⚡ Yüksek Toprak EC Uyarı Eşiği (µS/cm)", bn: "⚡ উচ্চ মাটির EC সতর্কতা সীমা (µS/cm)", ar: "⚡ عتبة تحذير ارتفاع توصيل التربة EC (µS/cm)" },
+      "🚨 Critical Low Moisture Alert (%)": { tr: "🚨 Kritik Düşük Nem Alarmı (%)", bn: "🚨 জরুরি নিম্ন আর্দ্রতা সতর্কতা (%)", ar: "🚨 تنبيه الانخفاض الحرج للرطوبة (%)" },
+      "🌡️ High Canopy / Soil Temp Alert (°C)": { tr: "🌡️ Yüksek Yaprak / Toprak Sıcaklığı Alarmı (°C)", bn: "🌡️ উচ্চ পাতা / মাটির তাপমাত্রা সতর্কতা (°C)", ar: "🌡️ تنبيه ارتفاع حرارة الأوراق / التربة (°C)" },
+      "🕒 PLC Real-Time Clock (RTC) Synchronization": { tr: "🕒 PLC Gerçek Zamanlı Saat (RTC) Senkronizasyonu", bn: "🕒 PLC রিয়েল-টাইম ঘড়ি (RTC) সিঙ্ক্রোনাইজেশন", ar: "🕒 مزامنة ساعة الوقت الفعلي لـ PLC (RTC)" },
+      "💾 Save Global Settings Only": { tr: "💾 Sadece Genel Ayarları Kaydet", bn: "💾 শুধু গ্লোবাল সেটিংস সেভ করুন", ar: "💾 حفظ الإعدادات العامة فقط" },
+      "🚀 Save & Apply Thresholds to All 8 Greenhouse Lines": { tr: "🚀 Kaydet ve Eşikleri Tüm 8 Sera Hattına Uygula", bn: "🚀 সেভ করুন ও সব ৮টি গ্রিনহাউস লাইনে সীমা প্রয়োগ করুন", ar: "🚀 حفظ وتطبيق العتبات على جميع خطوط الدفيئة الـ 8" },
+      "🌿 Per-Line Irrigation Rules & Instant Valve Control (Lines 1–8 / Zones 1–8)": {
+        tr: "🌿 Hat Bazında Sulama Kuralları ve Anlık Vana Kontrolü (Hat 1–8 / Bölge 1–8)",
+        bn: "🌿 প্রতি লাইনের সেচ নিয়ম ও তাৎক্ষণিক ভালভ কন্ট্রোল (লাইন ১–৮ / জোন ১–৮)",
+        ar: "🌿 قواعد الري لكل خط والتحكم الفوري بالصمامات (الخطوط 1–8)"
+      },
+      "💾 Save All 8 Line Rules": { tr: "💾 Tüm 8 Hat Kurallarını Kaydet", bn: "💾 সব ৮টি লাইনের রুল সেভ করুন", ar: "💾 حفظ قواعد جميع الخطوط الـ 8" },
+      "Greenhouse Line": { tr: "Sera Hattı", bn: "গ্রিনহাউস লাইন", ar: "خط الدفيئة" },
+      "Experimental Plots (Rep I, II, III)": { tr: "Deney Parselleri (Tekerrür I, II, III)", bn: "পরীক্ষামূলক প্লট (রেপ্লিকেট I, II, III)", ar: "القطع التجريبية (مكرر I, II, III)" },
+      "PLC Valve & Relay": { tr: "PLC Vana ve Röle", bn: "PLC ভালভ ও রিলে", ar: "صمام ومرحل PLC" },
+      "Live 3-Plot Avg Moisture": { tr: "Canlı 3 Parsel Ort. Nem", bn: "লাইভ ৩-প্লট গড় আর্দ্রতা", ar: "متوسط رطوبة 3 قطع مباشر" },
+      "Current Mode": { tr: "Mevcut Mod", bn: "বর্তমান মোড", ar: "الوضع الحالي" },
+      "Physical Valve State": { tr: "Fiziksel Vana Durumu", bn: "ভালভের প্রকৃত অবস্থা", ar: "حالة الصمام الفعلية" },
+      "Auto Start ON ≤ (%)": { tr: "Otomatik Başlat ≤ (%)", bn: "অটো শুরু ≤ (%)", ar: "بدء تلقائي ≤ (%)" },
+      "Auto Stop OFF ≥ (%)": { tr: "Otomatik Durdur ≥ (%)", bn: "অটো বন্ধ ≥ (%)", ar: "إيقاف تلقائي ≥ (%)" },
+      "Instant Line Valve Control": { tr: "Anlık Hat Vana Kontrolü", bn: "তাৎক্ষণিক লাইন ভালভ কন্ট্রোল", ar: "تحكم فوري بصمام الخط" },
+      "Save Line": { tr: "Hattı Kaydet", bn: "লাইন সেভ", ar: "حفظ الخط" },
+
+      // Stress Studio Form Labels & Buttons (#viewStressStudio)
+      "Application Date & Time (Required) *": { tr: "Uygulama Tarihi ve Saati (Zorunlu) *", bn: "প্রয়োগের তারিখ ও সময় (আবশ্যক) *", ar: "تاريخ ووقت التطبيق (مطلوب) *" },
+      "⌚ Now": { tr: "⌚ Şimdi", bn: "⌚ এখন", ar: "⌚ الآن" },
+      "Days After Transplant (DAT)": { tr: "Dikim Sonrası Gün (DAT)", bn: "রোপণের পরের দিন (DAT)", ar: "أيام بعد الشتل (DAT)" },
+      "Irrigation Line (Zone)": { tr: "Sulama Hattı (Bölge)", bn: "সেচ লাইন (জোন)", ar: "خط الري (المنطقة)" },
+      "Specific Plot (Optional)": { tr: "Belirli Parsel (İsteğe Bağlı)", bn: "নির্দিষ্ট প্লট (ঐচ্ছিক)", ar: "قطعة محددة (اختياري)" },
+      "Treatment Code": { tr: "Uygulama Kodu", bn: "ট্রিটমেন্ট কোড", ar: "رمز المعاملة" },
+      "Solution Volume Applied (L)": { tr: "Uygulanan Çözelti Hacmi (L)", bn: "প্রয়োগকৃত দ্রবণের পরিমাণ (লিটার)", ar: "حجم المحلول المطبق (لتر)" },
+      "Observation Date & Time (Required) *": { tr: "Gözlem Tarihi ve Saati (Zorunlu) *", bn: "পর্যবেক্ষণের তারিখ ও সময় (আবশ্যক) *", ar: "تاريخ ووقت الملاحظة (مطلوب) *" },
+      "Author / Researcher": { tr: "Yazar / Araştırmacı", bn: "লেখক / গবেষক", ar: "الباحث / المؤلف" },
+      "Observation Category": { tr: "Gözlem Kategorisi", bn: "পর্যবেক্ষণের ধরন", ar: "فئة الملاحظة" },
+      "Stress / Alert Severity": { tr: "Stres / Uyarı Derecesi", bn: "স্ট্রেস / সতর্কতার মাত্রা", ar: "شدة الإجهاد / التنبيه" },
+      "Note Title / Summary *": { tr: "Not Başlığı / Özeti *", bn: "নোটের শিরোনাম / সারাংশ *", ar: "عنوان / ملخص الملاحظة *" },
+      "Detailed Scientific Observation / Measurements *": { tr: "Detaylı Bilimsel Gözlem / Ölçümler *", bn: "বিস্তারিত বৈজ্ঞানিক পর্যবেক্ষণ / পরিমাপ *", ar: "الملاحظة العلمية التفصيلية / القياسات *" },
+      "💾 Save All 8 Line Profiles": { tr: "💾 Tüm 8 Hat Profilini Kaydet", bn: "💾 সব ৮টি লাইন প্রোফাইল সেভ করুন", ar: "💾 حفظ ملفات الخطوط الـ 8" }
+    };
+
+    const FULL_SITE_REGEX_RULES = [
+      // "🚰 Line 1" .. "🚰 Line 8" or "Line 1" .. "Line 8"
+      {
+        re: /^(🚰\s*)?Line\s+(\d+)(\s*\(Z(\d+)\))?$/i,
+        tr: (_, p1, n, p3, z) => `${p1 || ''}Hat ${n}${z ? ` (B${z})` : ''}`,
+        bn: (_, p1, n, p3, z) => `${p1 || ''}লাইন ${n}${z ? ` (Z${z})` : ''}`,
+        ar: (_, p1, n, p3, z) => `${p1 || ''}خط ${n}${z ? ` (م${z})` : ''}`
+      },
+      // "🌱 Plot R1" or "🍅 Plot R1"
+      {
+        re: /^([🌱🍅]\s*)?Plot\s+R(\d+)$/i,
+        tr: (_, icon, n) => `${icon || ''}Parsel R${n}`,
+        bn: (_, icon, n) => `${icon || ''}প্লট R${n}`,
+        ar: (_, icon, n) => `${icon || ''}قطعة R${n}`
+      },
+      // "🍅 Plot L1-4"
+      {
+        re: /^([🌱🍅]\s*)?Plot\s+L(\d+)-4$/i,
+        tr: (_, icon, n) => `${icon || ''}Parsel L${n}-4`,
+        bn: (_, icon, n) => `${icon || ''}প্লট L${n}-4`,
+        ar: (_, icon, n) => `${icon || ''}قطعة L${n}-4`
+      },
+      // "Rep I", "Rep II", "Rep III"
+      {
+        re: /^Rep\s+(I|II|III|1|2|3)(\s*\((R\d+–R\d+)\))?$/i,
+        tr: (_, r, p2, rng) => `Tekerrür ${r}${rng ? ` (${rng})` : ''}`,
+        bn: (_, r, p2, rng) => `রেপ্লিকেট ${r}${rng ? ` (${rng})` : ''}`,
+        ar: (_, r, p2, rng) => `مكرر ${r}${rng ? ` (${rng})` : ''}`
+      },
+      // "🚰 Valve vana1"
+      {
+        re: /^🚰\s*Valve\s+(vana\d+)$/i,
+        tr: (_, v) => `🚰 Vana ${v}`,
+        bn: (_, v) => `🚰 ভালভ ${v}`,
+        ar: (_, v) => `🚰 صمام ${v}`
+      },
+      // "🕒 LAST SYNC TIME: ..."
+      {
+        re: /^🕒\s*LAST SYNC TIME:\s*(.+)$/i,
+        tr: (_, rest) => `🕒 SON SENKRONİZASYON ZAMANI: ${rest.replace(' ago', ' önce')}`,
+        bn: (_, rest) => `🕒 সর্বশেষ সিঙ্ক সময়: ${rest.replace(' ago', ' আগে')}`,
+        ar: (_, rest) => `🕒 وقت آخر مزامنة: ${rest.replace(' ago', ' مضت')}`
+      },
+      // "Matched Records: 123"
+      {
+        re: /^Matched Records:\s*(.+)$/i,
+        tr: (_, n) => `Eşleşen Kayıtlar: ${n}`,
+        bn: (_, n) => `মিল পাওয়া রেকর্ড: ${n}`,
+        ar: (_, n) => `السجلات المطابقة: ${n}`
+      },
+      // "LINE 1 (ZONE 1) DETAILS"
+      {
+        re: /^LINE\s+(\d+)\s+\(ZONE\s+(\d+)\)\s+DETAILS$/i,
+        tr: (_, l, z) => `HAT ${l} (BÖLGE ${z}) DETAYLARI`,
+        bn: (_, l, z) => `লাইন ${l} (জোন ${z}) বিস্তারিত`,
+        ar: (_, l, z) => `تفاصيل الخط ${l} (المنطقة ${z})`
+      },
+      // "📈 Line 1 — Live Valve Control, Sensor Telemetry & Historical Data Graph"
+      {
+        re: /^📈\s*Line\s+(\d+)\s*—\s*Live Valve Control, Sensor Telemetry & Historical Data Graph$/i,
+        tr: (_, l) => `📈 Hat ${l} — Canlı Vana Kontrolü, Sensör Telemetrisi ve Geçmiş Veri Grafiği`,
+        bn: (_, l) => `📈 লাইন ${l} — লাইভ ভালভ কন্ট্রোল, সেন্সর টেলিমেট্রি ও ঐতিহাসিক ডাটা গ্রাফ`,
+        ar: (_, l) => `📈 خط ${l} — التحكم المباشر بالصمام وقراءات الحساسات والرسم البياني التاريخي`
+      },
+      // "📈 Plot R1 (Line 1) — Live Sensor Telemetry & Historical Data Graph"
+      {
+        re: /^📈\s*Plot\s+R(\d+)\s*\(Line\s+(\d+)\)\s*—\s*(.+)$/i,
+        tr: (_, p, l) => `📈 Parsel R${p} (Hat ${l}) — Canlı Sensör Telemetrisi ve Geçmiş Veri Grafiği`,
+        bn: (_, p, l) => `📈 প্লট R${p} (লাইন ${l}) — লাইভ সেন্সর টেলিমেট্রি ও ঐতিহাসিক ডাটা গ্রাফ`,
+        ar: (_, p, l) => `📈 قطعة R${p} (خط ${l}) — قراءات الحساسات والرسم البياني التاريخي`
+      },
+      // "At 2026-11-03 17:30:00"
+      {
+        re: /^At\s+(\d{4}-\d{2}-\d{2}.*)$/i,
+        tr: (_, dt) => `Zaman: ${dt}`,
+        bn: (_, dt) => `সময়: ${dt}`,
+        ar: (_, dt) => `في: ${dt}`
+      },
+      // "Window Avg: 55.2% • Span: 12.4%"
+      {
+        re: /^Window Avg:\s*([^\s•]+)\s*•\s*Span:\s*(.+)$/i,
+        tr: (_, avg, sp) => `Dönem Ort: ${avg} • Aralık: ${sp}`,
+        bn: (_, avg, sp) => `গড়: ${avg} • ব্যবধান: ${sp}`,
+        ar: (_, avg, sp) => `متوسط الفترة: ${avg} • المدى: ${sp}`
+      },
+      // "0 / 12 Buckets ON"
+      {
+        re: /^(\d+\s*\/\s*\d+)\s+Buckets ON$/i,
+        tr: (_, c) => `${c} Aralıkta Vana AÇIK`,
+        bn: (_, c) => `${c} বাকেটে ভালভ চালু`,
+        ar: (_, c) => `${c} فترة صمام مفتوح`
+      },
+      // "36 raw sensor samples aggregated"
+      {
+        re: /^(\d+)\s+raw sensor samples aggregated$/i,
+        tr: (_, n) => `${n} ham sensör ölçümü birleştirildi`,
+        bn: (_, n) => `${n}টি সেন্সর নমুনা একত্রিত`,
+        ar: (_, n) => `تم تجميع ${n} قراءة خام للحساسات`
+      },
+      // "Feels like: 12.3 °C"
+      {
+        re: /^Feels like:\s*(.+)$/i,
+        tr: (_, v) => `Hissedilen: ${v}`,
+        bn: (_, v) => `অনুভূত তাপমাত্রা: ${v}`,
+        ar: (_, v) => `المحسوسة: ${v}`
+      },
+      // "Outdoor VPD: 0.85 kPa"
+      {
+        re: /^Outdoor VPD:\s*(.+)$/i,
+        tr: (_, v) => `Dış VPD: ${v}`,
+        bn: (_, v) => `বাইরের VPD: ${v}`,
+        ar: (_, v) => `عجز VPD الخارجي: ${v}`
+      },
+      // "Gusts: 14.0 km/h"
+      {
+        re: /^Gusts:\s*(.+)$/i,
+        tr: (_, v) => `Hamle: ${v}`,
+        bn: (_, v) => `দমকা হাওয়া: ${v}`,
+        ar: (_, v) => `هبات الرياح: ${v}`
+      },
+      // "Cloud cover: 25%"
+      {
+        re: /^Cloud cover:\s*(.+)$/i,
+        tr: (_, v) => `Bulutluluk: ${v}`,
+        bn: (_, v) => `মেঘের আবরণ: ${v}`,
+        ar: (_, v) => `الغطاء السحابي: ${v}`
+      },
+      // "Dew Point: 14.2 °C"
+      {
+        re: /^Dew Point:\s*(.+)$/i,
+        tr: (_, v) => `Çiğ Noktası: ${v}`,
+        bn: (_, v) => `শিশিরাঙ্ক: ${v}`,
+        ar: (_, v) => `نقطة الندى: ${v}`
+      },
+      // "Mean EC: 450 µS/cm"
+      {
+        re: /^Mean EC:\s*(.+)$/i,
+        tr: (_, v) => `Ortalama EC: ${v}`,
+        bn: (_, v) => `গড় EC: ${v}`,
+        ar: (_, v) => `متوسط EC: ${v}`
+      },
+      // "Δ Humidity: +12.0%"
+      {
+        re: /^Δ Humidity:\s*(.+)$/i,
+        tr: (_, v) => `Δ Nem Farkı: ${v}`,
+        bn: (_, v) => `Δ আর্দ্রতার পার্থক্য: ${v}`,
+        ar: (_, v) => `Δ فرق الرطوبة: ${v}`
+      },
+      // "Total Water: 125.90 L • Snapshots: 401"
+      {
+        re: /^Total Water:\s*([^•]+)•\s*Snapshots:\s*(.+)$/i,
+        tr: (_, w, s) => `Toplam Su: ${w}• Kayıt: ${s}`,
+        bn: (_, w, s) => `মোট পানি: ${w}• স্ন্যাপশট: ${s}`,
+        ar: (_, w, s) => `إجمالي المياه: ${w}• اللقطات: ${s}`
+      }
+    ];
+
+    function translateSingleText(origText, lang) {
+      if (!origText || lang === 'en') return origText;
+      const trimmed = origText.trim();
+      if (!trimmed) return origText;
+
+      const exact = FULL_SITE_EXACT_MAP[trimmed];
+      if (exact && exact[lang]) {
+        return origText.replace(trimmed, exact[lang]);
+      }
+
+      for (let i = 0; i < FULL_SITE_REGEX_RULES.length; i++) {
+        const rule = FULL_SITE_REGEX_RULES[i];
+        if (rule[lang] && rule.re.test(trimmed)) {
+          const replaced = trimmed.replace(rule.re, rule[lang]);
+          return origText.replace(trimmed, replaced);
+        }
+      }
+      return origText;
+    }
+
+    let _isApplyingSiteTranslations = false;
+
+    function applyFullSiteTranslations(lang = currentLang) {
+      if (_isApplyingSiteTranslations) return;
+      _isApplyingSiteTranslations = true;
+      try {
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode(node) {
+              const p = node.parentElement;
+              if (!p) return NodeFilter.FILTER_REJECT;
+              const tag = p.tagName;
+              if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'PRE') {
+                return NodeFilter.FILTER_REJECT;
+              }
+              return NodeFilter.FILTER_ACCEPT;
+            }
+          }
+        );
+
+        let textNode;
+        while ((textNode = walker.nextNode())) {
+          const curVal = textNode.nodeValue || '';
+          if (!curVal.trim()) continue;
+          if (textNode._origEn === undefined || (lang === 'en' && textNode._lastTranslated !== curVal)) {
+            textNode._origEn = curVal;
+          }
+          const targetVal = lang === 'en'
+            ? textNode._origEn
+            : translateSingleText(textNode._origEn, lang);
+          if (targetVal !== curVal) {
+            textNode.nodeValue = targetVal;
+            textNode._lastTranslated = targetVal;
+          }
+        }
+
+        // Translate input placeholders & element titles
+        document.querySelectorAll('[placeholder], [title]').forEach(el => {
+          if (el.hasAttribute('placeholder')) {
+            const curPh = el.getAttribute('placeholder') || '';
+            if (el._origPh === undefined) el._origPh = curPh;
+            const nextPh = lang === 'en' ? el._origPh : translateSingleText(el._origPh, lang);
+            if (nextPh !== curPh) el.setAttribute('placeholder', nextPh);
+          }
+          if (el.hasAttribute('title')) {
+            const curTitle = el.getAttribute('title') || '';
+            if (el._origTitle === undefined) el._origTitle = curTitle;
+            const nextTitle = lang === 'en' ? el._origTitle : translateSingleText(el._origTitle, lang);
+            if (nextTitle !== curTitle) el.setAttribute('title', nextTitle);
+          }
+        });
+      } catch (err) {
+        console.warn('applyFullSiteTranslations warning:', err);
+      } finally {
+        _isApplyingSiteTranslations = false;
+      }
+    }
+
+    // Automatically re-apply translations whenever dynamic AJAX/WebSocket content renders
+    let _siteTranslationTimer = null;
+    const _siteMutationObserver = new MutationObserver(() => {
+      if (_isApplyingSiteTranslations || currentLang === 'en') return;
+      if (_siteTranslationTimer) clearTimeout(_siteTranslationTimer);
+      _siteTranslationTimer = setTimeout(() => {
+        applyFullSiteTranslations(currentLang);
+      }, 40);
+    });
+    if (document.body) {
+      _siteMutationObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     function initStressStudioEmbedded() {
