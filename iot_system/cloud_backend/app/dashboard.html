@@ -5380,13 +5380,26 @@
         const flowRateLpm = isValveOpen ? nominalFlowLpm : 0.0;
         const flowRateLph = isValveOpen ? nominalFlowLph : 0.0;
 
+        const defaultRelays = {1: 'dc1', 2: 'dc2', 3: 'dc14', 4: 'dc13', 5: 'dc3', 6: 'dc4', 7: 'dc5', 8: 'dc6'};
+        const defaultTerminals = {
+          1: 'GLC-196R CPU QP0 (Physical Valve 1)',
+          2: 'GLC-196R CPU QP1 (Physical Valve 2)',
+          3: 'GXM-88R Exp01_QP7 (Physical Valve 3)',
+          4: 'GXM-88R Exp01_QP6 (Physical Valve 4)',
+          5: 'GLC-196R CPU QP2 (Physical Valve 5)',
+          6: 'GLC-196R CPU QP3 (Physical Valve 6)',
+          7: 'GLC-196R CPU QP4 (Physical Valve 7)',
+          8: 'GLC-196R CPU QP5 (Physical Valve 8)'
+        };
         zonesToRender.push({
           zone_id: zid,
           name_tr: realZ?.name_tr || cfgZ?.name_tr || `Bölge ${zid} (Parsel ${sIds.join('-')})`,
           name_en: realZ?.name_en || cfgZ?.name_en || `Line ${zid} / Zone ${zid} (Plots ${sIds.join('-')})`,
           valve_tag: realZ?.valve_tag || cfgZ?.valve_tag || `vana${zid}`,
           valve_coil: realZ?.valve_coil || cfgZ?.valve_coil || (zid === 6 ? 7 : (zid === 7 ? 6 : zid)),
-          relay_tag: realZ?.relay_tag || cfgZ?.relay_tag || (zid <= 6 ? `dc${zid}` : `dc${zid + 6}`),
+          valve_manual_coil: realZ?.valve_manual_coil || cfgZ?.valve_manual_coil || (8 + zid),
+          relay_tag: cfgZ?.relay_tag || realZ?.relay_tag || defaultRelays[zid] || `dc${zid}`,
+          plc_terminal: cfgZ?.plc_terminal || realZ?.plc_terminal || defaultTerminals[zid] || '',
           valve_open: isValveOpen,
           vana_coil_on: vanaBit,
           plc_son_ortlama: sonOrtlama,
@@ -5953,7 +5966,7 @@
               <td><span class="slave-pill">&lt; ${z.default_min_moisture.toFixed(1)}% (45) → --(S)-- ${z.relay_tag}</span></td>
               <td><span class="slave-pill leaf">&gt;= ${z.default_max_moisture.toFixed(1)}% (80) → --(R)-- ${z.relay_tag}</span></td>
               <td><strong>${z.valve_tag}</strong></td>
-              <td><code>0X:${z.valve_coil}</code></td>
+              <td><code>Mode: 0X:${z.valve_coil} | Valve: 0X:${z.valve_manual_coil || (8 + z.zone_id)}</code></td>
               <td><strong>${z.relay_tag}</strong> (${z.plc_terminal})</td>
             </tr>
           `;
@@ -6414,11 +6427,12 @@
         if (btn) btn.classList.toggle('active', i === zid && currentDetailsMode === 'line');
       }
 
+      const defaultRelays = {1: 'dc1', 2: 'dc2', 3: 'dc14', 4: 'dc13', 5: 'dc3', 6: 'dc4', 7: 'dc5', 8: 'dc6'};
       const z = (lastZonesRendered || []).find(item => item.zone_id === zid) || {
         zone_id: zid,
         sensor_ids: [zid, zid + 8, zid + 16],
         valve_tag: `vana${zid}`,
-        relay_tag: `dc${zid}`,
+        relay_tag: defaultRelays[zid] || `dc${zid}`,
         valve_open: null,
         auto_mode: true,
         min_moisture: 45,
@@ -6555,14 +6569,18 @@
             ? (currentDetailsHours < 1 ? `Last ${Math.round(currentDetailsHours * 60)}m` : `Last ${currentDetailsHours}H`)
             : 'Custom Date Window');
 
+      const defaultRelays = {1: 'dc1', 2: 'dc2', 3: 'dc14', 4: 'dc13', 5: 'dc3', 6: 'dc4', 7: 'dc5', 8: 'dc6'};
+      const zInfo = (lastZonesRendered || []).find(item => item.zone_id === zid) || {};
+      const rTag = zInfo.relay_tag || defaultRelays[zid] || `dc${zid}`;
+      const pTerm = zInfo.plc_terminal ? ` (${zInfo.plc_terminal})` : '';
       if (isLine) {
         document.getElementById('detTypeBadge').textContent = `🚰 LINE ${zid} (ZONE ${zid}) — ALL 3 PLOTS AVERAGE`;
-        document.getElementById('detSubBadge').textContent = `Valve vana${zid} • Relay dc${zid} • Plots R${plotIds.join(', R')} • Leaf R${plotIds.join('_L, R')}_L`;
+        document.getElementById('detSubBadge').textContent = `Valve vana${zid} (0X:${8 + zid}) • Relay ${rTag}${pTerm} • Plots R${plotIds.join(', R')} • Leaf R${plotIds.join('_L, R')}_L`;
         document.getElementById('detMainTitle').textContent = `📈 Line ${zid} — Live Valve Status, Sensor Telemetry & Historical Graph (${rangeBadge} @ ${currentDetailsResolution.toUpperCase()})`;
         document.getElementById('detGraphTitle').textContent = `📈 Line ${zid} Historical Graph (${rangeBadge} • Interval: ${currentDetailsResolution.toUpperCase()})`;
       } else {
         document.getElementById('detTypeBadge').textContent = `🌱 PLOT R${pid} — LINE ${zid} (${rep})`;
-        document.getElementById('detSubBadge').textContent = `Soil RS485 Slave #${pid} (R${pid}) • Leaf RS485 Slave #${100 + pid} (R${pid}_L) • Controlled by Line ${zid} Valve vana${zid}`;
+        document.getElementById('detSubBadge').textContent = `Soil RS485 Slave #${pid} (R${pid}) • Leaf RS485 Slave #${100 + pid} (R${pid}_L) • Controlled by Line ${zid} Valve vana${zid} (${rTag})`;
         document.getElementById('detMainTitle').textContent = `📈 Plot R${pid} (Line ${zid}) — Historical Sensor Graph & Telemetry (${rangeBadge} @ ${currentDetailsResolution.toUpperCase()})`;
         document.getElementById('detGraphTitle').textContent = `📈 Plot R${pid} Historical Graph (${rangeBadge} • Interval: ${currentDetailsResolution.toUpperCase()})`;
       }

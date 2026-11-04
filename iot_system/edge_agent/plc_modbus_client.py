@@ -31,14 +31,14 @@ from app.plc_map import EC_REGISTERS, PH_REGISTERS, SALT_REGISTERS, SENSORS, ZON
 
 # Exact byte offsets inside `plcvar_t` (total 3379 bytes = 0x0d33) verified from ladder.c & AppPLC.map
 PLC_QP_OFFSETS: Dict[int, int] = {
-    1: 0x0118,  # QP[0]  -> Relay dc1  (Zone 1 Valve)
-    2: 0x0119,  # QP[1]  -> Relay dc2  (Zone 2 Valve)
-    3: 0x011A,  # QP[2]  -> Relay dc3  (Zone 3 Valve)
-    4: 0x011B,  # QP[3]  -> Relay dc4  (Zone 4 Valve)
-    5: 0x011C,  # QP[4]  -> Relay dc5  (Zone 5 Valve)
-    6: 0x011D,  # QP[5]  -> Relay dc6  (Zone 6 Valve)
-    7: 0x012E,  # QP[22] -> Relay dc13 (Zone 7 Valve on GXM-88R)
-    8: 0x012F,  # QP[23] -> Relay dc14 (Zone 8 Valve on GXM-88R)
+    1: 0x0118,  # QP[0]  -> Relay dc1  (Zone 1 Physical Valve 1 on GLC-196R CPU QP0)
+    2: 0x0119,  # QP[1]  -> Relay dc2  (Zone 2 Physical Valve 2 on GLC-196R CPU QP1)
+    3: 0x012F,  # QP[23] -> Relay dc14 (Zone 3 Physical Valve 3 on GXM-88R Exp01_QP7)
+    4: 0x012E,  # QP[22] -> Relay dc13 (Zone 4 Physical Valve 4 on GXM-88R Exp01_QP6)
+    5: 0x011A,  # QP[2]  -> Relay dc3  (Zone 5 Physical Valve 5 on GLC-196R CPU QP2)
+    6: 0x011B,  # QP[3]  -> Relay dc4  (Zone 6 Physical Valve 6 on GLC-196R CPU QP3)
+    7: 0x011C,  # QP[4]  -> Relay dc5  (Zone 7 Physical Valve 7 on GLC-196R CPU QP4)
+    8: 0x011D,  # QP[5]  -> Relay dc6  (Zone 8 Physical Valve 8 on GLC-196R CPU QP5)
 }
 
 PLC_VANA_OFFSETS: Dict[int, int] = {
@@ -422,9 +422,9 @@ class GLC196RModbusDriver:
                             self._wrmem_single(sock, qp_off, b"\x00")
                         return ok1
                     elif target_open is True:
-                        # Switch zone to MANUAL MODE RUNNING — VALVE OPEN
+                        # Switch zone to MANUAL MODE RUNNING — VALVE OPEN (vana=0, QP=1)
                         self.manual_override_zones[zone_id] = "open"
-                        ok1 = self._wrmem_single(sock, vana_off, b"\x01")
+                        ok1 = self._wrmem_single(sock, vana_off, b"\x00")
                         ok2 = self._wrmem_single(sock, qp_off, b"\x01")
                         return ok1 and ok2
                     else:
@@ -441,23 +441,20 @@ class GLC196RModbusDriver:
 
         # Fallback to Port 502 Modbus TCP if Port 502 is open
         if diag["port502_open"]:
-            coil_state = True if (auto_mode is True or target_open is True) else False
-            return self.write_valve_coil(zone_id, coil_state)
+            mode_coil = ZONES[zone_id]["valve_coil"]
+            phys_valve_coil = 8 + zone_id
+            if auto_mode is True:
+                return self._write_coil_csv(mode_coil, True)
+            else:
+                ok1 = self._write_coil_csv(mode_coil, False)
+                ok2 = self._write_coil_csv(phys_valve_coil, bool(target_open))
+                return ok1 and ok2
 
         return False
 
-    def write_valve_coil(self, zone_id: int, state: bool) -> bool:
-        """Write ON (True) or OFF (False) to vana1..vana8 on the physical PLC."""
-        if zone_id not in ZONES:
-            raise ValueError(f"Invalid zone_id: {zone_id}")
-        diag = self.check_ports()
-        if diag["port23_open"] and not diag["port502_open"]:
-            return self.write_zone_control(zone_id=zone_id, auto_mode=False, target_open=state)
-
-        coil_csv_addr = ZONES[zone_id]["valve_coil"]
+    def _write_coil_csv(self, coil_csv_addr: int, state: bool) -> bool:
         if not self.connect() or not self.client:
             return False
-
         pdu_addr = self._pdu_addr(coil_csv_addr)
         try:
             try:
@@ -470,6 +467,16 @@ class GLC196RModbusDriver:
             return wr is not None and not wr.isError()
         except Exception:
             return False
+
+    def write_valve_coil(self, zone_id: int, state: bool) -> bool:
+        """Write ON (True) or OFF (False) to physical valve (0X:9..16) on the PLC."""
+        if zone_id not in ZONES:
+            raise ValueError(f"Invalid zone_id: {zone_id}")
+        diag = self.check_ports()
+        if diag["port23_open"] and not diag["port502_open"]:
+            return self.write_zone_control(zone_id=zone_id, auto_mode=False, target_open=state)
+
+        return self.write_zone_control(zone_id=zone_id, auto_mode=False, target_open=state)
 
     # -------------------------------------------------------------------------
     # Snapshot Polling (Port 502 or Port 23)
@@ -533,7 +540,7 @@ class GLC196RModbusDriver:
         ec_salt_regs = self._read_hr(start_csv_addr=3, count=94)
         float_block_1 = self._read_hr(start_csv_addr=2001, count=96)
         float_block_2 = self._read_hr(start_csv_addr=2097, count=96)
-        coil_bits = self._read_coils(start_csv_addr=1, count=9)
+        coil_bits = self._read_coils(start_csv_addr=1, count=16)
 
         if ec_salt_regs is None or float_block_1 is None or float_block_2 is None or coil_bits is None:
             self.plc_online = False
@@ -584,12 +591,16 @@ class GLC196RModbusDriver:
             })
 
         vana_states: Dict[int, bool] = {}
+        qp_states: Dict[int, bool] = {}
         valves_map: Dict[str, bool] = {}
         for zid, zdef in ZONES.items():
             c_idx = zdef["valve_coil"] - 1
             vana_on = bool(coil_bits[c_idx]) if 0 <= c_idx < len(coil_bits) else False
             vana_states[zid] = vana_on
-            valves_map[zdef["valve_tag"]] = bool(coil_bits[8]) if zid == 1 and len(coil_bits) > 8 else vana_on
+            qp_idx = (8 + zid) - 1  # 0X:9..16 -> index 8..15
+            qp_on = bool(coil_bits[qp_idx]) if 0 <= qp_idx < len(coil_bits) else vana_on
+            qp_states[zid] = qp_on
+            valves_map[zdef["valve_tag"]] = qp_on
 
         return self._build_batch_payload(
             sensors_list=sensors_list,
@@ -597,6 +608,7 @@ class GLC196RModbusDriver:
             plc_online=True,
             source="plc_hardware_196r",
             zone_configs=zone_configs,
+            qp_relay_states=qp_states,
             vana_auto_bits=vana_states,
         )
 
@@ -713,13 +725,9 @@ class GLC196RModbusDriver:
             # - If vana_bit is False -> Zone is in MANUAL MODE (Auto OFF, Valve Closed).
             # - If vana_bit is True and operator explicitly forced manual open -> MANUAL MODE (Valve Forced Open).
             # - If vana_bit is True (and not manual-open overridden) -> AUTO MODE RUNNING!
-            manual_ovr = self.manual_override_zones.get(zid)
             if not vana_bit:
                 is_auto_mode = False
-                operation_mode = "manual_closed"
-            elif manual_ovr == "open" and qp_open:
-                is_auto_mode = False
-                operation_mode = "manual_open"
+                operation_mode = "manual_open" if qp_open else "manual_closed"
             else:
                 is_auto_mode = True
                 operation_mode = "auto_irrigating" if qp_open else "auto_standby"

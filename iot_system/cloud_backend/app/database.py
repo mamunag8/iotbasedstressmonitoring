@@ -477,6 +477,12 @@ def init_db() -> None:
                     zdef["valve_coil"], zdef["relay_tag"],
                     zdef["default_min_moisture"], zdef["default_max_moisture"], now_iso
                 ))
+            # Always keep relay_tag, valve_coil, and zone names synced with ZONES physical valve mapping
+            _exec(
+                cur,
+                "UPDATE zone_configs SET relay_tag = ?, valve_coil = ?, valve_tag = ?, name_tr = ?, name_en = ? WHERE zone_id = ?",
+                (zdef["relay_tag"], zdef["valve_coil"], zdef["valve_tag"], zdef["name_tr"], zdef["name_en"], zid),
+            )
         _exec(
             cur,
             "UPDATE zone_configs SET min_moisture = 45.0, max_moisture = 80.0 WHERE min_moisture = 48.0 AND max_moisture = 90.0",
@@ -876,6 +882,10 @@ def get_zone_configs() -> List[Dict[str, Any]]:
             r["flow_meter_model"] = "YF-S201 (8 × 4 L/h drippers = 32 L/h max)"
             r["valve_model"] = "hexa CONTROLS AC 230V IP54 NC"
             if zid in ZONES:
+                r["relay_tag"] = ZONES[zid]["relay_tag"]
+                r["valve_coil"] = ZONES[zid]["valve_coil"]
+                r["valve_manual_coil"] = ZONES[zid].get("valve_manual_coil", 8 + zid)
+                r["qp_index"] = ZONES[zid].get("qp_index")
                 r["sensor_ids"] = ZONES[zid]["sensor_ids"]
                 r["leaf_slave_ids"] = [100 + s for s in ZONES[zid]["sensor_ids"]]
                 r["plc_terminal"] = ZONES[zid]["plc_terminal"]
@@ -901,6 +911,11 @@ def get_latest_telemetry() -> Optional[Dict[str, Any]]:
                     z["auto_mode"] = bool(cfg["auto_mode"])
                 z["min_moisture"] = float(cfg["min_moisture"])
                 z["max_moisture"] = float(cfg["max_moisture"])
+                z["relay_tag"] = ZONES[zid]["relay_tag"]
+                z["plc_terminal"] = ZONES[zid]["plc_terminal"]
+                z["valve_coil"] = ZONES[zid]["valve_coil"]
+                z["valve_manual_coil"] = ZONES[zid].get("valve_manual_coil", 8 + zid)
+                z["qp_index"] = ZONES[zid].get("qp_index")
                 z["sensor_ids"] = ZONES[zid]["sensor_ids"]
                 z["leaf_slave_ids"] = [100 + s for s in ZONES[zid]["sensor_ids"]]
                 nom_lpm = float(cfg.get("nominal_flow_lpm", 0.5333))

@@ -55,9 +55,11 @@ def test_hardware_register_map_matches_plc_csv():
     assert EC_REGISTERS[14] == 91 and EC_REGISTERS[15] == 92
     assert EC_REGISTERS[24] == 82 and SALT_REGISTERS[24] == 38
 
-    # Check vana6=7 and vana7=6 coil mapping from CSV
+    # Check vana6=7 and vana7=6 coil mapping from CSV & remapped physical solenoid relays
     assert ZONES[6]["valve_tag"] == "vana6" and ZONES[6]["valve_coil"] == 7
     assert ZONES[7]["valve_tag"] == "vana7" and ZONES[7]["valve_coil"] == 6
+    assert [ZONES[z]["relay_tag"] for z in range(1, 9)] == ["dc1", "dc2", "dc14", "dc13", "dc3", "dc4", "dc5", "dc6"]
+    assert [ZONES[z]["valve_manual_coil"] for z in range(1, 9)] == [9, 10, 11, 12, 13, 14, 15, 16]
     assert ZONES[1]["sensor_ids"] == [1, 9, 17]
     assert ZONES[8]["sensor_ids"] == [8, 16, 24]
 
@@ -83,8 +85,11 @@ def test_offline_queue_and_idempotent_cloud_sync():
     queue = LocalEdgeSyncQueue(db_path=q_file.name)
     driver = GLC196RModbusDriver(plc_ip="127.0.0.1", plc_port=59999, allow_simulation_fallback=True)
 
-    for _ in range(5):
+    for i in range(5):
         snap = driver.poll_snapshot()
+        snap["batch_id"] = f"test_hw_batch_{i}"
+        snap["plc_online"] = True
+        snap["source"] = "plc_hardware_196r"
         queue.enqueue(snap)
 
     counts = queue.queue_counts()

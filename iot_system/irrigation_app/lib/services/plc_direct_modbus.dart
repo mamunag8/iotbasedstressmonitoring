@@ -50,12 +50,12 @@ class DirectPlcModbusClient {
   static const Map<int, String> zoneRelays = {
     1: 'dc1',
     2: 'dc2',
-    3: 'dc3',
-    4: 'dc4',
-    5: 'dc5',
-    6: 'dc6',
-    7: 'dc13',
-    8: 'dc14',
+    3: 'dc14',
+    4: 'dc13',
+    5: 'dc3',
+    6: 'dc4',
+    7: 'dc5',
+    8: 'dc6',
   };
 
   static double decodeIeee754Float(int regLow, int regHigh) {
@@ -153,8 +153,16 @@ class DirectPlcModbusClient {
   }
 
   Future<bool> writeValveCoil(int zoneId, bool openState) async {
-    final coilCsvAddr = zoneCoils[zoneId] ?? zoneId;
-    final pduAddr = coilCsvAddr - 1;
+    // Switch zone to Manual mode (0X:1..8 = False) and write Physical Valve Coil (0X:9..16)
+    final modeCoilAddr = zoneCoils[zoneId] ?? zoneId;
+    final modePdu = ByteData(5);
+    modePdu.setUint8(0, 0x05);
+    modePdu.setUint16(1, modeCoilAddr - 1, Endian.big);
+    modePdu.setUint16(3, 0x0000, Endian.big);
+    await _sendModbusRequest(modePdu.buffer.asUint8List());
+
+    final physValveCoil = 8 + zoneId; // 0X:9..16
+    final pduAddr = physValveCoil - 1;
     final pdu = ByteData(5);
     pdu.setUint8(0, 0x05); // FC05 Write Single Coil
     pdu.setUint16(1, pduAddr, Endian.big);
@@ -169,7 +177,7 @@ class DirectPlcModbusClient {
     if (ecSaltRegs == null) return null;
     final floatBlock1 = await readHoldingRegisters(2001, 96);
     final floatBlock2 = await readHoldingRegisters(2097, 96);
-    final coils = await readCoils(1, 9);
+    final coils = await readCoils(1, 16);
     if (floatBlock1 == null || floatBlock2 == null || coils == null) return null;
 
     final floatRegs = <int>[...floatBlock1, ...floatBlock2];
@@ -212,7 +220,9 @@ class DirectPlcModbusClient {
     final zones = <ZoneSummary>[];
     for (int zid = 1; zid <= 8; zid++) {
       final coilAddr = zoneCoils[zid]!;
-      final isOpen = (coilAddr - 1 < coils.length) ? coils[coilAddr - 1] : false;
+      final isAutoMode = (coilAddr - 1 < coils.length) ? coils[coilAddr - 1] : true;
+      final physCoilIdx = (8 + zid) - 1; // 0X:9..16 -> physical valve relay state
+      final isOpen = (physCoilIdx < coils.length) ? coils[physCoilIdx] : false;
       final vTag = 'vana$zid';
       valves[vTag] = isOpen;
 
@@ -229,9 +239,9 @@ class DirectPlcModbusClient {
           valveCoil: coilAddr,
           relayTag: zoneRelays[zid]!,
           valveOpen: isOpen,
-          autoMode: true,
-          minMoisture: 48.0,
-          maxMoisture: 90.0,
+          autoMode: isAutoMode,
+          minMoisture: 45.0,
+          maxMoisture: 80.0,
           avgSoilMoisture: zSensors.fold(0.0, (a, b) => a + (b.soilMoisture ?? 0.0)) / cnt,
           avgSoilTemp: zSensors.fold(0.0, (a, b) => a + (b.soilTemp ?? 0.0)) / cnt,
           avgSoilEc: zSensors.fold(0.0, (a, b) => a + (b.soilEc ?? 0)) / cnt,

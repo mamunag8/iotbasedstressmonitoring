@@ -30,8 +30,10 @@ class ZoneDefinition(TypedDict):
     name_tr: str
     name_en: str
     valve_tag: str
-    valve_coil: int          # 0X Coil address from PLC(196R).gpf.csv
-    relay_tag: str           # Physical relay output in PLC(196R).gpf
+    valve_coil: int          # 0X Coil address for Auto/Manual Mode switch (vana1..vana8: 0X:1..8)
+    valve_manual_coil: int   # 0X Coil address for Physical Solenoid Valve (0X:9..16 -> QP[0,1,23,22,2,3,4,5])
+    qp_index: int            # Physical QP array index inside GLC-196R + GXM-88R (0, 1, 23, 22, 2, 3, 4, 5)
+    relay_tag: str           # Physical relay output in PLC(196R).gpf (dc1, dc2, dc14, dc13, dc3, dc4, dc5, dc6)
     plc_terminal: str        # Physical hardware terminal on GLC-196R / GXM-88R
     sensor_ids: List[int]    # 3 Soil + 3 Leaf sensors averaged per zone
     sum_tag_1: str           # First intermediate sum tag in AnaProgram
@@ -87,8 +89,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 1 (Plots 1-9-17)",
         "valve_tag": "vana1",
         "valve_coil": 1,
+        "valve_manual_coil": 9,
+        "qp_index": 0,
         "relay_tag": "dc1",
-        "plc_terminal": "GLC-196R CPU QP0",
+        "plc_terminal": "GLC-196R CPU QP0 (Physical Valve 1)",
         "sensor_ids": [1, 9, 17],
         "sum_tag_1": "ortlama_1_9",
         "sum_tag_2": "ortlama_1_9_17",
@@ -102,8 +106,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 2 (Plots 2-10-18)",
         "valve_tag": "vana2",
         "valve_coil": 2,
+        "valve_manual_coil": 10,
+        "qp_index": 1,
         "relay_tag": "dc2",
-        "plc_terminal": "GLC-196R CPU QP1",
+        "plc_terminal": "GLC-196R CPU QP1 (Physical Valve 2)",
         "sensor_ids": [2, 10, 18],
         "sum_tag_1": "ortlama_2_10",
         "sum_tag_2": "ortlama_2_10_18",
@@ -117,8 +123,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 3 (Plots 3-11-19)",
         "valve_tag": "vana3",
         "valve_coil": 3,
-        "relay_tag": "dc3",
-        "plc_terminal": "GLC-196R CPU QP2",
+        "valve_manual_coil": 11,
+        "qp_index": 23,
+        "relay_tag": "dc14",
+        "plc_terminal": "GXM-88R Exp01_QP7 (Physical Valve 3)",
         "sensor_ids": [3, 11, 19],
         "sum_tag_1": "ortlama_3_11",
         "sum_tag_2": "ortlama_3_11_19",
@@ -132,8 +140,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 4 (Plots 4-12-20)",
         "valve_tag": "vana4",
         "valve_coil": 4,
-        "relay_tag": "dc4",
-        "plc_terminal": "GLC-196R CPU QP3",
+        "valve_manual_coil": 12,
+        "qp_index": 22,
+        "relay_tag": "dc13",
+        "plc_terminal": "GXM-88R Exp01_QP6 (Physical Valve 4)",
         "sensor_ids": [4, 12, 20],
         "sum_tag_1": "ortlama_4_12",
         "sum_tag_2": "ortlama_4_12_20",
@@ -147,8 +157,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 5 (Plots 5-13-21)",
         "valve_tag": "vana5",
         "valve_coil": 5,
-        "relay_tag": "dc5",
-        "plc_terminal": "GLC-196R CPU QP4",
+        "valve_manual_coil": 13,
+        "qp_index": 2,
+        "relay_tag": "dc3",
+        "plc_terminal": "GLC-196R CPU QP2 (Physical Valve 5)",
         "sensor_ids": [5, 13, 21],
         "sum_tag_1": "ortlama_5_13",
         "sum_tag_2": "ortlama_5_13_21",
@@ -162,8 +174,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 6 (Plots 6-14-22)",
         "valve_tag": "vana6",
         "valve_coil": 7,  # Mapped to Coil 7 in PLC(196R).gpf.csv
-        "relay_tag": "dc6",
-        "plc_terminal": "GLC-196R CPU QP5",
+        "valve_manual_coil": 14,
+        "qp_index": 3,
+        "relay_tag": "dc4",
+        "plc_terminal": "GLC-196R CPU QP3 (Physical Valve 6)",
         "sensor_ids": [6, 14, 22],
         "sum_tag_1": "ortlama_6_14",
         "sum_tag_2": "ortlama_6_14_22",
@@ -177,8 +191,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 7 (Plots 7-15-23)",
         "valve_tag": "vana7",
         "valve_coil": 6,  # Mapped to Coil 6 in PLC(196R).gpf.csv
-        "relay_tag": "dc13",
-        "plc_terminal": "GXM-88R Exp01_QP6",
+        "valve_manual_coil": 15,
+        "qp_index": 4,
+        "relay_tag": "dc5",
+        "plc_terminal": "GLC-196R CPU QP4 (Physical Valve 7)",
         "sensor_ids": [7, 15, 23],
         "sum_tag_1": "ortlama_7_15",
         "sum_tag_2": "ortlama_7_15_23",
@@ -192,8 +208,10 @@ ZONES: Dict[int, ZoneDefinition] = {
         "name_en": "Zone 8 (Plots 8-16-24)",
         "valve_tag": "vana8",
         "valve_coil": 8,
-        "relay_tag": "dc14",
-        "plc_terminal": "GXM-88R Exp01_QP7",
+        "valve_manual_coil": 16,
+        "qp_index": 5,
+        "relay_tag": "dc6",
+        "plc_terminal": "GLC-196R CPU QP5 (Physical Valve 8)",
         "sensor_ids": [8, 16, 24],
         "sum_tag_1": "ortlama_8_16",
         "sum_tag_2": "ortlama_8_16_24",
@@ -398,40 +416,39 @@ PLC_PROBLEMS_REPORT: List[Dict[str, Any]] = [
         "title_bn": "Zone 7-এর গড় আর্দ্রতা হিসাবে 'R15_humidity'-এর বদলে ভুলবশত 'R115_humidity' লেখা হয়েছে",
         "title_ar": "خطأ برمجي في المنطقة 7: كتابة المتغير R115_humidity بدلاً من R15_humidity",
         "symptom_en": (
-            "Zone 7 (Plots 7-15-23, Valve vana7 / Relay dc13) calculates a false low soil moisture average inside the PLC."
+            "Zone 7 (Plots 7-15-23, Valve vana7 / Relay dc5 on CPU QP4) had a typo tag in original ladder logic."
         ),
         "root_cause_en": (
-            "At byte offset 49682 of PLC(196R).gpf, right before ortlama_7_15 and ortlama_7_15_23, the ladder logic references "
+            "At byte offset 49682 of PLC(196R).gpf, right before ortlama_7_15 and ortlama_7_15_23, the original ladder logic referenced "
             "an unlinked tag named 'R115_humidity' (initial value = 0.0) instead of 'R15_humidity'. "
-            "Adding 0.0 to R7_humidity and R23_humidity and dividing by 3 makes son_ortlama_7_15_23 artificially ~33% lower than actual soil moisture."
+            "This has been permanently patched in PLC firmware (ladder_patched.c) to compute (R7 + R15 + R23) / 3.0."
         ),
         "fix_steps_en": (
-            "1. Open PLC(196R).gpf in GMTSuite and go to 'AnaProgram'.\n"
-            "2. Scroll to the Zone 7 averaging network (ortlama_7_15 / ortlama_7_15_23).\n"
-            "3. Change the input operand from 'R115_humidity' to 'R15_humidity' and delete the orphan 'R115_humidity' tag."
+            "1. Already fixed in PLC firmware v2.8 (ladder_patched.c -> R7_humidity + R15_humidity + R23_humidity / 3.0).\n"
+            "2. Zone 7 is now mapped to physical relay dc5 (CPU QP4, Modbus Coil 0X:15)."
         ),
     },
     {
         "problem_id": "PROB_04_VANA6_VANA7_SWAPPED_COILS",
         "severity": "medium",
-        "category": "Modbus Coil & Relay Mapping",
-        "location": "PLC(196R).gpf.csv -> Coils 0X:6 & 0X:7 | Relays dc6, dc7..dc12, dc13, dc14",
-        "title_en": "Swapped Modbus Coils for vana6 (0X:7) & vana7 (0X:6) and Skipped Expansion Relays dc7–dc12",
-        "title_tr": "vana6 (0X:7) ve vana7 (0X:6) Modbus Bobin Adreslerinin Ters Olması ve dc7–dc12 Rölelerinin Atlanması",
-        "title_bn": "vana6 (0X:7) ও vana7 (0X:6)-এর কয়েল এড্রেস অদলবদল এবং dc7–dc12 রিলে ফাঁকা রাখা",
-        "title_ar": "تبديل عناوين الصمامين vana6 (0X:7) و vana7 (0X:6) وتجاوز المرحلات dc7 إلى dc12",
+        "category": "Modbus Coil & Physical Solenoid Valve Remapping",
+        "location": "PLC(196R).gpf / ladder_patched.c -> Coils 0X:1..8 (Mode) & 0X:9..16 (Physical Valves) | Relays dc1, dc2, dc14, dc13, dc3, dc4, dc5, dc6",
+        "title_en": "Physical Solenoid Valve Remapping (Zone 1..8 -> dc1, dc2, dc14, dc13, dc3, dc4, dc5, dc6) & vana6/vana7 Coils",
+        "title_tr": "Fiziksel Solenoid Vana Röle Eşlemesi (Bölge 1..8 -> dc1, dc2, dc14, dc13, dc3, dc4, dc5, dc6) ve vana6/vana7 Bobinleri",
+        "title_bn": "ফিজিক্যাল সলেনয়েড ভালভ রিম্যাপিং (Zone 1..8 -> dc1, dc2, dc14, dc13, dc3, dc4, dc5, dc6) ও কয়েল কনফিগারেশন",
+        "title_ar": "إعادة تعيين صمامات الملف اللولبي الفعلية (المناطق 1..8) وعناوين vana6/vana7",
         "symptom_en": (
-            "In PLC(196R).gpf.csv, vana6 is assigned to Modbus Coil 0X:7 (driving CPU output QP5 / dc6), whereas vana7 is assigned to "
-            "Modbus Coil 0X:6 (driving GXM-88R output Exp01_QP6 / dc13). Meanwhile, relays dc7..dc12 (Exp01_QP0..QP5) are not driven by any valve."
+            "Physical solenoid valves 3..8 in the greenhouse cabinet were wired in shifted order (3->5, 4->6, 5->7, 6->8, 7->4, 8->3). "
+            "Additionally, vana6 is at Mode Coil 0X:7 and vana7 is at Mode Coil 0X:6."
         ),
         "root_cause_en": (
-            "During tag assignment in GMTSuite (byte offsets 86295..86309), vana7 was declared before vana6 in the Modbus slave table, "
-            "assigning Coil 6 to vana7 and Coil 7 to vana6. Furthermore, on the GXM-88R expansion module, outputs QP0..QP5 (dc7..dc12) were skipped "
-            "and valves 7 & 8 were wired to the last two terminals QP6 (dc13) and QP7 (dc14)."
+            "Physical field cables for Valves 3..8 were connected to different relay terminals in the PLC cabinet: "
+            "Valve 1 -> CPU QP0 (dc1), Valve 2 -> CPU QP1 (dc2), Valve 3 -> GXM-88R Exp01_QP7 (dc14), Valve 4 -> GXM-88R Exp01_QP6 (dc13), "
+            "Valve 5 -> CPU QP2 (dc3), Valve 6 -> CPU QP3 (dc4), Valve 7 -> CPU QP4 (dc5), Valve 8 -> CPU QP5 (dc6)."
         ),
         "fix_steps_en": (
-            "Our SCADA Cloud/Edge software already compensates automatically (mapping Zone 6 -> Coil 7 / dc6 and Zone 7 -> Coil 6 / dc13). "
-            "When checking physical wiring in the cabinet, ensure Solenoid 7 is wired to GXM-88R QP6 (dc13) and Solenoid 8 to GXM-88R QP7 (dc14)."
+            "Permanently remapped in PLC firmware (ladder_patched.c v2.8: qp_idx[8] = {0, 1, 23, 22, 2, 3, 4, 5} and Modbus Coils 0X:9..16), "
+            "Edge Agent (PLC_QP_OFFSETS), Web SCADA Dashboard, and Cloud VPS Server so Zone 1..8 directly operate Physical Valves 1..8."
         ),
     },
     {
