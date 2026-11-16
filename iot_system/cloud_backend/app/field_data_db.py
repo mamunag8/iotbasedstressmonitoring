@@ -19,7 +19,9 @@ from . import database as db
 from .stress_engine import compute_dat, compute_vpd_and_dewpoint
 
 
-# Exact 8 Color-Coded Treatments from Exp2_Planter_Tags_2x2in_A4.html
+# Exact 8 Color-Coded Treatments unified with Sera 5 64-Plot Field Layout colors
+# Protocol confirmed: T3 = 0 NaCl + 4 mL/L HS, T4 = 0 NaCl + 25 uM H2S + 4 mL/L HS,
+#                     T7 = 80 NaCl + 4 mL/L HS, T8 = 80 NaCl + 25 uM H2S + 4 mL/L HS
 EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
     "T1": {
         "treatment_no": "T1",
@@ -29,9 +31,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 0.0,
         "nahs_um": 0.0,
         "humic_mll": 0.0,
-        "bg_hex": "#E2E8F0",
-        "header_hex": "#334155",
-        "border_hex": "#0F172A",
+        "bg_hex": "#DBEAFE",
+        "header_hex": "#1565C0",
+        "border_hex": "#1E3A8A",
         "short_en": "0 NaCl | 0 H2S | 0 HS",
         "short_tr": "0 Tuz | 0 H2S | 0 HS",
         "label_en": "T1: Control (0 mM NaCl, 0 uM H2S, 0 mL/L HS)",
@@ -45,12 +47,12 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 0.0,
         "nahs_um": 25.0,
         "humic_mll": 0.0,
-        "bg_hex": "#DBEAFE",
-        "header_hex": "#1D4ED8",
-        "border_hex": "#1E3A8A",
+        "bg_hex": "#DCFCE7",
+        "header_hex": "#2E7D32",
+        "border_hex": "#14532D",
         "short_en": "0 NaCl | 25 uM H2S | 0 HS",
         "short_tr": "0 Tuz | 25 uM H2S | 0 HS",
-    "label_en": "T2: 0 mM NaCl + 25 uM NaHS",
+        "label_en": "T2: 0 mM NaCl + 25 uM NaHS",
         "label_tr": "T2: 0 mM Tuz + 25 uM NaHS",
     },
     "T3": {
@@ -61,9 +63,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 0.0,
         "nahs_um": 0.0,
         "humic_mll": 4.0,
-        "bg_hex": "#FEF08A",
-        "header_hex": "#A16207",
-        "border_hex": "#713F12",
+        "bg_hex": "#FFEDD5",
+        "header_hex": "#E65100",
+        "border_hex": "#9A3412",
         "short_en": "0 NaCl | 0 H2S | 4 mL HS",
         "short_tr": "0 Tuz | 0 H2S | 4 mL HS",
         "label_en": "T3: 0 mM NaCl + 4 mL/L LIQHUMUS NK",
@@ -77,9 +79,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 0.0,
         "nahs_um": 25.0,
         "humic_mll": 4.0,
-        "bg_hex": "#DCFCE7",
-        "header_hex": "#15803D",
-        "border_hex": "#14532D",
+        "bg_hex": "#FEE2E2",
+        "header_hex": "#C62828",
+        "border_hex": "#7F1D1D",
         "short_en": "0 NaCl | 25 uM H2S | 4 mL HS",
         "short_tr": "0 Tuz | 25 uM H2S | 4 mL HS",
         "label_en": "T4: 0 mM NaCl + 25 uM NaHS + 4 mL/L HS",
@@ -93,9 +95,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 80.0,
         "nahs_um": 0.0,
         "humic_mll": 0.0,
-        "bg_hex": "#FEE2E2",
-        "header_hex": "#DC2626",
-        "border_hex": "#7F1D1D",
+        "bg_hex": "#FEF9C3",
+        "header_hex": "#CA8A04",
+        "border_hex": "#713F12",
         "short_en": "80 NaCl | 0 H2S | 0 HS",
         "short_tr": "80 Tuz | 0 H2S | 0 HS",
         "label_en": "T5: Salt Stress (80 mM NaCl, 0 H2S, 0 HS)",
@@ -109,9 +111,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 80.0,
         "nahs_um": 25.0,
         "humic_mll": 0.0,
-        "bg_hex": "#CCFBF1",
-        "header_hex": "#0F766E",
-        "border_hex": "#134E4A",
+        "bg_hex": "#F3E8FF",
+        "header_hex": "#6A1B9A",
+        "border_hex": "#4C1D95",
         "short_en": "80 NaCl | 25 uM H2S | 0 HS",
         "short_tr": "80 Tuz | 25 uM H2S | 0 HS",
         "label_en": "T6: 80 mM NaCl + 25 uM NaHS",
@@ -125,9 +127,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 80.0,
         "nahs_um": 0.0,
         "humic_mll": 4.0,
-        "bg_hex": "#FCE7F3",
-        "header_hex": "#BE185D",
-        "border_hex": "#831843",
+        "bg_hex": "#E0F2FE",
+        "header_hex": "#0284C7",
+        "border_hex": "#075985",
         "short_en": "80 NaCl | 0 H2S | 4 mL HS",
         "short_tr": "80 Tuz | 0 H2S | 4 mL HS",
         "label_en": "T7: 80 mM NaCl + 4 mL/L LIQHUMUS NK",
@@ -141,9 +143,9 @@ EXP2_TREATMENTS: Dict[str, Dict[str, Any]] = {
         "nacl_mm": 80.0,
         "nahs_um": 25.0,
         "humic_mll": 4.0,
-        "bg_hex": "#EDE9FE",
-        "header_hex": "#6D28D9",
-        "border_hex": "#4C1D95",
+        "bg_hex": "#D1FAE5",
+        "header_hex": "#1B4D1E",
+        "border_hex": "#064E3B",
         "short_en": "80 NaCl | 25 uM H2S | 4 mL HS",
         "short_tr": "80 Tuz | 25 uM H2S | 4 mL HS",
         "label_en": "T8: 80 mM NaCl + 25 uM NaHS + 4 mL/L HS",
@@ -592,7 +594,7 @@ def init_field_data_db() -> None:
                     openrouter_api_key TEXT,
                     gemini_api_key TEXT,
                     primary_model TEXT NOT NULL DEFAULT 'google/gemini-2.5-flash',
-                    secondary_model TEXT NOT NULL DEFAULT 'openai/gpt-4o-mini',
+                    secondary_model TEXT NOT NULL DEFAULT 'openai/gpt-4o',
                     dual_verify_enabled INTEGER NOT NULL DEFAULT 1,
                     updated_at TEXT NOT NULL
                 );
@@ -603,7 +605,7 @@ def init_field_data_db() -> None:
             cur.execute(
                 """
                 INSERT INTO field_ai_settings (id, provider, primary_model, secondary_model, dual_verify_enabled, updated_at)
-                VALUES (1, 'openrouter', 'google/gemini-2.5-flash', 'openai/gpt-4o-mini', 1, %s)
+                VALUES (1, 'openrouter', 'google/gemini-2.5-flash', 'openai/gpt-4o', 1, %s)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 (now_iso,),
@@ -612,7 +614,7 @@ def init_field_data_db() -> None:
             cur.execute(
                 """
                 INSERT OR IGNORE INTO field_ai_settings (id, provider, primary_model, secondary_model, dual_verify_enabled, updated_at)
-                VALUES (1, 'openrouter', 'google/gemini-2.5-flash', 'openai/gpt-4o-mini', 1, ?)
+                VALUES (1, 'openrouter', 'google/gemini-2.5-flash', 'openai/gpt-4o', 1, ?)
                 """,
                 (now_iso,),
             )
@@ -664,7 +666,8 @@ def _resolve_unit_metadata(
     plc_sensor_id: Optional[int] = None
     if zone_id is not None and r_clean.startswith("R") and r_clean[1:].isdigit():
         rep_idx = int(r_clean[1:])
-        if 1 <= rep_idx <= 4:
+        # GLC-196R hardware has 24 soil + 24 leaf sensors covering R1..R3 (1..24); R4 uses zone-average telemetry
+        if 1 <= rep_idx <= 3:
             plc_sensor_id = (rep_idx - 1) * 8 + int(zone_id)
 
     treatment_code = t_info["code_manual"] if arm == "Manual" else t_info["code_iot"]
@@ -928,19 +931,19 @@ def update_measurement(record_id: str, updates: Dict[str, Any]) -> Optional[Dict
     category = str(updates.get("category") or pdef.get("category") or existing["category"]).strip()
     unit = str(updates.get("unit") or pdef.get("unit") or existing["unit"]).strip()
 
-    manual_val = (
-        float(updates["manual_value"])
-        if ("manual_value" in updates and updates["manual_value"] not in (None, ""))
-        else (None if ("manual_value" in updates and updates["manual_value"] == "") else existing.get("manual_value"))
-    )
-    ai_val = (
-        float(updates["ai_value"])
-        if ("ai_value" in updates and updates["ai_value"] not in (None, ""))
-        else existing.get("ai_value")
-    )
+    if "manual_value" in updates:
+        manual_val = float(updates["manual_value"]) if updates["manual_value"] not in (None, "") else None
+    else:
+        manual_val = existing.get("manual_value")
+
+    if "ai_value" in updates:
+        ai_val = float(updates["ai_value"]) if updates["ai_value"] not in (None, "") else None
+    else:
+        ai_val = existing.get("ai_value")
+
     if "final_value" in updates and updates["final_value"] not in (None, ""):
         final_val = float(updates["final_value"])
-        if manual_val is None:
+        if manual_val is None and ai_val is None:
             manual_val = final_val
     elif manual_val is not None:
         final_val = manual_val
@@ -948,6 +951,13 @@ def update_measurement(record_id: str, updates: Dict[str, Any]) -> Optional[Dict
         final_val = ai_val
     else:
         final_val = float(existing["final_value"])
+
+    if manual_val is not None and ai_val is not None:
+        entry_mode = "manual_plus_ai"
+    elif ai_val is not None:
+        entry_mode = "ai_photo"
+    else:
+        entry_mode = "manual"
 
     notes = str(updates["notes"]) if "notes" in updates and updates["notes"] is not None else existing.get("notes", "")
     ver_status = str(updates.get("verification_status") or "human_edited")
@@ -962,7 +972,7 @@ def update_measurement(record_id: str, updates: Dict[str, Any]) -> Optional[Dict
                 treatment_no = ?, treatment_code = ?, nacl_mm = ?, nahs_um = ?, humic_mll = ?,
                 replicate_no = ?, planter_code = ?, plc_zone_id = ?, plc_sensor_id = ?,
                 plant_no = ?, truss_no = ?, category = ?, parameter_key = ?, parameter_label = ?, unit = ?,
-                manual_value = ?, ai_value = ?, final_value = ?, verification_status = ?,
+                manual_value = ?, ai_value = ?, final_value = ?, entry_mode = ?, verification_status = ?,
                 notes = ?, updated_at = ?, edit_history_json = ?
             WHERE record_id = ?
             """,
@@ -989,6 +999,7 @@ def update_measurement(record_id: str, updates: Dict[str, Any]) -> Optional[Dict
                 manual_val,
                 ai_val,
                 final_val,
+                entry_mode,
                 ver_status,
                 notes,
                 now_iso,
@@ -1063,7 +1074,7 @@ def query_measurements(
     if end_date:
         e_val = end_date.strip()
         if len(e_val) == 10:
-            e_val = e_val + "T23:59:59"
+            e_val = e_val + "T23:59:59.999999~"
         clauses.append("measured_at <= ?")
         params.append(e_val)
     if dat_min is not None:
@@ -1144,25 +1155,32 @@ def compute_summary_statistics(rows: List[Dict[str, Any]], experiment_code: str 
         }
 
     # Baselines (T1 for 0 mM NaCl, T5 for 80 mM NaCl) per parameter & arm
+    # Computed on true experimental units (Planter / Replicate means R1..R4) to avoid pseudoreplication across P1/P2 sub-samples
     summary_rows: List[Dict[str, Any]] = []
     t_sort_order = [f"T{i}" for i in range(1, 28)]
 
+    def _rep_mean_series(p_key: str, arm_name: str, trt_code: str) -> List[float]:
+        rmap = rep_values.get((p_key, arm_name, trt_code), {})
+        return [sum(rv) / len(rv) for _, rv in sorted(rmap.items()) if rv]
+
     for pkey, pinfo in param_meta_seen.items():
         for arm in ("IoT", "Manual", "EXP1"):
-            ctrl_0 = _stats(grouped.get((pkey, arm, "T1"), []))["mean"]
-            ctrl_salt = _stats(grouped.get((pkey, arm, "T5"), []))["mean"]
+            ctrl_0 = _stats(_rep_mean_series(pkey, arm, "T1"))["mean"]
+            ctrl_salt = _stats(_rep_mean_series(pkey, arm, "T5"))["mean"]
             for t_no in t_sort_order:
                 vals = grouped.get((pkey, arm, t_no))
                 if not vals:
                     continue
-                st = _stats(vals)
+                rep_raw_map = {
+                    rk: (sum(rv) / len(rv))
+                    for rk, rv in sorted(rep_values.get((pkey, arm, t_no), {}).items())
+                    if rv
+                }
+                reps_map = {rk: round(mv, 3) for rk, mv in rep_raw_map.items()}
+                st = _stats(list(rep_raw_map.values()))
                 t_def = (EXP1_TREATMENTS if experiment_code == "EXP1" else EXP2_TREATMENTS).get(t_no, {})
                 pct_vs_t1 = round(((st["mean"] - ctrl_0) / ctrl_0) * 100.0, 1) if (ctrl_0 and st["mean"] is not None) else None
                 pct_vs_t5 = round(((st["mean"] - ctrl_salt) / ctrl_salt) * 100.0, 1) if (ctrl_salt and st["mean"] is not None and t_def.get("nacl_mm", 0) > 0) else None
-                reps_map = {
-                    rk: round(sum(rv) / len(rv), 3)
-                    for rk, rv in sorted(rep_values.get((pkey, arm, t_no), {}).items())
-                }
                 summary_rows.append({
                     **pinfo,
                     "fertigation_arm": arm,
@@ -1172,6 +1190,7 @@ def compute_summary_statistics(rows: List[Dict[str, Any]], experiment_code: str 
                     "nahs_um": t_def.get("nahs_um", 0.0),
                     "humic_mll": t_def.get("humic_mll", 0.0),
                     **st,
+                    "n_samples": len(vals),
                     "pct_vs_t1_ctrl": pct_vs_t1,
                     "pct_vs_t5_salt_ctrl": pct_vs_t5,
                     "rep_means": reps_map,
@@ -1344,7 +1363,7 @@ def list_treatment_batches(
     if end_date:
         e_val = end_date.strip()
         if len(e_val) == 10:
-            e_val = e_val + "T23:59:59"
+            e_val = e_val + "T23:59:59.999999~"
         clauses.append("applied_at <= ?")
         params.append(e_val)
     where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
@@ -1485,7 +1504,7 @@ def get_env_climate_summary(
     if end_date:
         e_val = end_date.strip()
         if len(e_val) == 10:
-            e_val = e_val + "T23:59:59"
+            e_val = e_val + "T23:59:59.999999~"
         clauses.append("recorded_at <= ?")
         params.append(e_val)
     where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
@@ -1553,7 +1572,7 @@ def get_ai_settings(include_secrets: bool = False) -> Dict[str, Any]:
             "openrouter_api_key": None,
             "gemini_api_key": None,
             "primary_model": "google/gemini-2.5-flash",
-            "secondary_model": "openai/gpt-4o-mini",
+            "secondary_model": "openai/gpt-4o",
             "dual_verify_enabled": 1,
         }
 
@@ -1562,7 +1581,7 @@ def get_ai_settings(include_secrets: bool = False) -> Dict[str, Any]:
     out = {
         "provider": row.get("provider") or "openrouter",
         "primary_model": row.get("primary_model") or "google/gemini-2.5-flash",
-        "secondary_model": row.get("secondary_model") or "openai/gpt-4o-mini",
+        "secondary_model": row.get("secondary_model") or "openai/gpt-4o",
         "dual_verify_enabled": bool(row.get("dual_verify_enabled", 1)),
         "has_openrouter_key": bool(or_key.strip()),
         "has_gemini_key": bool(gem_key.strip()),

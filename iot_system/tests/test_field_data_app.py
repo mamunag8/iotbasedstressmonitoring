@@ -413,3 +413,120 @@ def test_group_multi_value_screen_photo_records_together_with_time(monkeypatch):
     recs = r_bulk.json()["records"]
     assert all(r["measured_at"] == shared_ts for r in recs)
     assert all(r["ai_value"] is not None and r["manual_value"] is None for r in recs)
+
+
+def test_bugfix_regressions_protocol_colors_pseudorep_hobo_and_edits():
+    client = TestClient(app)
+
+    # 1. Protocol & Unified Color Check (T3 = 4HS Orange, T4 = 25H2S+4HS Red, T7 = Salt+4HS, T8 = Salt+25H2S+4HS)
+    cat = client.get("/api/v1/field-data/catalog").json()
+    exp2 = cat["exp2_treatments"]
+    assert exp2["T3"]["nahs_um"] == 0.0 and exp2["T3"]["humic_mll"] == 4.0 and exp2["T3"]["header_hex"] == "#E65100"
+    assert exp2["T4"]["nahs_um"] == 25.0 and exp2["T4"]["humic_mll"] == 4.0 and exp2["T4"]["header_hex"] == "#C62828"
+    assert exp2["T7"]["nacl_mm"] == 80.0 and exp2["T7"]["nahs_um"] == 0.0 and exp2["T7"]["humic_mll"] == 4.0
+    assert exp2["T8"]["nacl_mm"] == 80.0 and exp2["T8"]["nahs_um"] == 25.0 and exp2["T8"]["humic_mll"] == 4.0
+
+    # 2. GLC-196R Hardware Sensor Mapping: R1..R3 -> 1..24; R4 -> plc_sensor_id is None (Zone Avg)
+    r3_res = client.post(
+        "/api/v1/field-data/measurements",
+        headers=PIN_HEADERS,
+        json={
+            "experiment_code": "EXP2",
+            "measured_at": "2026-11-16T23:59:59.500+03:00",
+            "fertigation_arm": "IoT",
+            "treatment_no": "T8",
+            "replicate_no": "R3",
+            "plant_no": "P1",
+            "parameter_key": "spad_chlorophyll",
+            "manual_value": 48.0,
+        },
+    ).json()["record"]
+    assert r3_res["plc_zone_id"] == 8
+    assert r3_res["plc_sensor_id"] == 24
+
+    r4_res = client.post(
+        "/api/v1/field-data/measurements",
+        headers=PIN_HEADERS,
+        json={
+            "experiment_code": "EXP2",
+            "measured_at": "2026-11-16T23:59:59.850+03:00",
+            "fertigation_arm": "IoT",
+            "treatment_no": "T8",
+            "replicate_no": "R4",
+            "plant_no": "P1",
+            "parameter_key": "spad_chlorophyll",
+            "ai_value": 50.0,
+            "notes": 'Leaf "3" abaxial \'ok\'',
+        },
+    ).json()["record"]
+    assert r4_res["plc_zone_id"] == 8
+    assert r4_res["plc_sensor_id"] is None
+    assert r4_res["entry_mode"] == "ai_photo"
+
+    # 3. Date End-Boundary Check (23:59:59.850+03:00 included when filtering end_date=2026-11-16)
+    day_q = client.get("/api/v1/field-data/measurements?experiment_code=EXP2&start_date=2026-11-16&end_date=2026-11-16").json()
+    assert len(day_q["records"]) == 2
+
+    # 4. Inline Edit updates entry_mode (ai_photo -> manual_plus_ai -> ai_photo when manual_value cleared)
+    rec_id = r4_res["record_id"]
+    upd1 = client.put(
+        f"/api/v1/field-data/measurements/{rec_id}",
+        headers=PIN_HEADERS,
+        json={"manual_value": 50.2, "final_value": 50.2},
+    ).json()["record"]
+    assert upd1["entry_mode"] == "manual_plus_ai"
+    assert upd1["manual_value"] == 50.2
+    assert upd1["ai_value"] == 50.0
+
+    upd2 = client.put(
+        f"/api/v1/field-data/measurements/{rec_id}",
+        headers=PIN_HEADERS,
+        json={"manual_value": None, "final_value": 50.0},
+    ).json()["record"]
+    assert upd2["manual_value"] is None
+    assert upd2["ai_value"] == 50.0
+    assert upd2["entry_mode"] == "ai_photo"
+
+    # 5. Anti-Pseudoreplication Summary Check: 4 Replicates x 2 Sub-samples (P1, P2) -> n == 4, n_samples == 8
+    bulk_subsamples = []
+    for rep, p1_v, p2_v in [("R1", 10.0, 12.0), ("R2", 14.0, 16.0), ("R3", 18.0, 20.0), ("R4", 22.0, 24.0)]:
+        bulk_subsamples.append({
+            "experiment_code": "EXP2", "measured_at": "2026-11-16T11:00:00+03:00",
+            "fertigation_arm": "IoT", "treatment_no": "T5", "replicate_no": rep,
+            "plant_no": "P1", "parameter_key": "stem_diameter_mm", "manual_value": p1_v,
+        })
+        bulk_subsamples.append({
+            "experiment_code": "EXP2", "measured_at": "2026-11-16T11:01:00+03:00",
+            "fertigation_arm": "IoT", "treatment_no": "T5", "replicate_no": rep,
+            "plant_no": "P2", "parameter_key": "stem_diameter_mm", "manual_value": p2_v,
+        })
+    client.post("/api/v1/field-data/measurements/bulk", headers=PIN_HEADERS, json={"items": bulk_subsamples})
+    sum_resp = client.get("/api/v1/field-data/measurements?experiment_code=EXP2&parameter_key=stem_diameter_mm").json()["summary"]
+    sr = sum_resp["summary_rows"][0]
+    # Replicate means are [11, 15, 19, 23] -> n=4, mean=17.0, SD=sqrt(80/3)=5.164, SE=5.164/2=2.582
+    assert sr["n"] == 4
+    assert sr["n_samples"] == 8
+    assert sr["mean"] == 17.0
+    assert sr["se"] == 2.582
+
+    # 6. Separate Date + Time Columns in HOBO CSV Upload
+    split_hobo_csv = (
+        "#,Date,Time,Temp °C,RH %\n"
+        "1,2026-11-16,13:00:00,25.0,60.0\n"
+        "2,2026-11-16,13:15:00,25.5,58.0\n"
+    ).encode("utf-8")
+    r_split = client.post(
+        "/api/v1/field-data/climate/upload?filename=hobo_split.csv&logger_type=hobo_temp_rh&location_tag=Manual_Half",
+        headers=PIN_HEADERS,
+        content=split_hobo_csv,
+    )
+    assert r_split.status_code == 200
+    assert r_split.json()["rows_inserted"] == 2
+
+    # 7. UI JS Helper Presence Check
+    html = client.get("/data-app").text
+    assert "openEditModalById" in html
+    assert "toLocalOffsetIso" in html
+    assert "fmtLocalTime" in html
+    assert "populateFilterTreatments" in html
+    assert "_drainageAutoPlanter" in html

@@ -282,7 +282,7 @@ async def analyze_field_photo(
     gem_key = (cfg.get("gemini_api_key") or os.getenv("GEMINI_API_KEY") or "").strip()
     provider = cfg.get("provider", "openrouter")
     primary_model = (override_model or cfg.get("primary_model") or "google/gemini-2.5-flash").strip()
-    secondary_model = (cfg.get("secondary_model") or "openai/gpt-4o-mini").strip()
+    secondary_model = (cfg.get("secondary_model") or "openai/gpt-4o").strip()
     dual_verify = bool(cfg.get("dual_verify_enabled", True))
 
     if not or_key and not gem_key:

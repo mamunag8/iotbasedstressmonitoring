@@ -408,10 +408,15 @@ def _parse_timestamp_flexible(val: Any) -> Optional[str]:
         "%m/%d/%y %H:%M:%S",
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%Y %H:%M",
+        "%m/%d/%y %H:%M",
         "%d.%m.%Y %H:%M:%S",
         "%d.%m.%Y %H:%M",
+        "%d.%m.%y %H:%M:%S",
+        "%d.%m.%y %H:%M",
         "%d/%m/%Y %H:%M:%S",
         "%d/%m/%Y %H:%M",
+        "%d/%m/%y %H:%M:%S",
+        "%d/%m/%y %H:%M",
     ):
         try:
             dt = datetime.strptime(s, fmt)
@@ -444,6 +449,8 @@ def _to_float(val: Any) -> Optional[float]:
 def _parse_hobo_rows_from_matrix(matrix: List[List[Any]]) -> List[Dict[str, Any]]:
     header_idx = -1
     col_time = -1
+    col_date_only = -1
+    col_clock_only = -1
     col_temp = -1
     temp_is_fahrenheit = False
     col_rh = -1
@@ -452,33 +459,57 @@ def _parse_hobo_rows_from_matrix(matrix: List[List[Any]]) -> List[Dict[str, Any]
 
     for idx, row in enumerate(matrix[:15]):
         cells = [str(c or "").strip().lower() for c in row]
-        has_time = any(any(k in c for k in ("date", "time", "timestamp", "tarih", "zaman")) for c in cells)
-        has_metric = any(any(k in c for k in ("temp", "sicaklik", "rh", "humid", "nem", "lux", "intens", "light", "isik")) for c in cells)
+        has_time = any(any(k in c for k in ("date", "time", "timestamp", "tarih", "zaman", "saat")) for c in cells)
+        has_metric = any(any(k in c for k in ("temp", "sicaklik", "sıcaklık", "rh", "humid", "nem", "lux", "intens", "light", "isik", "ışık")) for c in cells)
         if has_time and has_metric:
             header_idx = idx
             for c_i, c_txt in enumerate(cells):
-                if col_time == -1 and any(k in c_txt for k in ("date", "time", "timestamp", "tarih")):
+                is_d = any(k in c_txt for k in ("date", "tarih"))
+                is_t = any(k in c_txt for k in ("time", "timestamp", "zaman", "saat"))
+                if col_time == -1 and ((is_d and is_t) or "timestamp" in c_txt):
                     col_time = c_i
-                elif col_temp == -1 and any(k in c_txt for k in ("temp", "sicaklik", "°c", "°f")) and "dew" not in c_txt:
+                elif is_d and col_date_only == -1:
+                    col_date_only = c_i
+                elif is_t and col_clock_only == -1:
+                    col_clock_only = c_i
+                elif col_temp == -1 and any(k in c_txt for k in ("temp", "sicaklik", "sıcaklık", "°c", "°f")) and "dew" not in c_txt:
                     col_temp = c_i
                     if "°f" in c_txt or "fahrenheit" in c_txt or "(f)" in c_txt:
                         temp_is_fahrenheit = True
                 elif col_rh == -1 and any(k in c_txt for k in ("rh", "humid", "nem")):
                     col_rh = c_i
-                elif col_lux == -1 and any(k in c_txt for k in ("lux", "intens", "light", "isik", "lum/ft")):
+                elif col_lux == -1 and any(k in c_txt for k in ("lux", "intens", "light", "isik", "ışık", "lum/ft")):
                     col_lux = c_i
                     if "lum/ft" in c_txt:
                         lux_is_fc = True
+            if col_time == -1:
+                col_time = col_date_only if col_date_only != -1 else col_clock_only
             break
 
     if header_idx == -1 or col_time == -1:
         return []
 
+    use_split_dt = (
+        col_date_only != -1
+        and col_clock_only != -1
+        and col_date_only != col_clock_only
+    )
+
     parsed: List[Dict[str, Any]] = []
     for row in matrix[header_idx + 1 :]:
-        if col_time >= len(row):
-            continue
-        ts = _parse_timestamp_flexible(row[col_time])
+        if use_split_dt:
+            if max(col_date_only, col_clock_only) >= len(row):
+                continue
+            d_cell = row[col_date_only]
+            t_cell = row[col_clock_only]
+            d_part = d_cell.strftime("%Y-%m-%d") if hasattr(d_cell, "strftime") else str(d_cell or "").strip()
+            t_part = t_cell.strftime("%H:%M:%S") if hasattr(t_cell, "strftime") else str(t_cell or "").strip()
+            raw_ts: Any = f"{d_part} {t_part}".strip()
+        else:
+            if col_time >= len(row):
+                continue
+            raw_ts = row[col_time]
+        ts = _parse_timestamp_flexible(raw_ts)
         if not ts:
             continue
         t_val = _to_float(row[col_temp]) if (0 <= col_temp < len(row)) else None

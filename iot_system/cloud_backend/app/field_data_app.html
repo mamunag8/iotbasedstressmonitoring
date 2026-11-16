@@ -1019,6 +1019,16 @@
             <span>🌱 No Salt (1–4)</span>
             <span>🧂 80mM Salt (5–8)</span>
           </div>
+          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; padding-top:6px; border-top:1px dashed var(--border); font-size:0.64rem; font-weight:800;">
+            <span style="background:#1565C0; color:#fff; padding:2px 6px; border-radius:5px;">T1: 0 Ctrl</span>
+            <span style="background:#2E7D32; color:#fff; padding:2px 6px; border-radius:5px;">T2: 25H2S</span>
+            <span style="background:#E65100; color:#fff; padding:2px 6px; border-radius:5px;">T3: 4HS</span>
+            <span style="background:#C62828; color:#fff; padding:2px 6px; border-radius:5px;">T4: 25H2S+4HS</span>
+            <span style="background:#FACC15; color:#0F172A; padding:2px 6px; border-radius:5px;">T5: 80Salt</span>
+            <span style="background:#6A1B9A; color:#fff; padding:2px 6px; border-radius:5px;">T6: Salt+25H2S</span>
+            <span style="background:#81D4FA; color:#0F172A; padding:2px 6px; border-radius:5px;">T7: Salt+4HS</span>
+            <span style="background:#1B4D1E; color:#fff; padding:2px 6px; border-radius:5px;">T8: Salt+25H2S+4HS</span>
+          </div>
         </div>
       </div>
 
@@ -1044,9 +1054,9 @@
       <!-- Shared Plant Position Selector (Always visible) -->
       <span class="sec-lbl">Plant Position inside Selected Plot (Auto-Advances P1 ➔ P2 ➔ Next Plot)</span>
       <div class="pill-row">
-        <button type="button" class="plant-pill active" data-plant="P1" onclick="selectPlant('P1')">🌱 Plant 1 (P1)</button>
-        <button type="button" class="plant-pill" data-plant="P2" onclick="selectPlant('P2')">🌿 Plant 2 (P2)</button>
-        <button type="button" class="plant-pill" data-plant="Planter" onclick="selectPlant('Planter')">🪴 Whole Planter</button>
+        <button type="button" class="plant-pill active" data-plant="P1" onclick="selectPlant('P1', true)">🌱 Plant 1 (P1)</button>
+        <button type="button" class="plant-pill" data-plant="P2" onclick="selectPlant('P2', true)">🌿 Plant 2 (P2)</button>
+        <button type="button" class="plant-pill" data-plant="Planter" onclick="selectPlant('Planter', true)">🪴 Whole Planter</button>
         <select id="selTrussNo" style="width:auto; min-height:44px; padding:6px 10px; font-size:0.8rem;" title="Optional Truss #">
           <option value="">Truss: —</option>
           <option value="1">Truss 1</option>
@@ -1398,7 +1408,7 @@
         <div class="multi-grid">
           <div class="multi-item">
             <label>Experiment</label>
-            <select id="fltExp" onchange="loadDashboardData()">
+            <select id="fltExp" onchange="onFilterExperimentChange()">
               <option value="EXP2">Experiment 2</option>
               <option value="EXP1">Experiment 1</option>
               <option value="ALL">All</option>
@@ -1410,6 +1420,7 @@
               <option value="ALL">Both (IoT + Manual)</option>
               <option value="IoT">IoT Arm Only</option>
               <option value="Manual">Manual Arm Only</option>
+              <option value="EXP1">Exp 1 Only</option>
             </select>
           </div>
           <div class="multi-item">
@@ -1417,13 +1428,13 @@
             <select id="fltTrt" onchange="loadDashboardData()">
               <option value="ALL">All Treatments (T1–T8)</option>
               <option value="T1">T1 (0 NaCl, 0 H2S, 0 HS)</option>
-              <option value="T2">T2 (0 NaCl + H2S)</option>
-              <option value="T3">T3 (0 NaCl + HS)</option>
-              <option value="T4">T4 (0 NaCl + H2S + HS)</option>
+              <option value="T2">T2 (0 NaCl + 25 uM H2S)</option>
+              <option value="T3">T3 (0 NaCl + 4 mL/L HS)</option>
+              <option value="T4">T4 (0 NaCl + 25 H2S + 4 HS)</option>
               <option value="T5">T5 (80 NaCl Control)</option>
-              <option value="T6">T6 (80 NaCl + H2S)</option>
-              <option value="T7">T7 (80 NaCl + HS)</option>
-              <option value="T8">T8 (80 NaCl + H2S + HS)</option>
+              <option value="T6">T6 (80 NaCl + 25 uM H2S)</option>
+              <option value="T7">T7 (80 NaCl + 4 mL/L HS)</option>
+              <option value="T8">T8 (80 NaCl + 25 H2S + 4 HS)</option>
             </select>
           </div>
           <div class="multi-item">
@@ -1680,8 +1691,8 @@
         <div class="multi-item">
           <label>Cross-Check Model (Model 2)</label>
           <select id="cfgSecondaryModel">
-            <option value="openai/gpt-4o-mini">openai/gpt-4o-mini (Fast Digit Check)</option>
             <option value="openai/gpt-4o">openai/gpt-4o (Flagship Check)</option>
+            <option value="openai/gpt-4o-mini">openai/gpt-4o-mini (Fast Digit Check)</option>
             <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
             <option value="anthropic/claude-sonnet-4.5">anthropic/claude-sonnet-4.5</option>
           </select>
@@ -1728,9 +1739,9 @@
           <strong>ধাপ ১: গ্রিনহাউসে সারি ধরে ডেটা এন্ট্রি (🌱 Growth / 📟 Meters / ⚖️ Lab)</strong>
           <ul style="margin:6px 0 0 18px;">
             <li>উপরের <strong>64-Plot Field Map</strong> আপনার Sera 5 গ্রিনহাউসের হুবহু নকশা (নিচে <strong>IoT Cols 1–8</strong>, মাঝে হাঁটার পথ, উপরে <strong>Manual Cols 9–16</strong>)।</li>
-            <li><strong>Walk Route</strong> থেকে সাধারণত <strong>🐍 Snake Row (1→8, 8→1)</strong> রাখুন (যেদিক দিয়ে হাঁটবেন, উল্টো দিকে না ঘুরে সোজা পরবর্তী টবে যাবে)। যেকোনো টবে ট্যাপ করে শুরু করতে পারেন।</li>
-            <li>নিচে ২ নম্বর কার্ড থেকে একটি প্যারামিটার (যেমন <em>Plant Height</em>) বা <strong>⚡ Multi-Parameter Sheet</strong> (একসাথে Height + Stem + Leaves + SPAD) সিলেক্ট করুন।</li>
-            <li>মান টাইপ করে সবুজ <strong>💾 Save &amp; Next ➔</strong> বাটনে চাপুন: প্রথম চাপে একই টবের <strong>P1 ➔ P2</strong> হবে; পরের চাপে ম্যাপ অনুযায়ী <strong>অটোমেটিক পরবর্তী টবে</strong> চলে যাবে!</li>
+            <li><strong>Walk Route</strong> থেকে ডিফল্ট <strong>➡️ Row by Row (R1T1→R1T2→R1T4→...→R2T2)</strong> বা <strong>🐍 Snake Row</strong> রাখুন এবং <strong>1 Plant / Planter</strong> বা <strong>2 Plants / Planter</strong> বেছে নিন। যেকোনো টবে ট্যাপ করে শুরু করতে পারেন।</li>
+            <li>নিচে ২ নম্বর কার্ড থেকে একটি প্যারামিটার (যেমন <em>Plant Height</em>) বা <strong>⚡ Multi-Parameter Sheet</strong> সিলেক্ট করুন। মিটার স্ক্রিনে একাধিক ডেটা থাকলে (যেমন <em>Leaf Porometer</em>-এর ৫টি রিডিং) ১টি ছবিতেই সব ডেটা একই সময়ের সাথে একত্রে সেভ হবে!</li>
+            <li>মান দিয়ে সবুজ <strong>💾 Save &amp; Next ➔</strong> চাপুন: <em>1 Plant / Planter</em> মোডে সরাসরি পরবর্তী টবে যাবে, আর <em>2 Plants / Planter</em> মোডে <strong>P1 ➔ P2 ➔ পরবর্তী টব</strong> যাবে!</li>
             <li>আজ যেসব টবের ১টি গাছ হয়েছে সেগুলোতে <span style="background:#f59e0b; color:#0f172a; padding:1px 6px; border-radius:99px; font-weight:900;">½</span> এবং ২টি গাছই হলে <span style="background:#16a34a; color:#fff; padding:1px 6px; border-radius:99px; font-weight:900;">✓</span> চিহ্ন দেখাবে।</li>
           </ul>
         </div>
@@ -1777,8 +1788,8 @@
           <strong>Step 1: Walk the 64-Plot Field Layout Systematically (🌱 Growth / 📟 Meters / ⚖️ Lab)</strong>
           <ul style="margin:6px 0 0 18px;">
             <li>The <strong>64-Plot Field Map</strong> matches your physical Sera 5 greenhouse layout (<strong>IoT Cols 1–8</strong> bottom, <strong>Central Pathway</strong> middle, <strong>Manual Cols 9–16</strong> top).</li>
-            <li>Keep Walk Route on <strong>🐍 Snake Row (1→8, 8→1)</strong> for zero backtracking, or tap any plot cell to jump there directly.</li>
-            <li>Pick one parameter or switch to <strong>⚡ Multi-Parameter Sheet</strong>, enter the value, and tap <strong>💾 Save &amp; Next ➔</strong>: it moves <strong>P1 ➔ P2</strong> inside the pot, then advances straight to the next bench plot automatically!</li>
+            <li>Use <strong>➡️ Row by Row (R1T1→R1T2→R1T4→...→R2T2)</strong> (default) or <strong>🐍 Snake Row</strong>, and select <strong>1 Plant / Planter</strong> or <strong>2 Plants / Planter</strong>.</li>
+            <li>Pick one parameter, switch to <strong>⚡ Multi-Parameter Sheet</strong>, or snap <strong>1 multi-value meter screen photo</strong> (e.g. SC-1 Porometer 5 readings) to record all channels together with exact timestamp, then tap <strong>💾 Save &amp; Next ➔</strong>!</li>
             <li>Badges track your progress live today: <span style="background:#f59e0b; color:#0f172a; padding:1px 6px; border-radius:99px; font-weight:900;">½</span> = 1 plant done, <span style="background:#16a34a; color:#fff; padding:1px 6px; border-radius:99px; font-weight:900;">✓</span> = whole plot complete.</li>
           </ul>
         </div>
@@ -1853,6 +1864,7 @@
       treatment: "T1",
       rep: "R1",
       plant: "P1",
+      _drainageAutoPlanter: false,
       meterGroup: "porometer",
       labGroup: "fruit_harvest",
       activeParamKey: "plant_height_cm",
@@ -1880,6 +1892,43 @@
     function localIsoNow() {
       const d = new Date();
       return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
+
+    function toLocalOffsetIso(localVal) {
+      const d = localVal ? new Date(localVal) : new Date();
+      const safe = Number.isNaN(d.getTime()) ? new Date() : d;
+      const pad = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
+      const offMin = -safe.getTimezoneOffset();
+      const sign = offMin >= 0 ? "+" : "-";
+      const hh = pad(offMin / 60);
+      const mm = pad(offMin % 60);
+      return `${safe.getFullYear()}-${pad(safe.getMonth() + 1)}-${pad(safe.getDate())}T${pad(safe.getHours())}:${pad(safe.getMinutes())}:${pad(safe.getSeconds())}${sign}${hh}:${mm}`;
+    }
+
+    function fmtLocalTime(isoStr, includeYear = true) {
+      if (!isoStr) return "—";
+      const d = new Date(isoStr);
+      if (Number.isNaN(d.getTime())) return String(isoStr).slice(includeYear ? 0 : 5, 16).replace("T", " ");
+      const pad = n => String(n).padStart(2, "0");
+      const datePart = includeYear
+        ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+        : `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      return `${datePart} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function toLocalDateStr(isoStr) {
+      if (!isoStr) return "";
+      const d = new Date(isoStr);
+      if (Number.isNaN(d.getTime())) return String(isoStr).slice(0, 10);
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function shiftDateStr(yyyyMmDd, deltaDays) {
+      const parts = String(yyyyMmDd || "").split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return yyyyMmDd;
+      const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + deltaDays));
+      return dt.toISOString().slice(0, 10);
     }
 
     // PIN Management (Shared with main iotserver.mmreza.com session)
@@ -1991,6 +2040,7 @@
 
       renderTreatmentTiles();
       renderTrtBatchButtons();
+      populateFilterTreatments();
       populateFilterParameters();
       switchAppTab("Growth");
       setSelectorView(STATE.selectorView);
@@ -2108,7 +2158,7 @@
       const activeCat = getActiveProgressCategory();
       const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
       const relevant = (STATE.todayRecords || []).filter(r => {
-        if (selDate && String(r.measured_at || "").slice(0, 10) !== selDate) return false;
+        if (selDate && toLocalDateStr(r.measured_at) !== selDate) return false;
         if (STATE.entryMode === "multi") return r.category === activeCat;
         return r.parameter_key === STATE.activeParamKey;
       });
@@ -2124,10 +2174,12 @@
       if (STATE.experiment !== "EXP2") return;
       try {
         const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
-        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=EXP2&start_date=${encodeURIComponent(selDate)}&end_date=${encodeURIComponent(selDate)}&limit=500`);
+        const qStart = shiftDateStr(selDate, -1);
+        const qEnd = shiftDateStr(selDate, 1);
+        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=EXP2&start_date=${encodeURIComponent(qStart)}&end_date=${encodeURIComponent(qEnd)}&limit=1500`);
         if (resp.ok) {
           const data = await resp.json();
-          STATE.todayRecords = data.records || [];
+          STATE.todayRecords = (data.records || []).filter(r => toLocalDateStr(r.measured_at) === selDate);
           renderFieldMap();
         }
       } catch (e) {}
@@ -2301,7 +2353,8 @@
       updateActiveUnitBanner();
     }
 
-    function selectPlant(p) {
+    function selectPlant(p, manualClick = false) {
+      if (manualClick) STATE._drainageAutoPlanter = false;
       STATE.plant = p;
       document.querySelectorAll(".plant-pill").forEach(el => {
         el.classList.toggle("active", el.dataset.plant === p);
@@ -2381,8 +2434,12 @@
       let sensorHint = "";
       if (STATE.experiment === "EXP2" && STATE.arm === "IoT" && t.zone_id) {
         const rIdx = parseInt(STATE.rep.replace("R", ""), 10) || 1;
-        const sId = (rIdx - 1) * 8 + t.zone_id;
-        sensorHint = ` • PLC Line ${t.zone_id} (Sensor R${sId})`;
+        if (rIdx <= 3) {
+          const sId = (rIdx - 1) * 8 + t.zone_id;
+          sensorHint = ` • PLC Line ${t.zone_id} (Sensor R${sId})`;
+        } else {
+          sensorHint = ` • PLC Line ${t.zone_id} (Zone Avg • R4)`;
+        }
       }
       const tag = `${colTxt}${armLbl} • ${STATE.rep}${STATE.treatment} • ${STATE.plant}`;
       document.getElementById("lblActiveUnit").textContent = `Selected: ${tag}${sensorHint}`;
@@ -2410,12 +2467,14 @@
       document.getElementById("labSubCatBar").classList.toggle("hidden", tab !== "Lab");
 
       if (tab === "Growth") {
+        if (STATE._drainageAutoPlanter) { STATE._drainageAutoPlanter = false; selectPlant("P1"); }
         document.getElementById("lblWorkspaceTitle").textContent = "🌱 2. Greenhouse Morphological Input";
         renderCategoryParameters("morphology");
       } else if (tab === "Meters") {
         document.getElementById("lblWorkspaceTitle").textContent = "📟 2. Meter Screen AI & Sensor Input";
         selectMeterGroup(STATE.meterGroup);
       } else if (tab === "Lab") {
+        if (STATE._drainageAutoPlanter) { STATE._drainageAutoPlanter = false; selectPlant("P1"); }
         document.getElementById("lblWorkspaceTitle").textContent = "⚖️ 2. Lab, Biomass & Fruit Harvest";
         selectLabGroup(STATE.labGroup);
       } else if (tab === "TreatEnv") {
@@ -2439,7 +2498,15 @@
     function selectMeterGroup(grp) {
       STATE.meterGroup = grp;
       document.querySelectorAll("#metersSubCatBar .submode-btn").forEach(b => b.classList.toggle("active", b.dataset.mcat === grp));
-      if (grp === "drainage") selectPlant("Planter");
+      if (grp === "drainage") {
+        if (STATE.plant !== "Planter") {
+          STATE._drainageAutoPlanter = true;
+          selectPlant("Planter");
+        }
+      } else if (STATE._drainageAutoPlanter) {
+        STATE._drainageAutoPlanter = false;
+        selectPlant("P1");
+      }
       renderCategoryParameters(grp);
     }
 
@@ -2779,6 +2846,9 @@
       const extras = STATE.currentAiResult.extra_fields;
       const extrasSec = STATE.currentAiResult.extra_fields_secondary || {};
       const base = buildBaseMeasurementPayload();
+      const manRaw = document.getElementById("inpManualValue").value;
+      const hasMan = manRaw !== "" && !Number.isNaN(parseFloat(manRaw));
+      const manNum = hasMan ? parseFloat(manRaw) : null;
       const userNote = document.getElementById("inpEntryNote").value.trim();
       const clkTag = STATE.currentAiResult.screen_time ? `[Meter Clock: ${STATE.currentAiResult.screen_time}]` : "";
       const instTag = STATE.currentAiResult.instrument_detected ? `[${STATE.currentAiResult.instrument_detected}]` : "";
@@ -2788,13 +2858,16 @@
         const p = CATALOG.parameters.find(x => x.key === k);
         if (p && v !== null && v !== "" && !Number.isNaN(Number(v))) {
           const secVal = extrasSec[k];
+          const isActiveManual = hasMan && p.key === STATE.activeParamKey;
           items.push({
             ...base,
             category: p.category,
             parameter_key: p.key,
             parameter_label: p.label_en,
             unit: p.unit,
+            manual_value: isActiveManual ? manNum : null,
             ai_value: Number(v),
+            final_value: isActiveManual ? manNum : Number(v),
             ai_secondary_value: (secVal !== null && secVal !== undefined && !Number.isNaN(Number(secVal))) ? Number(secVal) : null,
             verification_status: STATE.currentAiResult.verification_status || "ai_photo",
             ai_confidence: STATE.currentAiResult.ai_confidence,
@@ -2811,7 +2884,7 @@
 
     function buildBaseMeasurementPayload() {
       const tVal = document.getElementById("inpMeasureTime").value;
-      const isoTime = tVal ? new Date(tVal).toISOString() : new Date().toISOString();
+      const isoTime = toLocalOffsetIso(tVal);
       const trussRaw = document.getElementById("selTrussNo").value;
       return {
         experiment_code: STATE.experiment,
@@ -2854,10 +2927,10 @@
 
       // If AI read a multi-parameter screen (e.g., Decagon SC-1 Porometer) and group save is checked, record all channels together with exact same timestamp
       const chkGroup = document.getElementById("chkSaveAllGroupChannels");
-      if (chkGroup && chkGroup.checked && STATE.currentAiResult && STATE.currentAiResult.extra_fields) {
+      if (chkGroup && chkGroup.checked && STATE.currentAiResult && STATE.currentAiResult.extra_fields && !STATE.customParamOpen) {
         const extras = STATE.currentAiResult.extra_fields;
         const validExtraCount = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k)).length;
-        if (validExtraCount > 1 && manRaw === "") {
+        if (validExtraCount > 1) {
           await saveAllExtractedScreenChannels(advanceNext);
           document.getElementById("inpMeasureTime").value = localIsoNow();
           return;
@@ -3056,12 +3129,19 @@
     }
     window.addEventListener("online", syncOfflineQueue);
 
+    function openEditModalById(recId) {
+      const r = (window._recMap || {})[recId];
+      if (r) openEditModal(r);
+    }
+
     // Recent Mini Table
     async function refreshRecentMiniTable() {
       try {
         const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=${STATE.experiment}&limit=6`);
         const data = await resp.json();
         const rows = data.records || [];
+        window._recMap = window._recMap || {};
+        rows.forEach(r => { window._recMap[r.record_id] = r; });
         const tbody = document.getElementById("recentMiniTbody");
         if (!rows.length) {
           tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No records yet.</td></tr>`;
@@ -3069,13 +3149,13 @@
         }
         tbody.innerHTML = rows.map(r => `
           <tr>
-            <td>${String(r.measured_at).slice(5, 16).replace("T", " ")} <span style="color:var(--teal); font-weight:800;">(D${r.dat ?? 0})</span></td>
+            <td>${fmtLocalTime(r.measured_at, false)} <span style="color:var(--teal); font-weight:800;">(D${r.dat ?? 0})</span></td>
             <td><strong>${r.planter_code}</strong> (${r.plant_no})</td>
             <td>${r.parameter_label}</td>
             <td>${r.manual_value ?? "—"}</td>
             <td>${r.ai_value ?? "—"} ${r.photo_url ? `<a href="#" onclick="event.preventDefault();openLightbox('${r.photo_url}')">📷</a>` : ""}</td>
             <td><strong>${r.final_value} ${r.unit}</strong></td>
-            <td><button type="button" class="btn-action" style="min-height:30px; padding:3px 8px;" onclick='openEditModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>✏️</button></td>
+            <td><button type="button" class="btn-action" style="min-height:30px; padding:3px 8px;" onclick="openEditModalById('${r.record_id}')">✏️</button></td>
           </tr>
         `).join("");
       } catch (e) {}
@@ -3134,7 +3214,8 @@
       } else if (preset === "all_64") {
         STATE.trtSelectedTreatments = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"];
       } else if (preset === "single") {
-        document.getElementById("chkTrtManual").checked = false;
+        document.getElementById("chkTrtIoT").checked = (STATE.arm !== "Manual");
+        document.getElementById("chkTrtManual").checked = (STATE.arm === "Manual");
         STATE.trtSelectedTreatments = [STATE.treatment];
         STATE.trtSelectedReps = [STATE.rep];
       }
@@ -3171,7 +3252,7 @@
       const tRaw = document.getElementById("trtAppliedAt").value;
       const payload = {
         experiment_code: STATE.experiment,
-        applied_at: tRaw ? new Date(tRaw).toISOString() : new Date().toISOString(),
+        applied_at: toLocalOffsetIso(tRaw),
         target_arms: arms,
         target_treatments: STATE.trtSelectedTreatments,
         target_replicates: STATE.trtSelectedReps,
@@ -3211,7 +3292,7 @@
       }
       tbody.innerHTML = STATE.dashTreatments.map(t => `
         <tr>
-          <td>${String(t.applied_at).slice(0, 16).replace("T", " ")} <strong>(D${t.dat ?? 0})</strong></td>
+          <td>${fmtLocalTime(t.applied_at, true)} <strong>(D${t.dat ?? 0})</strong></td>
           <td>${t.group_label}</td>
           <td>${t.application_type}</td>
           <td>H2S: ${t.nahs_um} uM | HS: ${t.humic_mll} mL/L | NaCl: ${t.nacl_mm} mM</td>
@@ -3291,6 +3372,43 @@
     // ======================================================================
     // TAB 5: DASHBOARD, INLINE EDIT & BILINGUAL (EN/TR) A4 PRINT STUDIO
     // ======================================================================
+    function populateFilterTreatments() {
+      const exp = document.getElementById("fltExp")?.value || "EXP2";
+      const sel = document.getElementById("fltTrt");
+      if (!sel) return;
+      const prev = sel.value || "ALL";
+      if (exp === "EXP1" || exp === "ALL") {
+        const exp1Map = CATALOG.exp1_treatments || {};
+        const maxT = exp === "ALL" ? 27 : (Object.keys(exp1Map).length || 27);
+        const opts = [`<option value="ALL">All Treatments (T1–T${maxT})</option>`];
+        for (let i = 1; i <= maxT; i++) {
+          const tk = `T${i}`;
+          const td = exp1Map[tk];
+          const desc = (exp === "EXP1" && td && td.short_en) ? `${tk} (${td.short_en})` : tk;
+          opts.push(`<option value="${tk}">${desc}</option>`);
+        }
+        sel.innerHTML = opts.join("");
+      } else {
+        sel.innerHTML = `
+          <option value="ALL">All Treatments (T1–T8)</option>
+          <option value="T1">T1 (0 NaCl, 0 H2S, 0 HS)</option>
+          <option value="T2">T2 (0 NaCl + 25 uM H2S)</option>
+          <option value="T3">T3 (0 NaCl + 4 mL/L HS)</option>
+          <option value="T4">T4 (0 NaCl + 25 H2S + 4 HS)</option>
+          <option value="T5">T5 (80 NaCl Control)</option>
+          <option value="T6">T6 (80 NaCl + 25 uM H2S)</option>
+          <option value="T7">T7 (80 NaCl + 4 mL/L HS)</option>
+          <option value="T8">T8 (80 NaCl + 25 H2S + 4 HS)</option>
+        `;
+      }
+      if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function onFilterExperimentChange() {
+      populateFilterTreatments();
+      loadDashboardData();
+    }
+
     function populateFilterParameters() {
       const cat = document.getElementById("fltCategory").value;
       const params = (CATALOG.parameters || []).filter(p => cat === "ALL" || p.category === cat);
@@ -3387,13 +3505,15 @@
         tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:18px;">No records match current filters.</td></tr>`;
         return;
       }
+      window._recMap = window._recMap || {};
+      STATE.dashRecords.forEach(r => { window._recMap[r.record_id] = r; });
       tbody.innerHTML = STATE.dashRecords.slice(0, 300).map(r => {
         const badge = r.verification_status === "dual_ai_consensus"
           ? `<span style="color:#16a34a; font-size:0.68rem; font-weight:900;">✅ Dual-AI</span>`
           : (r.verification_status === "flagged_mismatch" ? `<span style="color:#dc2626; font-size:0.68rem; font-weight:900;">⚠️ Check</span>` : "");
         return `
           <tr>
-            <td>${String(r.measured_at).slice(0, 16).replace("T", " ")}<br/><span style="color:var(--teal); font-weight:800;">DAT ${r.dat ?? 0}</span></td>
+            <td>${fmtLocalTime(r.measured_at, true)}<br/><span style="color:var(--teal); font-weight:800;">DAT ${r.dat ?? 0}</span></td>
             <td><strong>${r.planter_code}</strong><br/><span style="font-size:0.68rem; color:var(--text-muted);">${r.treatment_code}</span></td>
             <td>${r.plant_no}${r.truss_no ? ` (Tr${r.truss_no})` : ""}</td>
             <td><strong>${r.parameter_label}</strong></td>
@@ -3403,7 +3523,7 @@
             <td>${r.photo_url ? `<img src="${r.photo_url}" style="width:40px; height:32px; object-fit:cover; border-radius:5px; cursor:zoom-in;" onclick="openLightbox('${r.photo_url}')" />` : "—"}</td>
             <td style="max-width:150px;">${r.notes || ""}</td>
             <td>
-              <button type="button" class="btn-action" style="min-height:30px; padding:4px 8px;" onclick='openEditModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>✏️ Edit</button>
+              <button type="button" class="btn-action" style="min-height:30px; padding:4px 8px;" onclick="openEditModalById('${r.record_id}')">✏️ Edit</button>
             </td>
           </tr>
         `;
@@ -3446,6 +3566,7 @@
         closeModal("editRecordModal");
         showToast("✓ Record updated!", "#16a34a");
         refreshRecentMiniTable();
+        refreshTodayFieldProgress();
         if (STATE.tab === "ViewPrint") loadDashboardData();
       }
     }
@@ -3458,6 +3579,7 @@
         closeModal("editRecordModal");
         showToast("🗑️ Record deleted", "#dc2626");
         refreshRecentMiniTable();
+        refreshTodayFieldProgress();
         if (STATE.tab === "ViewPrint") loadDashboardData();
       }
     }
@@ -3481,7 +3603,7 @@
         ? "Deneme 2: IoT ve Manuel Fertigasyon × Tuzluluk (0/80 mM NaCl) × NaHS (25 uM) × Hümik Asit (4 mL/L)"
         : "Experiment 2: IoT vs. Manual Fertigation × Salinity (0/80 mM NaCl) × NaHS (25 uM) × Humic Acid (4 mL/L)";
       document.getElementById("a4DateLbl").textContent = isTr ? "Rapor Tarihi:" : "Report Date:";
-      document.getElementById("a4DateVal").textContent = new Date().toISOString().slice(0, 10);
+      document.getElementById("a4DateVal").textContent = localIsoNow().slice(0, 10);
       document.getElementById("a4Sec1Title").textContent = isTr
         ? "1. Uygulama Özet Tablosu (Ortalama +/- Standart Hata)"
         : "1. Treatment Summary Table (Mean +/- SE)";
@@ -3530,14 +3652,18 @@
                 const rm = sr.rep_means || {};
                 const repCols = showReps ? `<td>${rm.R1 ?? "—"}</td><td>${rm.R2 ?? "—"}</td><td>${rm.R3 ?? "—"}</td><td>${rm.R4 ?? "—"}</td>` : "";
                 const pName = isTr ? (sr.label_tr || sr.parameter_label) : sr.parameter_label;
-                const pct = sr.pct_vs_t1_ctrl !== null && sr.pct_vs_t1_ctrl !== undefined ? `${sr.pct_vs_t1_ctrl > 0 ? '+' : ''}${sr.pct_vs_t1_ctrl}%` : "—";
+                const pctT1 = sr.pct_vs_t1_ctrl !== null && sr.pct_vs_t1_ctrl !== undefined ? `${sr.pct_vs_t1_ctrl > 0 ? '+' : ''}${sr.pct_vs_t1_ctrl}%` : "—";
+                const pct = (sr.nacl_mm > 0 && sr.pct_vs_t5_salt_ctrl !== null && sr.pct_vs_t5_salt_ctrl !== undefined)
+                  ? `${pctT1} (T1) / ${sr.pct_vs_t5_salt_ctrl > 0 ? '+' : ''}${sr.pct_vs_t5_salt_ctrl}% (T5)`
+                  : pctT1;
+                const nTxt = (sr.n_samples && sr.n_samples > sr.n) ? `${sr.n} (${sr.n_samples}p)` : `${sr.n}`;
                 return `
                   <tr>
                     <td><strong>${pName}</strong> (${sr.unit})</td>
                     <td>${sr.fertigation_arm}</td>
                     <td><strong>${sr.treatment_no}</strong> (${sr.treatment_code})</td>
                     <td>${sr.nacl_mm}mM | ${sr.nahs_um}uM | ${sr.humic_mll}mL</td>
-                    <td>${sr.n}</td>
+                    <td>${nTxt}</td>
                     <td><strong>${sr.mean} ± ${sr.se}</strong></td>
                     <td>${pct}</td>
                     ${repCols}
@@ -3568,7 +3694,7 @@
             <tbody>
               ${STATE.dashRecords.slice(0, 120).map(r => `
                 <tr>
-                  <td>${String(r.measured_at).slice(0, 16).replace("T", " ")} (D${r.dat ?? 0})</td>
+                  <td>${fmtLocalTime(r.measured_at, true)} (D${r.dat ?? 0})</td>
                   <td>${r.planter_code} (${r.plant_no})</td>
                   <td>${r.parameter_label}</td>
                   <td>${r.manual_value ?? "—"}</td>
@@ -3603,7 +3729,7 @@
               <tbody>
                 ${trts.map(t => `
                   <tr>
-                    <td>${String(t.applied_at).slice(0, 16).replace("T", " ")} (D${t.dat ?? 0})</td>
+                    <td>${fmtLocalTime(t.applied_at, true)} (D${t.dat ?? 0})</td>
                     <td>${t.group_label}</td>
                     <td>${t.application_type}</td>
                     <td>${t.nahs_um} uM | ${t.humic_mll} mL/L | ${t.nacl_mm} mM</td>
@@ -3663,7 +3789,7 @@
       const cfg = await resp.json();
       document.getElementById("cfgAiProvider").value = cfg.provider || "openrouter";
       document.getElementById("cfgPrimaryModel").value = cfg.primary_model || "google/gemini-2.5-flash";
-      document.getElementById("cfgSecondaryModel").value = cfg.secondary_model || "openai/gpt-4o-mini";
+      document.getElementById("cfgSecondaryModel").value = cfg.secondary_model || "openai/gpt-4o";
       document.getElementById("cfgDualVerify").checked = Boolean(cfg.dual_verify_enabled);
       document.getElementById("cfgOpenRouterKey").value = "";
       document.getElementById("cfgGeminiKey").value = "";
