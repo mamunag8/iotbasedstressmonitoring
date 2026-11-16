@@ -1,0 +1,3445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/data-app/manifest.json" />
+  <title>PhD Field, Meter AI &amp; Lab Data App — Atatürk University</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #cbd5e1;
+      --border-strong: #94a3b8;
+      --text: #0f172a;
+      --text-sub: #334155;
+      --text-muted: #64748b;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --teal: #0d9488;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+      --purple: #7c3aed;
+      --radius: 14px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+    body.dark {
+      --bg: #090d16;
+      --surface: #131c2e;
+      --surface-alt: #0f172a;
+      --border: #1e293b;
+      --border-strong: #334155;
+      --text: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Noto Sans Bengali", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      font-variant-numeric: tabular-nums;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 88px;
+      line-height: 1.4;
+    }
+
+    /* Top App Header */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-bottom: 2px solid #0284c7;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #fff;
+      padding: 2px;
+      border: 1.5px solid #38bdf8;
+    }
+    .brand-title {
+      font-size: 0.92rem;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+    }
+    .brand-sub {
+      font-size: 0.68rem;
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .h-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 7px 10px;
+      border-radius: 9px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .h-btn.unlocked {
+      background: #14532d;
+      border-color: #22c55e;
+      color: #dcfce7;
+    }
+    .h-btn.locked {
+      background: #7c2d12;
+      border-color: #f97316;
+      color: #ffedd5;
+    }
+
+    /* Main Container */
+    .main-wrap {
+      max-width: 1280px;
+      margin: 12px auto;
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Desktop Top Tab Bar + Mobile Sticky Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 120;
+      background: var(--surface);
+      border-top: 2px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.12);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-tab {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 8px 4px;
+      min-height: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-tab .ico {
+      font-size: 1.22rem;
+      line-height: 1;
+    }
+    .nav-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+    }
+    @media (min-width: 920px) {
+      body { padding-bottom: 36px; }
+      .bottom-nav {
+        position: static;
+        max-width: 1280px;
+        margin: 12px auto 0;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        overflow: hidden;
+      }
+      .nav-tab {
+        flex-direction: row;
+        font-size: 0.84rem;
+        gap: 8px;
+        min-height: 48px;
+      }
+    }
+
+    /* Cards & Controls */
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 900;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sec-lbl {
+      font-size: 0.72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    /* Unit Selector (Matches Physical 8-Color 2x2in Greenhouse Tags) */
+    .arm-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .arm-btn {
+      min-height: 48px;
+      border-radius: 11px;
+      border: 2px solid var(--border-strong);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .arm-btn.active.iot {
+      background: #0284c7;
+      border-color: #0369a1;
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+    }
+    .arm-btn.active.manual {
+      background: #d97706;
+      border-color: #92400e;
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(217, 119, 6, 0.35);
+    }
+
+    .trt-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 480px) {
+      .trt-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    }
+    .trt-tile {
+      border-radius: 10px;
+      border: 2.5px solid #334155;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.1s ease;
+      background: #f8fafc;
+      padding: 0;
+    }
+    .trt-tile.selected {
+      transform: scale(1.03);
+      box-shadow: 0 0 0 3px #0284c7, 0 4px 12px rgba(0, 0, 0, 0.22);
+    }
+
+    /* Interactive 64-Plot Greenhouse Randomization Field Map */
+    .walk-toolbar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 8px;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+    }
+    .walk-toolbar select {
+      min-height: 38px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      width: auto;
+      flex: 1;
+      min-width: 145px;
+    }
+    .walk-nav-btn {
+      min-height: 38px;
+      padding: 6px 11px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .field-map-shell {
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 8px;
+      background: #f8fafc;
+      margin-bottom: 10px;
+    }
+    body.dark .field-map-shell {
+      background: #0b1220;
+    }
+    .field-block-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+    .field-grid-8 {
+      display: grid;
+      grid-template-columns: 24px repeat(8, minmax(0, 1fr));
+      gap: 3px;
+      align-items: stretch;
+    }
+    .field-row-lbl {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: var(--text-muted);
+    }
+    .field-col-hdr {
+      text-align: center;
+      font-size: 0.66rem;
+      font-weight: 900;
+      color: var(--text-muted);
+      padding-bottom: 2px;
+    }
+    .field-cell {
+      position: relative;
+      min-height: 44px;
+      border-radius: 7px;
+      border: 1.5px solid rgba(15, 23, 42, 0.45);
+      padding: 3px 2px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      line-height: 1.1;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .field-cell .fc-lbl {
+      font-size: 0.68rem;
+      letter-spacing: -0.02em;
+    }
+    .field-cell .fc-col {
+      font-size: 0.56rem;
+      opacity: 0.85;
+      font-weight: 800;
+    }
+    .field-cell.active-cell {
+      outline: 3px solid #0284c7;
+      box-shadow: 0 0 0 2px #ffffff, 0 4px 12px rgba(2, 132, 199, 0.55);
+      transform: scale(1.06);
+      z-index: 4;
+    }
+    .field-cell.next-cell {
+      outline: 2px dashed #f59e0b;
+      z-index: 3;
+    }
+    .cell-badge {
+      position: absolute;
+      top: -4px;
+      right: -3px;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 3px;
+      border-radius: 999px;
+      font-size: 0.58rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    }
+    .cell-badge.full { background: #16a34a; color: #fff; }
+    .cell-badge.half { background: #f59e0b; color: #0f172a; }
+    .cell-badge.nxt { background: #0f172a; color: #fde047; top: auto; bottom: -4px; right: auto; left: 50%; transform: translateX(-50%); font-size: 0.5rem; height: 12px; }
+    .pathway-bar {
+      margin: 7px 0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      border: 1px dashed #64748b;
+      color: #0f172a;
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .salt-split-axis {
+      display: grid;
+      grid-template-columns: 24px 1fr 1fr;
+      margin-top: 3px;
+      font-size: 0.64rem;
+      font-weight: 900;
+      text-align: center;
+      color: var(--text-sub);
+    }
+    @media (max-width: 460px) {
+      .field-grid-8 { grid-template-columns: 18px repeat(8, minmax(0, 1fr)); gap: 2px; }
+      .field-cell { min-height: 40px; border-radius: 5px; }
+      .field-cell .fc-lbl { font-size: 0.61rem; }
+      .salt-split-axis { grid-template-columns: 18px 1fr 1fr; }
+    }
+    .trt-tile-top {
+      padding: 5px 7px;
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 0.84rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .trt-tile-body {
+      padding: 5px 7px;
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .rep-pill, .plant-pill, .param-chip, .submode-btn {
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 2px solid var(--border-strong);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .rep-pill { flex: 1; min-width: 62px; }
+    .plant-pill { flex: 1; min-width: 82px; }
+    .rep-pill.active, .plant-pill.active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+    body.dark .rep-pill.active, body.dark .plant-pill.active {
+      background: #0284c7;
+      border-color: #7dd3fc;
+    }
+    .param-chip {
+      min-height: 40px;
+      padding: 6px 11px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .param-chip.active, .submode-btn.active {
+      background: var(--teal);
+      color: #ffffff;
+      border-color: #0f766e;
+    }
+
+    .selected-unit-banner {
+      background: linear-gradient(135deg, #0f172a, #1e3a5f);
+      color: #ffffff;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Inputs (16px+ prevents mobile iOS/Android auto-zoom!) */
+    input[type="text"],
+    input[type="number"],
+    input[type="datetime-local"],
+    input[type="date"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 10px;
+      border: 2px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+    }
+    input.giant-num {
+      font-size: 1.55rem;
+      font-weight: 900;
+      min-height: 58px;
+      border-color: var(--primary);
+      text-align: center;
+    }
+    textarea {
+      min-height: 70px;
+      font-weight: 600;
+    }
+
+    /* Camera & AI Verification Box */
+    .cam-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .cam-btn {
+      min-height: 52px;
+      border-radius: 12px;
+      border: 2px dashed #0284c7;
+      background: rgba(2, 132, 199, 0.08);
+      color: var(--primary);
+      font-size: 0.86rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .cam-btn.primary-cam {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+    }
+    .ai-verify-box {
+      margin-top: 10px;
+      border: 2px solid #0284c7;
+      border-radius: 12px;
+      padding: 10px;
+      background: var(--surface-alt);
+      display: none;
+    }
+    .ai-verify-box.show { display: block; }
+    .ai-verify-layout {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    @media (max-width: 460px) {
+      .ai-verify-layout { grid-template-columns: 105px 1fr; }
+    }
+    .ai-thumb {
+      width: 100%;
+      max-height: 130px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1.5px solid var(--border-strong);
+      background: #000;
+      cursor: zoom-in;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+    .status-pill.ok { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .status-pill.warn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .status-pill.err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    /* Save Action Buttons */
+    .save-row {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 480px) {
+      .save-row { grid-template-columns: 1fr; }
+    }
+    .btn-save {
+      min-height: 54px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.96rem;
+      font-weight: 900;
+      cursor: pointer;
+      color: #ffffff;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.32);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn-save.secondary {
+      background: linear-gradient(135deg, #0f172a, #334155);
+      box-shadow: none;
+    }
+    .btn-action {
+      min-height: 42px;
+      padding: 8px 14px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+    .btn-action.teal { background: var(--teal); color: #fff; border-color: #0f766e; }
+    .btn-action.amber { background: var(--amber); color: #fff; border-color: #b45309; }
+
+    /* Multi-Trait Grid */
+    .multi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .multi-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 9px;
+      border-radius: 10px;
+    }
+    .multi-item label {
+      font-size: 0.74rem;
+      font-weight: 800;
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text-sub);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    th {
+      background: var(--surface-alt);
+      color: var(--text-sub);
+      font-weight: 900;
+      text-align: left;
+      padding: 9px 8px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:hover td {
+      background: rgba(2, 132, 199, 0.05);
+    }
+
+    /* KPI Grid */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 9px;
+    }
+    .kpi-box {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-top: 4px solid var(--primary);
+      border-radius: 11px;
+      padding: 10px 12px;
+    }
+    .kpi-lbl { font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+    .kpi-val { font-size: 1.32rem; font-weight: 900; margin-top: 2px; }
+
+    /* Bar Chart Visual */
+    .bar-chart-row {
+      display: grid;
+      grid-template-columns: 95px 1fr 90px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .bar-track {
+      height: 20px;
+      background: var(--surface-alt);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.25s ease;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(9, 13, 22, 0.82);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      overflow-y: auto;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--surface);
+      color: var(--text);
+      border: 2px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 18px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Toast */
+    #toastBox {
+      position: fixed;
+      top: 68px;
+      right: 14px;
+      left: 14px;
+      max-width: 440px;
+      margin: 0 auto;
+      z-index: 900;
+      padding: 12px 15px;
+      border-radius: 11px;
+      color: #fff;
+      font-size: 0.84rem;
+      font-weight: 800;
+      display: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ======================================================================
+       A4 PROFESSOR ACADEMIC PRINT REPORT (@media print + On-Screen Preview)
+       ====================================================================== */
+    #a4PrintSheet {
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid #0f172a;
+      border-radius: 8px;
+      padding: 16mm 14mm;
+      margin-top: 12px;
+      font-family: "Times New Roman", Georgia, Arial, serif;
+    }
+    #a4PrintSheet * {
+      font-family: Arial, "Segoe UI", sans-serif;
+      color: #000000;
+    }
+    .a4-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2.5px solid #000000;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+    .a4-header img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+    }
+    .a4-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      border: 1.5px solid #000;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-size: 9pt;
+      background: #f8fafc;
+    }
+    .a4-sec-title {
+      font-size: 10.5pt;
+      font-weight: 900;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 3px;
+      margin: 12px 0 6px 0;
+    }
+    #a4PrintSheet table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin-bottom: 10px;
+    }
+    #a4PrintSheet th, #a4PrintSheet td {
+      border: 1px solid #000000;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    #a4PrintSheet th {
+      background: #e2e8f0 !important;
+      font-weight: 900;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .a4-sign-box {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+      page-break-inside: avoid;
+    }
+    .a4-sign-panel {
+      border: 1.5px solid #000;
+      padding: 8px 10px;
+      min-height: 76px;
+      font-size: 8.5pt;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+      body.print-landscape {
+        /* Hint for browsers supporting named pages */
+      }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .app-header,
+      .bottom-nav,
+      .no-print,
+      #toastBox,
+      .modal-backdrop {
+        display: none !important;
+      }
+      .main-wrap {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #tabViewPrint {
+        display: block !important;
+      }
+      #tabGrowth, #tabMeters, #tabLab, #tabTreatEnv {
+        display: none !important;
+      }
+      #a4PrintSheet {
+        display: block !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div id="toastBox"></div>
+
+  <!-- Top Sticky Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="https://atauni.edu.tr/wp-content/uploads/2025/01/cropped-icon-1-192x192.png" alt="Ataturk University" />
+        <div>
+          <div class="brand-title">Atatürk Univ. — PhD Field &amp; Lab Data</div>
+          <div class="brand-sub" id="hdrSubInfo">Exp 2 (IoT × Peat-Perlite × H2S × Humic) • Zero-Error AI</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/" class="h-btn" title="Back to PLC Irrigation SCADA">🌿 SCADA</a>
+        <button type="button" class="h-btn" id="btnOfflineQueue" style="display:none; background:#b45309;" onclick="syncOfflineQueue()">⚡ Sync (0)</button>
+        <button type="button" class="h-btn" onclick="openAISettingsModal()" title="Configure OpenRouter / Gemini Vision API">⚙️ AI Key</button>
+        <button type="button" class="h-btn" onclick="toggleDarkMode()" title="Sunlight / Dark Theme">🌓</button>
+        <button type="button" class="h-btn locked" id="btnPinState" onclick="openPinModal()">🔒 Unlock PIN</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop / Mobile Navigation -->
+  <nav class="bottom-nav" aria-label="App Sections">
+    <button type="button" class="nav-tab active" data-tab="Growth" onclick="switchAppTab('Growth')">
+      <span class="ico">🌱</span><span>Growth</span>
+    </button>
+    <button type="button" class="nav-tab" data-tab="Meters" onclick="switchAppTab('Meters')">
+      <span class="ico">📟</span><span>Meters</span>
+    </button>
+    <button type="button" class="nav-tab" data-tab="Lab" onclick="switchAppTab('Lab')">
+      <span class="ico">⚖️</span><span>Lab/Fruit</span>
+    </button>
+    <button type="button" class="nav-tab" data-tab="TreatEnv" onclick="switchAppTab('TreatEnv')">
+      <span class="ico">🧪</span><span>Treat/Env</span>
+    </button>
+    <button type="button" class="nav-tab" data-tab="ViewPrint" onclick="switchAppTab('ViewPrint')">
+      <span class="ico">📊</span><span>View/A4</span>
+    </button>
+  </nav>
+
+  <main class="main-wrap">
+
+    <!-- SHARED UNIT SELECTOR CARD (Visible on Growth, Meters & Lab Tabs) -->
+    <section class="card" id="sharedUnitCard">
+      <div class="card-title">
+        <span>🎯 1. Field Walk Layout &amp; Plant Selector</span>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <input type="datetime-local" id="inpMeasureTime" title="Measurement Date & Time" onchange="refreshTodayFieldProgress()" style="min-height:36px; width:auto; max-width:175px; font-size:0.74rem; padding:4px 8px;" />
+          <select id="selExperiment" onchange="onExperimentChange()" style="width:auto; min-height:36px; padding:4px 8px; font-size:0.76rem;">
+            <option value="EXP2">Exp 2 (64 Plots)</option>
+            <option value="EXP1">Exp 1 (T1–T27)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Mode Switcher & Walk Controls (Shown for Exp 2) -->
+      <div id="exp2WalkWrap">
+        <div class="pill-row" style="margin-bottom:8px;">
+          <button type="button" class="submode-btn active" id="btnViewFieldMap" onclick="setSelectorView('map')">🗺️ 64-Plot Field Map (Walk Order)</button>
+          <button type="button" class="submode-btn" id="btnViewTiles" onclick="setSelectorView('tiles')">🎨 By Treatment (T1–T8)</button>
+        </div>
+
+        <div class="walk-toolbar">
+          <select id="selWalkRoute" onchange="onWalkSettingsChanged()" title="Systematic Greenhouse Walking Route">
+            <option value="snake_row">🐍 Snake Row (1→8, 8→1)</option>
+            <option value="row_lr">➡️ Row L→R (1→8 each row)</option>
+            <option value="col_snake">↕️ Col Snake (Col 1 R1→R4, Col 2 R4→R1)</option>
+            <option value="treatment">🎨 Treatment Order (T1→T8)</option>
+          </select>
+          <select id="selWalkScope" onchange="onWalkSettingsChanged()" title="Walk Both Blocks or Single Block">
+            <option value="ALL">🌿 All 64 Plots (IoT + Manual)</option>
+            <option value="IoT">🤖 IoT Block Only (Cols 1–8)</option>
+            <option value="Manual">🖐️ Manual Mirror Only (Cols 9–16)</option>
+          </select>
+          <button type="button" class="walk-nav-btn" onclick="stepWalkPlot(-1)" title="Previous Plot in Walk Route">◀ Prev</button>
+          <button type="button" class="walk-nav-btn" onclick="stepWalkPlot(1)" title="Skip / Next Plot in Walk Route">Skip ▶</button>
+          <span class="status-pill ok" id="lblWalkProgress">Done Today: 0 / 64</span>
+        </div>
+
+        <!-- 64-PLOT EXPERIMENTAL FIELD LAYOUT MAP -->
+        <div class="field-map-shell" id="fieldMapSection">
+          <div class="field-block-hdr">
+            <span>🖐️ MANUAL BLOCK (MIRROR) — Cols 9–16</span>
+            <span style="color:var(--text-muted); font-size:0.65rem;">Tap any plot to jump there</span>
+          </div>
+          <div class="field-grid-8" id="manualMapGrid"></div>
+          <div class="salt-split-axis">
+            <span></span>
+            <span>🧂 80mM Salt (9–12)</span>
+            <span>🌱 No Salt (13–16)</span>
+          </div>
+
+          <div class="pathway-bar">━━━ CENTRAL MAINLINE &amp; INSPECTION PATHWAY ━━━</div>
+
+          <div class="field-block-hdr">
+            <span>🤖 IoT BLOCK (AUTOMATED) — Cols 1–8</span>
+            <span style="color:var(--primary); font-size:0.65rem;">▶ Active &nbsp;|&nbsp; ✓ Done &nbsp;|&nbsp; ½ P1 Only</span>
+          </div>
+          <div class="field-grid-8" id="iotMapGrid"></div>
+          <div class="salt-split-axis">
+            <span></span>
+            <span>🌱 No Salt (1–4)</span>
+            <span>🧂 80mM Salt (5–8)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legacy Arm + Treatment Tiles + R1..R4 (Shown in Tile View or Exp 1) -->
+      <div id="tileSelectSection" class="hidden">
+        <div class="arm-row" id="armRowWrap" style="grid-template-columns: 1fr 1fr;">
+          <button type="button" class="arm-btn iot active" id="btnArmIoT" onclick="selectArm('IoT')">🤖 IoT Arm</button>
+          <button type="button" class="arm-btn manual" id="btnArmManual" onclick="selectArm('Manual')">🖐️ Manual Arm</button>
+        </div>
+
+        <span class="sec-lbl">Treatment (Matches Physical Pot Tag Color)</span>
+        <div class="trt-grid" id="trtTilesContainer"></div>
+
+        <span class="sec-lbl">Replication / Block</span>
+        <div class="pill-row" id="repPillsContainer">
+          <button type="button" class="rep-pill active" data-rep="R1" onclick="selectRep('R1')">R1</button>
+          <button type="button" class="rep-pill" data-rep="R2" onclick="selectRep('R2')">R2</button>
+          <button type="button" class="rep-pill" data-rep="R3" onclick="selectRep('R3')">R3</button>
+          <button type="button" class="rep-pill" data-rep="R4" onclick="selectRep('R4')">R4</button>
+        </div>
+      </div>
+
+      <!-- Shared Plant Position Selector (Always visible) -->
+      <span class="sec-lbl">Plant Position inside Selected Plot (Auto-Advances P1 ➔ P2 ➔ Next Plot)</span>
+      <div class="pill-row">
+        <button type="button" class="plant-pill active" data-plant="P1" onclick="selectPlant('P1')">🌱 Plant 1 (P1)</button>
+        <button type="button" class="plant-pill" data-plant="P2" onclick="selectPlant('P2')">🌿 Plant 2 (P2)</button>
+        <button type="button" class="plant-pill" data-plant="Planter" onclick="selectPlant('Planter')">🪴 Whole Planter</button>
+        <select id="selTrussNo" style="width:auto; min-height:44px; padding:6px 10px; font-size:0.8rem;" title="Optional Truss #">
+          <option value="">Truss: —</option>
+          <option value="1">Truss 1</option>
+          <option value="2">Truss 2</option>
+          <option value="3">Truss 3</option>
+          <option value="4">Truss 4</option>
+          <option value="5">Truss 5</option>
+          <option value="6">Truss 6</option>
+        </select>
+      </div>
+
+      <!-- Active Unit Summary Banner -->
+      <div class="selected-unit-banner" id="activeUnitBanner">
+        <span id="lblActiveUnit">Selected: Col 1 • IoT • R1T1 • Plant 1</span>
+        <span id="lblActiveDose" style="color:#7dd3fc; font-size:0.74rem;">0 NaCl | 0 H2S | 0 HS</span>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         TAB 1, 2, 3 SHARED SINGLE-OR-MULTI ENTRY & AI CAMERA WORKSPACE
+         ================================================================== -->
+    <section class="card" id="entryWorkspaceCard">
+      <div class="card-title">
+        <span id="lblWorkspaceTitle">🌱 2. Greenhouse Morphological Input</span>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="submode-btn active" id="btnModeSingle" style="min-height:34px; padding:4px 10px; font-size:0.74rem;" onclick="setEntryLayoutMode('single')">1-by-1 + AI Photo</button>
+          <button type="button" class="submode-btn" id="btnModeMulti" style="min-height:34px; padding:4px 10px; font-size:0.74rem;" onclick="setEntryLayoutMode('multi')">⚡ Multi-Parameter Sheet</button>
+        </div>
+      </div>
+
+      <!-- Meters Sub-Category Selector (Shown only on Meters Tab) -->
+      <div class="pill-row hidden" id="metersSubCatBar">
+        <button type="button" class="submode-btn active" data-mcat="porometer" onclick="selectMeterGroup('porometer')">🍃 Porometer</button>
+        <button type="button" class="submode-btn" data-mcat="ir_thermometer" onclick="selectMeterGroup('ir_thermometer')">🌡️ IR / Probe Temp</button>
+        <button type="button" class="submode-btn" data-mcat="handheld_sensor" onclick="selectMeterGroup('handheld_sensor')">📡 Handheld 4-in-1</button>
+        <button type="button" class="submode-btn" data-mcat="drainage" onclick="selectMeterGroup('drainage')">💧 Drainage &amp; EC/pH</button>
+      </div>
+
+      <!-- Lab Sub-Category Selector (Shown only on Lab Tab) -->
+      <div class="pill-row hidden" id="labSubCatBar">
+        <button type="button" class="submode-btn active" data-lcat="fruit_harvest" onclick="selectLabGroup('fruit_harvest')">🍅 Fruit &amp; Ripening</button>
+        <button type="button" class="submode-btn" data-lcat="biomass_leaf_area" onclick="selectLabGroup('biomass_leaf_area')">🌿 Leaf Area &amp; FW/DW</button>
+        <button type="button" class="submode-btn" data-lcat="biochemical_lab" onclick="selectLabGroup('biochemical_lab')">🧪 Chl / Enzymes / Ions</button>
+      </div>
+
+      <!-- Quick Helper Calculators (Drainage % / Ripening Days / RWC %) -->
+      <div id="helperCalcBox" class="hidden" style="background:var(--surface-alt); border:1.5px dashed var(--teal); border-radius:10px; padding:10px; margin-bottom:10px;"></div>
+
+      <!-- SINGLE PARAMETER + AI CAMERA MODE -->
+      <div id="singleEntryPanel">
+        <span class="sec-lbl">Tap Parameter</span>
+        <div class="pill-row" id="paramChipsContainer"></div>
+
+        <div style="display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:end; margin-top:8px;">
+          <div>
+            <label class="sec-lbl" id="lblManualInput">Enter Manual Value (or Snap Screen Photo Below)</label>
+            <input type="number" step="any" inputmode="decimal" class="giant-num" id="inpManualValue" placeholder="0.00" oninput="onManualValueTyped()" />
+          </div>
+          <div style="min-width:86px; text-align:center; padding-bottom:10px;">
+            <div style="font-size:0.68rem; color:var(--text-muted); font-weight:800;">UNIT</div>
+            <div id="lblActiveUnitBadge" style="font-size:1.1rem; font-weight:900; color:var(--primary);">cm</div>
+          </div>
+        </div>
+
+        <!-- Custom Parameter Name Option -->
+        <div style="margin-top:6px;">
+          <button type="button" onclick="toggleCustomParam()" style="background:none; border:none; color:var(--primary); font-size:0.75rem; font-weight:800; cursor:pointer;">+ Or type a custom parameter name</button>
+          <div id="customParamRow" class="hidden" style="display:grid; grid-template-columns:2fr 1fr; gap:8px; margin-top:6px;">
+            <input type="text" id="inpCustomParamName" placeholder="Custom parameter (e.g. Stem Anthocyanin)" />
+            <input type="text" id="inpCustomParamUnit" placeholder="Unit (e.g. score)" />
+          </div>
+        </div>
+
+        <!-- Live Camera & Gallery Upload Buttons -->
+        <input type="file" id="fileCameraCapture" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelected(this)" />
+        <input type="file" id="fileGalleryUpload" accept="image/*" class="hidden" onchange="handlePhotoSelected(this)" />
+        <div class="cam-grid">
+          <button type="button" class="cam-btn primary-cam" onclick="document.getElementById('fileCameraCapture').click()">
+            📷 Live Camera (AI Read)
+          </button>
+          <button type="button" class="cam-btn" onclick="document.getElementById('fileGalleryUpload').click()">
+            🖼️ Upload Screen / Photo
+          </button>
+        </div>
+
+        <!-- AI Side-by-Side Photo Verification Panel -->
+        <div class="ai-verify-box" id="aiVerifyBox">
+          <div class="ai-verify-layout">
+            <img id="imgAiPreview" class="ai-thumb" src="" alt="Captured Photo" onclick="openLightbox(this.src)" />
+            <div>
+              <div id="aiStatusBadge" class="status-pill ok">⏳ Reading with AI...</div>
+              <div style="margin-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div>
+                  <span style="font-size:0.68rem; font-weight:800; color:var(--text-muted);">AI READ VALUE (Separate Col)</span>
+                  <input type="number" step="any" inputmode="decimal" id="inpAiExtractedValue" style="min-height:40px; font-weight:900; border-color:#0d9488;" readonly />
+                </div>
+                <div>
+                  <span style="font-size:0.68rem; font-weight:800; color:var(--text-muted);">MODEL 2 CHECK</span>
+                  <input type="text" id="inpAiSecondaryCheck" style="min-height:40px; font-size:0.82rem;" readonly placeholder="—" />
+                </div>
+              </div>
+              <div id="aiExtraChannelsBox" style="margin-top:6px;"></div>
+              <div id="aiMessageText" style="font-size:0.74rem; color:var(--text-sub); margin-top:5px; font-weight:700;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plausibility Guardrail Warning -->
+        <div id="plausibilityAlert" class="hidden" style="margin-top:8px; padding:9px 12px; border-radius:10px; background:#fef3c7; border:1.5px solid #f59e0b; color:#92400e; font-size:0.78rem; font-weight:800;"></div>
+
+        <div style="margin-top:8px;">
+          <input type="text" id="inpEntryNote" placeholder="Optional note (e.g. leaf 3 abaxial, slight tip burn...)" style="min-height:42px; font-size:0.85rem;" />
+        </div>
+
+        <div class="save-row">
+          <button type="button" class="btn-save" id="btnSaveAndNext" onclick="saveSingleMeasurement(true)">
+            💾 Save &amp; Next (<span id="lblNextTarget">P2</span>) ➔
+          </button>
+          <button type="button" class="btn-save secondary" onclick="saveSingleMeasurement(false)">
+            ✓ Save &amp; Stay on Plant
+          </button>
+        </div>
+      </div>
+
+      <!-- MULTI-PARAMETER FAST SHEET MODE -->
+      <div id="multiEntryPanel" class="hidden">
+        <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:10px; font-weight:700;">
+          Type multiple traits for <strong id="lblMultiPlantTag">IoT-T1-R1 (P1)</strong> at once — blank boxes are skipped automatically:
+        </p>
+        <div class="multi-grid" id="multiInputsContainer"></div>
+        <div style="margin-top:8px;">
+          <input type="text" id="inpMultiNote" placeholder="Optional note for this batch..." style="min-height:42px;" />
+        </div>
+        <div class="save-row">
+          <button type="button" class="btn-save" onclick="saveMultiSheet(true)">💾 Save All &amp; Next (<span id="lblMultiNextTarget">P2</span>) ➔</button>
+          <button type="button" class="btn-save secondary" onclick="saveMultiSheet(false)">✓ Save All Filled</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent 5 Entries Quick Strip (Below Input Card so user sees instant confirmation) -->
+    <section class="card" id="recentMiniCard">
+      <div class="card-title">
+        <span>🕒 Last Saved Entries (Tap ✏️ to Edit)</span>
+        <button type="button" class="btn-action" style="min-height:32px; padding:4px 10px; font-size:0.74rem;" onclick="switchAppTab('ViewPrint')">View All / Print A4 ➔</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time / DAT</th>
+              <th>Planter</th>
+              <th>Parameter</th>
+              <th>Manual</th>
+              <th>AI Photo</th>
+              <th>Final</th>
+              <th>Edit</th>
+            </tr>
+          </thead>
+          <tbody id="recentMiniTbody">
+            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No entries yet — select a plant above to start!</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         TAB 4: GROUP / SINGLE TREATMENTS & HOBO CLIMATE LOGGER UPLOAD
+         ================================================================== -->
+    <div id="tabTreatEnv" class="hidden" style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Card A: Treatment & Fertigation Application Input -->
+      <section class="card">
+        <div class="card-title">
+          <span>🧪 Log Treatment Application (Group or Individual)</span>
+        </div>
+
+        <span class="sec-lbl">1-Tap Group Presets (Or Customize Below)</span>
+        <div class="pill-row">
+          <button type="button" class="param-chip" onclick="applyTreatmentPreset('all_h2s')">💧 All H2S Plots (T2,T4,T6,T8 • 32 Planters)</button>
+          <button type="button" class="param-chip" onclick="applyTreatmentPreset('all_humic')">🟫 All Humic Plots (T3,T4,T7,T8 • 32 Planters)</button>
+          <button type="button" class="param-chip" onclick="applyTreatmentPreset('all_salt')">🧂 All 80 mM Salt (T5–T8 • 32 Planters)</button>
+          <button type="button" class="param-chip" onclick="applyTreatmentPreset('all_64')">🌿 All 64 Planters (IoT + Manual)</button>
+          <button type="button" class="param-chip" onclick="applyTreatmentPreset('single')">🪴 Single Planter</button>
+        </div>
+
+        <div class="multi-grid" style="margin-top:8px;">
+          <div class="multi-item">
+            <label>Application Date &amp; Time *</label>
+            <input type="datetime-local" id="trtAppliedAt" />
+          </div>
+          <div class="multi-item">
+            <label>Application Type</label>
+            <select id="trtAppType">
+              <option value="nahs_humic_pulse">10-Day H2S / Humic Root Pulse</option>
+              <option value="pre_stress_priming">Pre-Stress Priming (4–7 DAT)</option>
+              <option value="salinity_step">Stepwise NaCl Salinity Application</option>
+              <option value="nutrient_tank_refill">A/B Nutrient Tank Refill (Sol 1/2/3)</option>
+              <option value="ph_ec_calibration">pH (4.01/6.86) &amp; EC Meter Calibration</option>
+              <option value="ipm_spray">Foliar / Pest Management</option>
+              <option value="other">Other Operation</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Target Arms</label>
+            <div style="display:flex; gap:10px; padding-top:8px; font-weight:800;">
+              <label><input type="checkbox" id="chkTrtIoT" checked onchange="updateTrtCountPreview()" /> IoT</label>
+              <label><input type="checkbox" id="chkTrtManual" checked onchange="updateTrtCountPreview()" /> Manual</label>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <span class="sec-lbl">Target Treatments (Tap to Toggle Multiple)</span>
+          <div class="pill-row" id="trtMultiSelectBtns"></div>
+          <span class="sec-lbl">Target Replicates</span>
+          <div class="pill-row" id="trtRepSelectBtns">
+            <button type="button" class="param-chip active" data-trep="R1" onclick="toggleTrtRep('R1')">R1</button>
+            <button type="button" class="param-chip active" data-trep="R2" onclick="toggleTrtRep('R2')">R2</button>
+            <button type="button" class="param-chip active" data-trep="R3" onclick="toggleTrtRep('R3')">R3</button>
+            <button type="button" class="param-chip active" data-trep="R4" onclick="toggleTrtRep('R4')">R4</button>
+          </div>
+          <div id="lblTrtSummaryScope" style="font-size:0.8rem; font-weight:900; color:var(--primary); margin-bottom:8px;"></div>
+        </div>
+
+        <div class="multi-grid">
+          <div class="multi-item">
+            <label>NaHS Dose (uM)</label>
+            <input type="number" step="any" inputmode="decimal" id="trtNahsUm" value="25" />
+          </div>
+          <div class="multi-item">
+            <label>10 mM Stock Weighed (mg / 100 mL)</label>
+            <input type="number" step="any" inputmode="decimal" id="trtNahsStockMg" placeholder="80.09" />
+          </div>
+          <div class="multi-item">
+            <label>LIQHUMUS NK Dose (mL/L)</label>
+            <input type="number" step="any" inputmode="decimal" id="trtHumicMll" value="4" />
+          </div>
+          <div class="multi-item">
+            <label>NaCl Dose (mM)</label>
+            <input type="number" step="any" inputmode="decimal" id="trtNaclMm" value="0" />
+          </div>
+          <div class="multi-item">
+            <label>Volume per Planter (L)</label>
+            <input type="number" step="any" inputmode="decimal" id="trtVolPlanter" value="1.0" />
+          </div>
+          <div class="multi-item">
+            <label>Supplied Solution EC (uS/cm)</label>
+            <input type="number" step="1" inputmode="numeric" id="trtSolEc" placeholder="2300" />
+          </div>
+          <div class="multi-item">
+            <label>Supplied Solution pH (Target 6.0)</label>
+            <input type="number" step="0.01" inputmode="decimal" id="trtSolPh" placeholder="6.00" />
+          </div>
+          <div class="multi-item">
+            <label>Hours After Morning Irrig (&gt;= 2h)</label>
+            <input type="number" step="0.1" inputmode="decimal" id="trtHrsAfter" placeholder="2.5" />
+          </div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <input type="text" id="trtNotes" placeholder="Notes (e.g. Delivered within 22 min of fresh stock preparation...)" />
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn-save" style="width:100%;" onclick="saveTreatmentApplication()">🧪 Save Treatment Application</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Applied At / DAT</th>
+                <th>Scope / Planters</th>
+                <th>Type</th>
+                <th>Doses (H2S / HS / NaCl)</th>
+                <th>EC / pH / Vol</th>
+                <th>Notes</th>
+                <th>Del</th>
+              </tr>
+            </thead>
+            <tbody id="trtHistoryTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Card B: Periodic HOBO Climate Logger Upload -->
+      <section class="card">
+        <div class="card-title">
+          <span>🌡️ Upload Greenhouse Environmental Logger Sheet (HOBO Temp/Light &amp; Temp/RH)</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:10px;">
+          Upload <strong>.csv</strong> or <strong>.xlsx</strong> files from your <strong>Onset HOBO Pendant UA-002-64 (Temp + Lux)</strong> or <strong>HOBO Temp/RH Logger</strong>. Duplicate timestamps are skipped automatically and <strong>VPD (kPa)</strong> is computed for every row.
+        </p>
+        <div class="multi-grid">
+          <div class="multi-item">
+            <label>Logger Instrument</label>
+            <select id="envLoggerType">
+              <option value="hobo_ua002_light_temp">HOBO UA-002-64 (Air Temp + Light Lux)</option>
+              <option value="hobo_temp_rh">HOBO ("Boro") Air Temp + Relative Humidity (%)</option>
+              <option value="generic_climate">Combined Temp + RH + Light Sheet</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Greenhouse Position</label>
+            <select id="envLocationTag">
+              <option value="IoT_Half">IoT Arm Half (Tank End — Blocks 1–4)</option>
+              <option value="Manual_Half">Manual Arm Half (Mirror End — Blocks 1–4)</option>
+              <option value="Canopy_Center">Greenhouse Center Canopy</option>
+              <option value="Outside">Outside Glasshouse Reference</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Select Datasheet (.csv / .xlsx)</label>
+            <input type="file" id="inpClimateFile" accept=".csv,.xlsx,.txt" style="padding:8px;" />
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn-save" style="width:100%; background:linear-gradient(135deg,#0284c7,#0d9488);" onclick="uploadClimateSheet()">
+            ☁️ Upload &amp; Compute VPD Time-Series
+          </button>
+        </div>
+        <div id="climateSummaryStatsBox" class="kpi-row" style="margin-top:12px;"></div>
+      </section>
+    </div>
+
+    <!-- ==================================================================
+         TAB 5: INTERACTIVE DASHBOARD, INLINE EDITOR & EN/TR A4 PRINT STUDIO
+         ================================================================== -->
+    <div id="tabViewPrint" class="hidden" style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Filter & Export Control Card (Hidden when printing A4) -->
+      <section class="card no-print">
+        <div class="card-title">
+          <span>📊 Filter Data, Edit Records &amp; Prepare Professor A4 Sheet</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-action teal" onclick="exportDataset('excel')">📥 Excel (.xlsx)</button>
+            <button type="button" class="btn-action" onclick="exportDataset('csv')">📄 CSV</button>
+            <button type="button" class="btn-action primary" onclick="triggerA4Print()">🖨️ Print A4 Report</button>
+          </div>
+        </div>
+
+        <div class="multi-grid">
+          <div class="multi-item">
+            <label>Experiment</label>
+            <select id="fltExp" onchange="loadDashboardData()">
+              <option value="EXP2">Experiment 2</option>
+              <option value="EXP1">Experiment 1</option>
+              <option value="ALL">All</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Fertigation Arm</label>
+            <select id="fltArm" onchange="loadDashboardData()">
+              <option value="ALL">Both (IoT + Manual)</option>
+              <option value="IoT">IoT Arm Only</option>
+              <option value="Manual">Manual Arm Only</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Treatment</label>
+            <select id="fltTrt" onchange="loadDashboardData()">
+              <option value="ALL">All Treatments (T1–T8)</option>
+              <option value="T1">T1 (0 NaCl, 0 H2S, 0 HS)</option>
+              <option value="T2">T2 (0 NaCl + H2S)</option>
+              <option value="T3">T3 (0 NaCl + HS)</option>
+              <option value="T4">T4 (0 NaCl + H2S + HS)</option>
+              <option value="T5">T5 (80 NaCl Control)</option>
+              <option value="T6">T6 (80 NaCl + H2S)</option>
+              <option value="T7">T7 (80 NaCl + HS)</option>
+              <option value="T8">T8 (80 NaCl + H2S + HS)</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Category</label>
+            <select id="fltCategory" onchange="onFilterCategoryChange()">
+              <option value="ALL">All Categories</option>
+              <option value="morphology">Morphology &amp; Growth</option>
+              <option value="porometer">Porometer / Gas Exchange</option>
+              <option value="ir_thermometer">IR &amp; Probe Thermometer</option>
+              <option value="handheld_sensor">Handheld 4-in-1 Sensor</option>
+              <option value="drainage">Daily Drainage &amp; EC/pH</option>
+              <option value="fruit_harvest">Fruit Yield &amp; Ripening</option>
+              <option value="biomass_leaf_area">Leaf Area &amp; Biomass</option>
+              <option value="biochemical_lab">Biochemical &amp; Enzymes</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>Parameter</label>
+            <select id="fltParam" onchange="loadDashboardData()">
+              <option value="ALL">All Parameters</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>From Date</label>
+            <input type="date" id="fltStart" onchange="loadDashboardData()" />
+          </div>
+          <div class="multi-item">
+            <label>To Date</label>
+            <input type="date" id="fltEnd" onchange="loadDashboardData()" />
+          </div>
+          <div class="multi-item">
+            <label>A4 Report Language</label>
+            <select id="selPrintLang" onchange="renderA4Report()">
+              <option value="en">🇬🇧 English (EN)</option>
+              <option value="tr">🇹🇷 Türkçe (TR)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:0.78rem; font-weight:800;">
+          <label><input type="checkbox" id="chkPrintSummary" checked onchange="renderA4Report()" /> Include Mean +/- SE Summary Table</label>
+          <label><input type="checkbox" id="chkPrintReps" checked onchange="renderA4Report()" /> Include R1–R4 Columns</label>
+          <label><input type="checkbox" id="chkPrintRaw" onchange="renderA4Report()" /> Include Individual Plant Rows</label>
+          <label><input type="checkbox" id="chkPrintTrtEnv" checked onchange="renderA4Report()" /> Include Treatments &amp; Climate</label>
+        </div>
+      </section>
+
+      <!-- Live KPI Summary Cards (Hidden on A4 Print) -->
+      <div class="kpi-row no-print" id="dashKpiRow">
+        <div class="kpi-box"><div class="kpi-lbl">Filtered Records</div><div class="kpi-val" id="kpiTotalRecs">0</div></div>
+        <div class="kpi-box" style="border-top-color:#0d9488;"><div class="kpi-lbl">Planters Covered</div><div class="kpi-val" id="kpiPlanters">0 / 64</div></div>
+        <div class="kpi-box" style="border-top-color:#16a34a;"><div class="kpi-lbl">Parameters</div><div class="kpi-val" id="kpiParams">0</div></div>
+        <div class="kpi-box" style="border-top-color:#7c3aed;"><div class="kpi-lbl">Photo / AI Verified</div><div class="kpi-val" id="kpiPhotoRecs">0</div></div>
+      </div>
+
+      <!-- Visual Treatment Comparison Bars (Hidden on A4 Print) -->
+      <section class="card no-print">
+        <div class="card-title">
+          <span>📈 Treatment Comparison Chart (Mean +/- SE)</span>
+          <select id="selChartParam" onchange="renderComparisonBars()" style="width:auto; min-height:36px; font-size:0.78rem;"></select>
+        </div>
+        <div id="chartBarsContainer"></div>
+      </section>
+
+      <!-- Inline Editable Records Table (Hidden on A4 Print) -->
+      <section class="card no-print">
+        <div class="card-title">
+          <span>✏️ Collected Data Table (Click Edit to Modify Any Value)</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date / DAT</th>
+                <th>Arm &amp; Planter</th>
+                <th>Plant</th>
+                <th>Parameter</th>
+                <th>Manual Col</th>
+                <th>AI Photo Col</th>
+                <th>Final Value</th>
+                <th>Photo</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fullDataTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           A4 ACADEMIC PROFESSOR REPORT SHEET (Live Preview + Exact Print)
+           ================================================================ -->
+      <section id="a4PrintSheet">
+        <div class="a4-header">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <img src="https://atauni.edu.tr/wp-content/uploads/2025/01/cropped-icon-1-192x192.png" alt="Ataturk University" />
+            <div>
+              <div id="a4UniTitle" style="font-size:12pt; font-weight:900;">ATATÜRK UNIVERSITY • FACULTY OF AGRICULTURE</div>
+              <div id="a4DeptSub" style="font-size:9.5pt; font-weight:700;">Department of Horticulture — PhD Experimental Data Report</div>
+              <div id="a4ExpTitle" style="font-size:8.8pt; margin-top:2px;">Experiment 2: IoT vs. Manual Fertigation × Salinity (0/80 mM NaCl) × NaHS (25 uM) × Humic Acid (4 mL/L)</div>
+            </div>
+          </div>
+          <div style="text-align:right; font-size:8.5pt;">
+            <div><strong id="a4DateLbl">Report Date:</strong> <span id="a4DateVal"></span></div>
+            <div><strong>Researcher:</strong> Md Mamunur Reza</div>
+            <div id="a4DatSpan"></div>
+          </div>
+        </div>
+
+        <div class="a4-meta-grid" id="a4MetaGrid"></div>
+
+        <div id="a4SummarySection">
+          <div class="a4-sec-title" id="a4Sec1Title">1. Treatment Summary Table (Mean +/- SE)</div>
+          <div id="a4SummaryTableWrap"></div>
+        </div>
+
+        <div id="a4RawSection" class="hidden">
+          <div class="a4-sec-title" id="a4Sec2Title">2. Individual Recorded Observations</div>
+          <div id="a4RawTableWrap"></div>
+        </div>
+
+        <div id="a4TrtEnvSection">
+          <div class="a4-sec-title" id="a4Sec3Title">3. Recent Treatment Applications &amp; Greenhouse Microclimate</div>
+          <div id="a4TrtEnvWrap"></div>
+        </div>
+
+        <div class="a4-sign-box">
+          <div class="a4-sign-panel">
+            <strong id="a4ProfNotesLbl">Supervisor Observations / Instructions (Prof. Dr. Ertan Yıldırım / Committee):</strong>
+            <div style="margin-top:42px; border-top:1px dotted #64748b; font-size:7.5pt; color:#475569;">Notes</div>
+          </div>
+          <div class="a4-sign-panel" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div><strong id="a4SignLbl">Reviewed By / Signature &amp; Date:</strong></div>
+            <div style="border-top:1px solid #000; padding-top:4px; font-size:8pt; text-align:center;">
+              Prof. Dr. Ertan Yıldırım / Prof. Dr. Melek Ekinci
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ====================================================================
+       MODAL 1: EDIT MEASUREMENT RECORD
+       ==================================================================== -->
+  <div class="modal-backdrop" id="editRecordModal">
+    <div class="modal-card">
+      <div class="card-title">
+        <span>✏️ Edit Measurement Record</span>
+        <button type="button" class="btn-action" onclick="closeModal('editRecordModal')">✕</button>
+      </div>
+      <input type="hidden" id="editRecId" />
+      <div class="multi-grid">
+        <div class="multi-item">
+          <label>Arm</label>
+          <select id="editArm"><option value="IoT">IoT</option><option value="Manual">Manual</option><option value="EXP1">EXP1</option></select>
+        </div>
+        <div class="multi-item">
+          <label>Treatment</label>
+          <input type="text" id="editTrt" />
+        </div>
+        <div class="multi-item">
+          <label>Replicate</label>
+          <input type="text" id="editRep" />
+        </div>
+        <div class="multi-item">
+          <label>Plant Position</label>
+          <select id="editPlant"><option value="P1">P1</option><option value="P2">P2</option><option value="Planter">Planter</option><option value="Pooled">Pooled</option></select>
+        </div>
+        <div class="multi-item">
+          <label>Manual Value</label>
+          <input type="number" step="any" inputmode="decimal" id="editManualVal" />
+        </div>
+        <div class="multi-item">
+          <label>AI Photo Value (Read-Only)</label>
+          <input type="number" step="any" id="editAiVal" readonly style="opacity:0.75;" />
+        </div>
+        <div class="multi-item">
+          <label>Final Verified Value *</label>
+          <input type="number" step="any" inputmode="decimal" id="editFinalVal" style="border-color:var(--green); font-weight:900;" />
+        </div>
+        <div class="multi-item">
+          <label>Unit</label>
+          <input type="text" id="editUnit" />
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="sec-lbl">Notes</label>
+        <input type="text" id="editNotes" />
+      </div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button type="button" class="btn-save" style="flex:1;" onclick="submitRecordEdit()">💾 Save Changes</button>
+        <button type="button" class="btn-action" style="background:#fee2e2; color:#991b1b; border-color:#fca5a5;" onclick="deleteCurrentModalRecord()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 2: OPERATOR SECURITY PIN UNLOCK
+       ==================================================================== -->
+  <div class="modal-backdrop" id="pinModal">
+    <div class="modal-card" style="max-width:390px;">
+      <div class="card-title">
+        <span>🔒 Operator Security PIN</span>
+        <button type="button" class="btn-action" onclick="closeModal('pinModal')">✕</button>
+      </div>
+      <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:10px;">
+        Enter the same Security PIN used on <strong>iotserver.mmreza.com</strong> to unlock saving, editing, and AI settings on this device:
+      </p>
+      <input type="password" id="inpOperatorPin" placeholder="Enter PIN..." onkeydown="if(event.key==='Enter')savePinUnlock()" />
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button type="button" class="btn-save" style="flex:1;" onclick="savePinUnlock()">🔓 Unlock Device</button>
+        <button type="button" class="btn-action" onclick="lockDevicePin()">Lock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 3: PHD DUAL-AI VISION API KEY SETTINGS
+       ==================================================================== -->
+  <div class="modal-backdrop" id="aiSettingsModal">
+    <div class="modal-card">
+      <div class="card-title">
+        <span>⚙️ PhD Zero-Error AI Vision Settings</span>
+        <button type="button" class="btn-action" onclick="closeModal('aiSettingsModal')">✕</button>
+      </div>
+      <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:10px;">
+        Keys are saved encrypted/masked on your private server database (never exposed publicly). Enable <strong>Dual-AI Cross-Check</strong> so two independent paid frontier models verify every meter digit!
+      </p>
+      <div class="multi-item" style="margin-bottom:8px;">
+        <label>Primary Provider</label>
+        <select id="cfgAiProvider">
+          <option value="openrouter">OpenRouter (Recommended — Paid Multi-Model Dual Check)</option>
+          <option value="gemini">Google AI Studio Direct (Gemini API)</option>
+        </select>
+      </div>
+      <div class="multi-item" style="margin-bottom:8px;">
+        <label>OpenRouter API Key (sk-or-v1-...)</label>
+        <input type="password" id="cfgOpenRouterKey" placeholder="Paste sk-or-v1-... key here" />
+        <div id="lblOrKeyStatus" style="font-size:0.7rem; color:var(--green); margin-top:3px; font-weight:800;"></div>
+      </div>
+      <div class="multi-grid" style="margin-bottom:8px;">
+        <div class="multi-item">
+          <label>Primary Vision Model (Model 1)</label>
+          <select id="cfgPrimaryModel">
+            <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Fast &amp; Accurate)</option>
+            <option value="google/gemini-2.5-pro">google/gemini-2.5-pro (Maximum Precision)</option>
+            <option value="openai/gpt-4o">openai/gpt-4o</option>
+            <option value="anthropic/claude-sonnet-4.5">anthropic/claude-sonnet-4.5</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Cross-Check Model (Model 2)</label>
+          <select id="cfgSecondaryModel">
+            <option value="openai/gpt-4o-mini">openai/gpt-4o-mini (Fast Digit Check)</option>
+            <option value="openai/gpt-4o">openai/gpt-4o (Flagship Check)</option>
+            <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
+            <option value="anthropic/claude-sonnet-4.5">anthropic/claude-sonnet-4.5</option>
+          </select>
+        </div>
+      </div>
+      <div class="multi-item" style="margin-bottom:8px;">
+        <label><input type="checkbox" id="cfgDualVerify" checked /> Enable Parallel Dual-AI Digit Cross-Check (100% PhD Zero-Error Mode)</label>
+      </div>
+      <div class="multi-item" style="margin-bottom:10px;">
+        <label>Optional Google Gemini Direct Key (AIzaSy...)</label>
+        <input type="password" id="cfgGeminiKey" placeholder="Optional AIzaSy... key" />
+        <div id="lblGemKeyStatus" style="font-size:0.7rem; color:var(--green); margin-top:3px; font-weight:800;"></div>
+      </div>
+      <button type="button" class="btn-save" style="width:100%;" onclick="saveAISettings()">💾 Save AI Vision Configuration</button>
+    </div>
+  </div>
+
+  <!-- Photo Zoom Lightbox -->
+  <div class="modal-backdrop" id="photoLightbox" onclick="closeModal('photoLightbox')">
+    <img id="imgLightboxFull" src="" alt="Full Photo" style="max-width:96vw; max-height:92vh; border-radius:10px; border:2px solid #fff;" />
+  </div>
+
+  <script>
+    const DEFAULT_PIN_CHECK = "atauniiot";
+    let CATALOG = { exp2_treatments: {}, exp2_field_layout: [], exp1_treatments: {}, parameters: [], transplant_date: "2026-10-16" };
+    const FALLBACK_FIELD_COLORS = {
+      T1: { bg: "#1565C0", text: "#FFFFFF" },
+      T2: { bg: "#2E7D32", text: "#FFFFFF" },
+      T3: { bg: "#E65100", text: "#FFFFFF" },
+      T4: { bg: "#C62828", text: "#FFFFFF" },
+      T5: { bg: "#FACC15", text: "#0F172A" },
+      T6: { bg: "#6A1B9A", text: "#FFFFFF" },
+      T7: { bg: "#81D4FA", text: "#0F172A" },
+      T8: { bg: "#1B4D1E", text: "#FFFFFF" },
+    };
+    const FALLBACK_IOT_ROWS = {
+      R1: ["T1", "T2", "T4", "T3", "T5", "T6", "T8", "T7"],
+      R2: ["T2", "T3", "T1", "T4", "T6", "T7", "T8", "T5"],
+      R3: ["T1", "T4", "T3", "T2", "T7", "T8", "T6", "T5"],
+      R4: ["T3", "T2", "T4", "T1", "T5", "T8", "T7", "T6"],
+    };
+    const FALLBACK_MANUAL_ROWS = {
+      R1: ["T7", "T8", "T6", "T5", "T3", "T4", "T2", "T1"],
+      R2: ["T5", "T8", "T7", "T6", "T4", "T1", "T3", "T2"],
+      R3: ["T5", "T6", "T8", "T7", "T2", "T3", "T4", "T1"],
+      R4: ["T6", "T7", "T8", "T5", "T1", "T4", "T2", "T3"],
+    };
+    let STATE = {
+      tab: "Growth",
+      entryMode: "single",
+      selectorView: localStorage.getItem("phd_selector_view") || "map",
+      walkRoute: localStorage.getItem("phd_walk_route") || "snake_row",
+      walkScope: localStorage.getItem("phd_walk_scope") || "ALL",
+      experiment: "EXP2",
+      arm: "IoT",
+      treatment: "T1",
+      rep: "R1",
+      plant: "P1",
+      meterGroup: "porometer",
+      labGroup: "fruit_harvest",
+      activeParamKey: "plant_height_cm",
+      customParamOpen: false,
+      currentPhotoRelPath: null,
+      currentAiResult: null,
+      todayRecords: [],
+      trtSelectedTreatments: ["T2", "T4", "T6", "T8"],
+      trtSelectedReps: ["R1", "R2", "R3", "R4"],
+      dashRecords: [],
+      dashSummary: { summary_rows: [], unique_planters_measured: [] },
+      dashTreatments: [],
+      dashClimate: { location_stats: [] },
+    };
+
+    function showToast(msg, bg = "#0f172a") {
+      const box = document.getElementById("toastBox");
+      box.textContent = msg;
+      box.style.background = bg;
+      box.style.display = "block";
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { box.style.display = "none"; }, 3800);
+    }
+
+    function localIsoNow() {
+      const d = new Date();
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
+
+    // PIN Management (Shared with main iotserver.mmreza.com session)
+    function getStoredPin() {
+      const p = localStorage.getItem("atauni_operator_pin") || "";
+      if (p) return p;
+      if (sessionStorage.getItem("atauni_site_unlocked") === "true") {
+        localStorage.setItem("atauni_operator_pin", DEFAULT_PIN_CHECK);
+        return DEFAULT_PIN_CHECK;
+      }
+      return "";
+    }
+
+    function updatePinUI() {
+      const unlocked = Boolean(getStoredPin());
+      const btn = document.getElementById("btnPinState");
+      if (unlocked) {
+        btn.textContent = "🔓 Unlocked";
+        btn.className = "h-btn unlocked";
+      } else {
+        btn.textContent = "🔒 Unlock PIN";
+        btn.className = "h-btn locked";
+      }
+    }
+
+    function openPinModal() {
+      document.getElementById("inpOperatorPin").value = "";
+      document.getElementById("pinModal").classList.add("open");
+      setTimeout(() => document.getElementById("inpOperatorPin").focus(), 100);
+    }
+
+    function savePinUnlock() {
+      const val = (document.getElementById("inpOperatorPin").value || "").trim();
+      if (val.toLowerCase() !== DEFAULT_PIN_CHECK.toLowerCase()) {
+        showToast("Incorrect Security PIN", "#dc2626");
+        return;
+      }
+      localStorage.setItem("atauni_operator_pin", val);
+      sessionStorage.setItem("atauni_site_unlocked", "true");
+      updatePinUI();
+      closeModal("pinModal");
+      showToast("🔓 Device unlocked for PhD data entry & editing!", "#16a34a");
+      syncOfflineQueue();
+    }
+
+    function lockDevicePin() {
+      localStorage.removeItem("atauni_operator_pin");
+      sessionStorage.removeItem("atauni_site_unlocked");
+      updatePinUI();
+      closeModal("pinModal");
+      showToast("🔒 Switched to Read-Only Mode", "#d97706");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function openLightbox(src) {
+      if (!src) return;
+      document.getElementById("imgLightboxFull").src = src;
+      document.getElementById("photoLightbox").classList.add("open");
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("phd_data_dark", document.body.classList.contains("dark") ? "1" : "0");
+    }
+
+    function apiHeaders(extra = {}) {
+      return {
+        "Content-Type": "application/json",
+        "X-Operator-Pin": getStoredPin(),
+        ...extra,
+      };
+    }
+
+    // Initialization
+    async function initApp() {
+      if (localStorage.getItem("phd_data_dark") === "1") {
+        document.body.classList.add("dark");
+      }
+      document.getElementById("inpMeasureTime").value = localIsoNow();
+      document.getElementById("trtAppliedAt").value = localIsoNow();
+      document.getElementById("selWalkRoute").value = STATE.walkRoute;
+      document.getElementById("selWalkScope").value = STATE.walkScope;
+      updatePinUI();
+      updateOfflineBadge();
+
+      try {
+        const res = await fetch("/api/v1/field-data/catalog");
+        CATALOG = await res.json();
+      } catch (e) {
+        showToast("Offline mode active — entries will queue locally", "#d97706");
+      }
+
+      renderTreatmentTiles();
+      renderTrtBatchButtons();
+      populateFilterParameters();
+      switchAppTab("Growth");
+      setSelectorView(STATE.selectorView);
+      refreshRecentMiniTable();
+      refreshTodayFieldProgress();
+    }
+
+    // Field Layout & Systematic Walking Engine
+    function getExp2FieldLayout() {
+      if (Array.isArray(CATALOG.exp2_field_layout) && CATALOG.exp2_field_layout.length === 64) {
+        return CATALOG.exp2_field_layout;
+      }
+      const plots = [];
+      for (const [arm, rows, colStart] of [["IoT", FALLBACK_IOT_ROWS, 1], ["Manual", FALLBACK_MANUAL_ROWS, 9]]) {
+        for (const rIdx of [1, 2, 3, 4]) {
+          const rep = `R${rIdx}`;
+          rows[rep].forEach((tKey, off) => {
+            const col = colStart + off;
+            const c = FALLBACK_FIELD_COLORS[tKey];
+            plots.push({
+              arm, rep, row_idx: rIdx, col, treatment: tKey,
+              plot_label: `${rep}${tKey}`, plot_code: `C${String(col).padStart(2, "0")}-${rep}${tKey}`,
+              map_bg_hex: c.bg, map_text_hex: c.text,
+            });
+          });
+        }
+      }
+      return plots;
+    }
+
+    function lookupExp2Plot(arm, rep, treatment) {
+      return getExp2FieldLayout().find(p => p.arm === arm && p.rep === rep && p.treatment === treatment) || null;
+    }
+
+    function buildWalkSequence() {
+      const allPlots = getExp2FieldLayout();
+      const scope = STATE.walkScope;
+      const route = STATE.walkRoute;
+      const arms = scope === "IoT" ? ["IoT"] : (scope === "Manual" ? ["Manual"] : ["IoT", "Manual"]);
+
+      const seq = [];
+      if (route === "treatment") {
+        for (const arm of arms) {
+          for (let t = 1; t <= 8; t++) {
+            for (let r = 1; r <= 4; r++) {
+              const p = allPlots.find(x => x.arm === arm && x.treatment === `T${t}` && x.rep === `R${r}`);
+              if (p) seq.push(p);
+            }
+          }
+        }
+        return seq;
+      }
+
+      if (route === "col_snake") {
+        for (const arm of arms) {
+          const colStart = arm === "IoT" ? 1 : 9;
+          for (let off = 0; off < 8; off++) {
+            const col = colStart + off;
+            const colPlots = allPlots.filter(x => x.arm === arm && x.col === col).sort((a, b) => a.row_idx - b.row_idx);
+            if (off % 2 === 1) colPlots.reverse();
+            seq.push(...colPlots);
+          }
+        }
+        return seq;
+      }
+
+      // snake_row or row_lr
+      for (const arm of arms) {
+        for (let r = 1; r <= 4; r++) {
+          const rowPlots = allPlots.filter(x => x.arm === arm && x.row_idx === r).sort((a, b) => a.col - b.col);
+          if (route === "snake_row" && r % 2 === 0) {
+            rowPlots.reverse();
+          }
+          seq.push(...rowPlots);
+        }
+      }
+      return seq;
+    }
+
+    function setSelectorView(view) {
+      STATE.selectorView = STATE.experiment === "EXP1" ? "tiles" : view;
+      localStorage.setItem("phd_selector_view", STATE.selectorView);
+      const isExp1 = STATE.experiment === "EXP1";
+      document.getElementById("exp2WalkWrap").classList.toggle("hidden", isExp1);
+      document.getElementById("fieldMapSection").classList.toggle("hidden", isExp1 || STATE.selectorView !== "map");
+      document.getElementById("tileSelectSection").classList.toggle("hidden", !isExp1 && STATE.selectorView === "map");
+      document.getElementById("btnViewFieldMap")?.classList.toggle("active", STATE.selectorView === "map");
+      document.getElementById("btnViewTiles")?.classList.toggle("active", STATE.selectorView === "tiles");
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function onWalkSettingsChanged() {
+      STATE.walkRoute = document.getElementById("selWalkRoute").value;
+      STATE.walkScope = document.getElementById("selWalkScope").value;
+      localStorage.setItem("phd_walk_route", STATE.walkRoute);
+      localStorage.setItem("phd_walk_scope", STATE.walkScope);
+      if (STATE.walkScope === "IoT" && STATE.arm !== "IoT") selectPlotFromMap("IoT", STATE.treatment, STATE.rep, true);
+      if (STATE.walkScope === "Manual" && STATE.arm !== "Manual") selectPlotFromMap("Manual", STATE.treatment, STATE.rep, true);
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function getActiveProgressCategory() {
+      if (STATE.tab === "Meters") return STATE.meterGroup;
+      if (STATE.tab === "Lab") return STATE.labGroup;
+      return "morphology";
+    }
+
+    function getPlotCompletionMap() {
+      // Computes today's completion status per planter_code ("full" / "half") for the active parameter or multi-sheet group
+      const map = {};
+      const activeCat = getActiveProgressCategory();
+      const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
+      const relevant = (STATE.todayRecords || []).filter(r => {
+        if (selDate && String(r.measured_at || "").slice(0, 10) !== selDate) return false;
+        if (STATE.entryMode === "multi") return r.category === activeCat;
+        return r.parameter_key === STATE.activeParamKey;
+      });
+      relevant.forEach(r => {
+        const key = `${r.fertigation_arm}|${r.replicate_no}|${r.treatment_no}`;
+        if (!map[key]) map[key] = new Set();
+        map[key].add(r.plant_no || "P1");
+      });
+      return map;
+    }
+
+    async function refreshTodayFieldProgress() {
+      if (STATE.experiment !== "EXP2") return;
+      try {
+        const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
+        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=EXP2&start_date=${encodeURIComponent(selDate)}&end_date=${encodeURIComponent(selDate)}&limit=500`);
+        if (resp.ok) {
+          const data = await resp.json();
+          STATE.todayRecords = data.records || [];
+          renderFieldMap();
+        }
+      } catch (e) {}
+    }
+
+    function renderFieldMap() {
+      if (STATE.experiment !== "EXP2") return;
+      const layout = getExp2FieldLayout();
+      const compMap = getPlotCompletionMap();
+      const seq = buildWalkSequence();
+      const nxtObj = computeNextTargetObj();
+
+      let doneCount = 0;
+      seq.forEach(p => {
+        const s = compMap[`${p.arm}|${p.rep}|${p.treatment}`];
+        if (s && (s.has("Planter") || (s.has("P1") && s.has("P2")))) doneCount += 1;
+      });
+      const progEl = document.getElementById("lblWalkProgress");
+      if (progEl) {
+        progEl.textContent = `Done Today: ${doneCount} / ${seq.length}`;
+        progEl.className = `status-pill ${doneCount >= seq.length && seq.length > 0 ? 'ok' : 'warn'}`;
+      }
+
+      const renderBlockGrid = (elId, arm, colStart) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        let html = `<div class="field-col-hdr"></div>`;
+        for (let c = colStart; c < colStart + 8; c++) {
+          html += `<div class="field-col-hdr">C${c}</div>`;
+        }
+        for (const rIdx of [4, 3, 2, 1]) {
+          const rep = `R${rIdx}`;
+          html += `<div class="field-row-lbl">${rep}</div>`;
+          for (let c = colStart; c < colStart + 8; c++) {
+            const p = layout.find(x => x.arm === arm && x.col === c && x.rep === rep);
+            if (!p) { html += `<div></div>`; continue; }
+            const isActive = STATE.arm === p.arm && STATE.rep === p.rep && STATE.treatment === p.treatment;
+            const isNextPlot = !isActive && nxtObj && nxtObj.arm === p.arm && nxtObj.rep === p.rep && nxtObj.treatment === p.treatment;
+            const pSet = compMap[`${p.arm}|${p.rep}|${p.treatment}`];
+            let badgeHtml = "";
+            if (pSet) {
+              if (pSet.has("Planter") || (pSet.has("P1") && pSet.has("P2"))) {
+                badgeHtml = `<span class="cell-badge full">✓</span>`;
+              } else if (pSet.size > 0) {
+                badgeHtml = `<span class="cell-badge half">½</span>`;
+              }
+            }
+            const nextTag = isNextPlot ? `<span class="cell-badge nxt">NEXT</span>` : "";
+            html += `
+              <button type="button"
+                class="field-cell ${isActive ? 'active-cell' : ''} ${isNextPlot ? 'next-cell' : ''}"
+                style="background:${p.map_bg_hex}; color:${p.map_text_hex};"
+                title="Col ${p.col} • ${p.arm} ${p.plot_label} (${p.salt_zone || ''})"
+                onclick="selectPlotFromMap('${p.arm}', '${p.treatment}', '${p.rep}')">
+                ${badgeHtml}${nextTag}
+                <span class="fc-lbl">${p.plot_label}</span>
+                <span class="fc-col">C${p.col}</span>
+              </button>
+            `;
+          }
+        }
+        el.innerHTML = html;
+      };
+
+      renderBlockGrid("manualMapGrid", "Manual", 9);
+      renderBlockGrid("iotMapGrid", "IoT", 1);
+    }
+
+    function selectPlotFromMap(arm, treatment, rep, keepPlant = false) {
+      STATE.arm = arm;
+      STATE.treatment = treatment;
+      STATE.rep = rep;
+      if (!keepPlant && STATE.plant !== "Planter") {
+        STATE.plant = "P1";
+        document.querySelectorAll(".plant-pill").forEach(el => {
+          el.classList.toggle("active", el.dataset.plant === "P1");
+        });
+      }
+      document.getElementById("btnArmIoT")?.classList.toggle("active", arm === "IoT");
+      document.getElementById("btnArmManual")?.classList.toggle("active", arm === "Manual");
+      renderTreatmentTiles();
+      renderRepPills();
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function stepWalkPlot(delta) {
+      if (STATE.experiment !== "EXP2") return;
+      const seq = buildWalkSequence();
+      if (!seq.length) return;
+      const idx = seq.findIndex(p => p.arm === STATE.arm && p.rep === STATE.rep && p.treatment === STATE.treatment);
+      const nextIdx = idx < 0 ? 0 : (idx + delta + seq.length) % seq.length;
+      const target = seq[nextIdx];
+      selectPlotFromMap(target.arm, target.treatment, target.rep, STATE.plant === "Planter");
+    }
+
+    // Unit Selection Logic
+    function getActiveTreatmentsMap() {
+      return STATE.experiment === "EXP1" ? CATALOG.exp1_treatments : CATALOG.exp2_treatments;
+    }
+
+    function onExperimentChange() {
+      STATE.experiment = document.getElementById("selExperiment").value;
+      if (document.getElementById("armRowWrap")) {
+        document.getElementById("armRowWrap").style.display = STATE.experiment === "EXP1" ? "none" : "grid";
+      }
+      STATE.treatment = "T1";
+      STATE.rep = "R1";
+      STATE.arm = "IoT";
+      renderTreatmentTiles();
+      renderRepPills();
+      setSelectorView(STATE.experiment === "EXP1" ? "tiles" : (localStorage.getItem("phd_selector_view") || "map"));
+      updateActiveUnitBanner();
+    }
+
+    function selectArm(arm) {
+      STATE.arm = arm;
+      document.getElementById("btnArmIoT").classList.toggle("active", arm === "IoT");
+      document.getElementById("btnArmManual").classList.toggle("active", arm === "Manual");
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function renderTreatmentTiles() {
+      const box = document.getElementById("trtTilesContainer");
+      const map = getActiveTreatmentsMap();
+      const keys = Object.keys(map);
+      if (!keys.length) return;
+      box.innerHTML = keys.map(tKey => {
+        const t = map[tKey];
+        const sel = STATE.treatment === tKey ? "selected" : "";
+        return `
+          <button type="button" class="trt-tile ${sel}" style="background:${t.bg_hex}; border-color:${t.border_hex};" onclick="selectTreatment('${tKey}')">
+            <div class="trt-tile-top" style="background:${t.header_hex};">
+              <span>${tKey}</span>
+              <span style="font-size:0.65rem; opacity:0.92;">${STATE.experiment === 'EXP2' ? (STATE.arm === 'Manual' ? t.code_manual : t.code_iot) : ''}</span>
+            </div>
+            <div class="trt-tile-body">
+              <div>NaCl: ${t.nacl_mm} mM</div>
+              <div>H2S: ${t.nahs_um} uM | HS: ${t.humic_mll} mL</div>
+            </div>
+          </button>
+        `;
+      }).join("");
+      updateActiveUnitBanner();
+    }
+
+    function renderRepPills() {
+      const reps = STATE.experiment === "EXP1" ? ["R1", "R2", "R3"] : ["R1", "R2", "R3", "R4"];
+      const box = document.getElementById("repPillsContainer");
+      box.innerHTML = reps.map(r => `
+        <button type="button" class="rep-pill ${STATE.rep === r ? 'active' : ''}" onclick="selectRep('${r}')">${r}</button>
+      `).join("");
+    }
+
+    function selectTreatment(tKey) {
+      STATE.treatment = tKey;
+      renderTreatmentTiles();
+      renderFieldMap();
+    }
+
+    function selectRep(rep) {
+      STATE.rep = rep;
+      renderRepPills();
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function selectPlant(p) {
+      STATE.plant = p;
+      document.querySelectorAll(".plant-pill").forEach(el => {
+        el.classList.toggle("active", el.dataset.plant === p);
+      });
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function computeNextTargetObj() {
+      const nextPlantWithinPlot = STATE.plant === "P1" ? "P2" : (STATE.plant === "Planter" ? "Planter" : "P1");
+      if (STATE.experiment === "EXP2") {
+        if (STATE.plant === "P1") {
+          const curPlot = lookupExp2Plot(STATE.arm, STATE.rep, STATE.treatment);
+          return {
+            arm: STATE.arm,
+            rep: STATE.rep,
+            treatment: STATE.treatment,
+            plant: "P2",
+            col: curPlot ? curPlot.col : null,
+            label: `${curPlot ? `Col ${curPlot.col} ` : ""}${STATE.rep}${STATE.treatment} P2`,
+          };
+        }
+        const seq = buildWalkSequence();
+        if (seq.length) {
+          const idx = seq.findIndex(p => p.arm === STATE.arm && p.rep === STATE.rep && p.treatment === STATE.treatment);
+          const nextPlot = seq[idx < 0 ? 0 : (idx + 1) % seq.length];
+          return {
+            arm: nextPlot.arm,
+            rep: nextPlot.rep,
+            treatment: nextPlot.treatment,
+            plant: nextPlantWithinPlot,
+            col: nextPlot.col,
+            label: `${nextPlot.arm === STATE.arm ? "" : `${nextPlot.arm} `}Col ${nextPlot.col} ${nextPlot.plot_label} ${nextPlantWithinPlot}`,
+          };
+        }
+      }
+      // EXP1 fallback order
+      if (STATE.plant === "P1") {
+        return { arm: STATE.arm, rep: STATE.rep, treatment: STATE.treatment, plant: "P2", col: null, label: `${STATE.treatment}-${STATE.rep} P2` };
+      }
+      const maxRep = 3;
+      const curR = parseInt(STATE.rep.replace("R", ""), 10) || 1;
+      if (curR < maxRep) {
+        return { arm: STATE.arm, rep: `R${curR + 1}`, treatment: STATE.treatment, plant: nextPlantWithinPlot, col: null, label: `${STATE.treatment}-R${curR + 1} ${nextPlantWithinPlot}` };
+      }
+      const curT = parseInt(STATE.treatment.replace("T", ""), 10) || 1;
+      const nextT = curT < 27 ? curT + 1 : 1;
+      return { arm: STATE.arm, rep: "R1", treatment: `T${nextT}`, plant: nextPlantWithinPlot, col: null, label: `T${nextT}-R1 ${nextPlantWithinPlot}` };
+    }
+
+    function advanceToNextPlant() {
+      const nxt = computeNextTargetObj();
+      STATE.arm = nxt.arm;
+      STATE.rep = nxt.rep;
+      STATE.treatment = nxt.treatment;
+      STATE.plant = nxt.plant;
+      document.getElementById("btnArmIoT")?.classList.toggle("active", STATE.arm === "IoT");
+      document.getElementById("btnArmManual")?.classList.toggle("active", STATE.arm === "Manual");
+      document.querySelectorAll(".plant-pill").forEach(el => {
+        el.classList.toggle("active", el.dataset.plant === STATE.plant);
+      });
+      renderTreatmentTiles();
+      renderRepPills();
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function updateActiveUnitBanner() {
+      const map = getActiveTreatmentsMap();
+      const t = map[STATE.treatment] || { short_en: "", zone_id: null };
+      const armLbl = STATE.experiment === "EXP1" ? "EXP1" : STATE.arm;
+      const plotMeta = STATE.experiment === "EXP2" ? lookupExp2Plot(STATE.arm, STATE.rep, STATE.treatment) : null;
+      const colTxt = plotMeta ? `Col ${plotMeta.col} • ` : "";
+      let sensorHint = "";
+      if (STATE.experiment === "EXP2" && STATE.arm === "IoT" && t.zone_id) {
+        const rIdx = parseInt(STATE.rep.replace("R", ""), 10) || 1;
+        const sId = (rIdx - 1) * 8 + t.zone_id;
+        sensorHint = ` • PLC Line ${t.zone_id} (Sensor R${sId})`;
+      }
+      const tag = `${colTxt}${armLbl} • ${STATE.rep}${STATE.treatment} • ${STATE.plant}`;
+      document.getElementById("lblActiveUnit").textContent = `Selected: ${tag}${sensorHint}`;
+      document.getElementById("lblActiveDose").textContent = t.short_en || "";
+      document.getElementById("lblMultiPlantTag").textContent = tag;
+      const nxt = computeNextTargetObj();
+      document.getElementById("lblNextTarget").textContent = nxt.label;
+      const multiNextEl = document.getElementById("lblMultiNextTarget");
+      if (multiNextEl) multiNextEl.textContent = nxt.label;
+    }
+
+    // Tab Navigation
+    function switchAppTab(tab) {
+      STATE.tab = tab;
+      document.querySelectorAll(".nav-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+
+      const isEntryTab = ["Growth", "Meters", "Lab"].includes(tab);
+      document.getElementById("sharedUnitCard").classList.toggle("hidden", !isEntryTab);
+      document.getElementById("entryWorkspaceCard").classList.toggle("hidden", !isEntryTab);
+      document.getElementById("recentMiniCard").classList.toggle("hidden", !isEntryTab);
+      document.getElementById("tabTreatEnv").classList.toggle("hidden", tab !== "TreatEnv");
+      document.getElementById("tabViewPrint").classList.toggle("hidden", tab !== "ViewPrint");
+
+      document.getElementById("metersSubCatBar").classList.toggle("hidden", tab !== "Meters");
+      document.getElementById("labSubCatBar").classList.toggle("hidden", tab !== "Lab");
+
+      if (tab === "Growth") {
+        document.getElementById("lblWorkspaceTitle").textContent = "🌱 2. Greenhouse Morphological Input";
+        renderCategoryParameters("morphology");
+      } else if (tab === "Meters") {
+        document.getElementById("lblWorkspaceTitle").textContent = "📟 2. Meter Screen AI & Sensor Input";
+        selectMeterGroup(STATE.meterGroup);
+      } else if (tab === "Lab") {
+        document.getElementById("lblWorkspaceTitle").textContent = "⚖️ 2. Lab, Biomass & Fruit Harvest";
+        selectLabGroup(STATE.labGroup);
+      } else if (tab === "TreatEnv") {
+        loadTreatmentsHistory();
+        loadClimateSummary();
+      } else if (tab === "ViewPrint") {
+        loadDashboardData();
+      }
+    }
+
+    function setEntryLayoutMode(mode) {
+      STATE.entryMode = mode;
+      document.getElementById("btnModeSingle").classList.toggle("active", mode === "single");
+      document.getElementById("btnModeMulti").classList.toggle("active", mode === "multi");
+      document.getElementById("singleEntryPanel").classList.toggle("hidden", mode !== "single");
+      document.getElementById("multiEntryPanel").classList.toggle("hidden", mode !== "multi");
+      renderFieldMap();
+      updateActiveUnitBanner();
+    }
+
+    function selectMeterGroup(grp) {
+      STATE.meterGroup = grp;
+      document.querySelectorAll("#metersSubCatBar .submode-btn").forEach(b => b.classList.toggle("active", b.dataset.mcat === grp));
+      if (grp === "drainage") selectPlant("Planter");
+      renderCategoryParameters(grp);
+    }
+
+    function selectLabGroup(grp) {
+      STATE.labGroup = grp;
+      document.querySelectorAll("#labSubCatBar .submode-btn").forEach(b => b.classList.toggle("active", b.dataset.lcat === grp));
+      renderCategoryParameters(grp);
+    }
+
+    function renderCategoryParameters(category) {
+      const params = (CATALOG.parameters || []).filter(p => p.category === category);
+      if (!params.length) return;
+      if (!params.some(p => p.key === STATE.activeParamKey)) {
+        STATE.activeParamKey = params[0].key;
+      }
+      const box = document.getElementById("paramChipsContainer");
+      box.innerHTML = params.map(p => `
+        <button type="button" class="param-chip ${p.key === STATE.activeParamKey ? 'active' : ''}" onclick="selectParameter('${p.key}')">
+          ${p.label_en} <span style="opacity:0.75; font-size:0.7rem;">(${p.unit})</span>
+        </button>
+      `).join("");
+
+      const multiBox = document.getElementById("multiInputsContainer");
+      multiBox.innerHTML = params.map(p => `
+        <div class="multi-item">
+          <label>${p.label_en} (${p.unit})</label>
+          <input type="number" step="any" inputmode="decimal" data-multikey="${p.key}" placeholder="—" />
+        </div>
+      `).join("");
+
+      renderQuickHelperBox(category);
+      selectParameter(STATE.activeParamKey);
+    }
+
+    function renderQuickHelperBox(category) {
+      const hBox = document.getElementById("helperCalcBox");
+      if (category === "drainage") {
+        hBox.classList.remove("hidden");
+        hBox.innerHTML = `
+          <div style="font-size:0.76rem; font-weight:900; color:var(--teal); margin-bottom:6px;">💧 Auto Drainage % Calculator</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:end;">
+            <div><span style="font-size:0.68rem; font-weight:800;">Supplied (mL)</span><input type="number" inputmode="decimal" id="calcVsup" placeholder="1000" oninput="calcDrainPct()" style="min-height:40px;" /></div>
+            <div><span style="font-size:0.68rem; font-weight:800;">Drainage (mL)</span><input type="number" inputmode="decimal" id="calcVdrn" placeholder="220" oninput="calcDrainPct()" style="min-height:40px;" /></div>
+            <button type="button" class="btn-action teal" style="min-height:40px;" onclick="saveCalculatedDrainagePair()">Save V_sup + V_drn + %</button>
+          </div>
+          <div id="lblDrainCalcOut" style="font-size:0.75rem; font-weight:800; margin-top:5px;"></div>
+        `;
+      } else if (category === "fruit_harvest") {
+        hBox.classList.remove("hidden");
+        hBox.innerHTML = `
+          <div style="font-size:0.76rem; font-weight:900; color:var(--teal); margin-bottom:6px;">🍅 Ripening Days Calculator (Anthesis ➔ Breaker / Red-Ripe)</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:end;">
+            <div><span style="font-size:0.68rem; font-weight:800;">Flower Tag Date</span><input type="date" id="calcFlwDate" onchange="calcRipeningDays()" style="min-height:40px;" /></div>
+            <div><span style="font-size:0.68rem; font-weight:800;">Breaker/Ripe Date</span><input type="date" id="calcRipeDate" onchange="calcRipeningDays()" style="min-height:40px;" /></div>
+            <div id="lblRipeDaysOut" style="font-size:0.84rem; font-weight:900; padding:8px;">— days</div>
+          </div>
+        `;
+      } else if (category === "biochemical_lab") {
+        hBox.classList.remove("hidden");
+        hBox.innerHTML = `
+          <div style="font-size:0.76rem; font-weight:900; color:var(--teal); margin-bottom:6px;">🧪 Quick RWC % Calculator: (FW - DW) / (TW - DW) × 100</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:6px; align-items:end;">
+            <input type="number" step="any" inputmode="decimal" id="rwcFw" placeholder="FW (g)" oninput="calcRwcVal()" style="min-height:40px;" />
+            <input type="number" step="any" inputmode="decimal" id="rwcTw" placeholder="TW (g)" oninput="calcRwcVal()" style="min-height:40px;" />
+            <input type="number" step="any" inputmode="decimal" id="rwcDw" placeholder="DW (g)" oninput="calcRwcVal()" style="min-height:40px;" />
+            <span id="lblRwcOut" style="font-size:0.82rem; font-weight:900; padding:8px;">— %</span>
+          </div>
+        `;
+      } else {
+        hBox.classList.add("hidden");
+        hBox.innerHTML = "";
+      }
+    }
+
+    function calcDrainPct() {
+      const sup = parseFloat(document.getElementById("calcVsup")?.value);
+      const drn = parseFloat(document.getElementById("calcVdrn")?.value);
+      const lbl = document.getElementById("lblDrainCalcOut");
+      if (sup > 0 && drn >= 0) {
+        const pct = ((drn / sup) * 100).toFixed(1);
+        lbl.textContent = `Drainage Fraction = ${pct}% (Target: 15–20% for 0 mM, 25–30% for 80 mM NaCl)`;
+      } else {
+        lbl.textContent = "";
+      }
+    }
+
+    async function saveCalculatedDrainagePair() {
+      const sup = parseFloat(document.getElementById("calcVsup")?.value);
+      const drn = parseFloat(document.getElementById("calcVdrn")?.value);
+      if (!(sup > 0) || !(drn >= 0)) {
+        showToast("Enter both Supplied mL and Drainage mL", "#d97706");
+        return;
+      }
+      const pct = parseFloat(((drn / sup) * 100).toFixed(2));
+      const base = buildBaseMeasurementPayload();
+      const items = [
+        { ...base, category: "drainage", parameter_key: "water_supplied_ml", manual_value: sup },
+        { ...base, category: "drainage", parameter_key: "drainage_volume_ml", manual_value: drn },
+        { ...base, category: "drainage", parameter_key: "drainage_fraction_pct", manual_value: pct },
+      ];
+      await submitBulkItems(items, false);
+    }
+
+    function calcRipeningDays() {
+      const d1 = document.getElementById("calcFlwDate")?.value;
+      const d2 = document.getElementById("calcRipeDate")?.value;
+      if (d1 && d2) {
+        const diff = Math.round((new Date(d2) - new Date(d1)) / 86400000);
+        document.getElementById("lblRipeDaysOut").textContent = `${diff} days`;
+        if (diff > 0) {
+          document.getElementById("inpManualValue").value = diff;
+          onManualValueTyped();
+        }
+      }
+    }
+
+    function calcRwcVal() {
+      const fw = parseFloat(document.getElementById("rwcFw")?.value);
+      const tw = parseFloat(document.getElementById("rwcTw")?.value);
+      const dw = parseFloat(document.getElementById("rwcDw")?.value);
+      if (fw > 0 && tw > dw && fw >= dw) {
+        const rwc = (((fw - dw) / (tw - dw)) * 100).toFixed(2);
+        document.getElementById("lblRwcOut").textContent = `${rwc}%`;
+        selectParameter("leaf_rwc_pct");
+        document.getElementById("inpManualValue").value = rwc;
+      }
+    }
+
+    function selectParameter(pkey) {
+      STATE.activeParamKey = pkey;
+      STATE.customParamOpen = false;
+      document.getElementById("customParamRow").classList.add("hidden");
+      document.querySelectorAll("#paramChipsContainer .param-chip").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("onclick") === `selectParameter('${pkey}')`);
+      });
+      const p = (CATALOG.parameters || []).find(x => x.key === pkey);
+      if (p) {
+        document.getElementById("lblActiveUnitBadge").textContent = p.unit;
+        document.getElementById("lblManualInput").textContent = `${p.label_en} (${p.unit}) — Expected [${p.min}..${p.max}]`;
+      }
+      onManualValueTyped();
+      renderFieldMap();
+    }
+
+    function toggleCustomParam() {
+      STATE.customParamOpen = !STATE.customParamOpen;
+      document.getElementById("customParamRow").classList.toggle("hidden", !STATE.customParamOpen);
+    }
+
+    function onManualValueTyped() {
+      const raw = document.getElementById("inpManualValue").value;
+      const alertBox = document.getElementById("plausibilityAlert");
+      if (raw === "" || STATE.customParamOpen) {
+        alertBox.classList.add("hidden");
+        return;
+      }
+      const val = parseFloat(raw);
+      const p = (CATALOG.parameters || []).find(x => x.key === STATE.activeParamKey);
+      if (p && (val < p.min || val > p.max)) {
+        const tenth = (val / 10).toFixed(2);
+        const hint = (val / 10 >= p.min && val / 10 <= p.max) ? ` — Did you miss a decimal point (${tenth} ${p.unit})?` : "";
+        alertBox.textContent = `⚠️ Range Check: ${val} ${p.unit} is outside typical [${p.min} .. ${p.max}] for ${p.label_en}${hint}`;
+        alertBox.classList.remove("hidden");
+      } else {
+        alertBox.classList.add("hidden");
+      }
+    }
+
+    // Client-Side Image Compression (~250 KB) & AI Vision Call
+    function compressImageToBase64(file, maxDim = 1500, quality = 0.84) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (Math.max(w, h) > maxDim) {
+              const scale = maxDim / Math.max(w, h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.onerror = reject;
+          img.src = ev.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handlePhotoSelected(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      inputEl.value = "";
+
+      if (!getStoredPin()) {
+        openPinModal();
+        showToast("Unlock PIN first to upload & run AI Vision", "#d97706");
+        return;
+      }
+
+      const box = document.getElementById("aiVerifyBox");
+      const badge = document.getElementById("aiStatusBadge");
+      const msgEl = document.getElementById("aiMessageText");
+      const extraBox = document.getElementById("aiExtraChannelsBox");
+      box.classList.add("show");
+      badge.className = "status-pill warn";
+      badge.textContent = "⏳ Reading Screen with Dual-AI...";
+      msgEl.textContent = "Compressing & verifying digits...";
+      extraBox.innerHTML = "";
+
+      try {
+        const b64 = await compressImageToBase64(file);
+        document.getElementById("imgAiPreview").src = b64;
+
+        const resp = await fetch("/api/v1/field-data/ai-read", {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify({
+            image_base64: b64,
+            parameter_key: STATE.customParamOpen ? "generic" : STATE.activeParamKey,
+          }),
+        });
+        if (resp.status === 403) {
+          openPinModal();
+          return;
+        }
+        const data = await resp.json();
+        STATE.currentPhotoRelPath = data.photo_rel_path || null;
+        STATE.currentAiResult = data;
+
+        document.getElementById("inpAiExtractedValue").value = data.ai_value !== null && data.ai_value !== undefined ? data.ai_value : "";
+        document.getElementById("inpAiSecondaryCheck").value = data.ai_secondary_value !== null && data.ai_secondary_value !== undefined ? data.ai_secondary_value : "—";
+        msgEl.textContent = data.message || "";
+
+        if (data.verification_status === "dual_ai_consensus") {
+          badge.className = "status-pill ok";
+          badge.textContent = "✅ 100% Dual-AI Matched";
+        } else if (data.verification_status === "flagged_mismatch") {
+          badge.className = "status-pill err";
+          badge.textContent = "⚠️ Check Digit Mismatch!";
+        } else if (data.ai_value !== null && data.ai_value !== undefined) {
+          badge.className = "status-pill ok";
+          badge.textContent = "✓ AI Value Extracted";
+        } else {
+          badge.className = "status-pill warn";
+          badge.textContent = "📷 Photo Saved (Enter Value)";
+        }
+
+        // Render multi-channel button if Porometer / LI-COR extra fields exist
+        const extras = data.extra_fields || {};
+        const extraKeys = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k));
+        if (extraKeys.length > 1) {
+          const summaryTxt = extraKeys.map(k => `${k}: ${extras[k]}`).join(" | ");
+          extraBox.innerHTML = `
+            <div style="font-size:0.72rem; font-weight:800; color:var(--teal); margin-bottom:4px;">Multi-Value Screen Detected: ${summaryTxt}</div>
+            <button type="button" class="btn-action teal" style="width:100%; justify-content:center;" onclick="saveAllExtractedScreenChannels()">
+              💾 Save All ${extraKeys.length} Screen Readings at Once
+            </button>
+          `;
+        }
+      } catch (err) {
+        badge.className = "status-pill err";
+        badge.textContent = "Network Error";
+        msgEl.textContent = String(err);
+      }
+    }
+
+    async function saveAllExtractedScreenChannels() {
+      if (!STATE.currentAiResult || !STATE.currentAiResult.extra_fields) return;
+      const extras = STATE.currentAiResult.extra_fields;
+      const base = buildBaseMeasurementPayload();
+      const items = [];
+      for (const [k, v] of Object.entries(extras)) {
+        const p = CATALOG.parameters.find(x => x.key === k);
+        if (p && v !== null && v !== "" && !Number.isNaN(Number(v))) {
+          items.push({
+            ...base,
+            category: p.category,
+            parameter_key: p.key,
+            parameter_label: p.label_en,
+            unit: p.unit,
+            ai_value: Number(v),
+            verification_status: STATE.currentAiResult.verification_status || "ai_photo",
+            ai_confidence: STATE.currentAiResult.ai_confidence,
+            ai_model: STATE.currentAiResult.ai_model,
+            photo_rel_path: STATE.currentPhotoRelPath,
+          });
+        }
+      }
+      if (!items.length) return;
+      await submitBulkItems(items, true);
+    }
+
+    function buildBaseMeasurementPayload() {
+      const tVal = document.getElementById("inpMeasureTime").value;
+      const isoTime = tVal ? new Date(tVal).toISOString() : new Date().toISOString();
+      const trussRaw = document.getElementById("selTrussNo").value;
+      return {
+        experiment_code: STATE.experiment,
+        measured_at: isoTime,
+        fertigation_arm: STATE.experiment === "EXP1" ? "EXP1" : STATE.arm,
+        treatment_no: STATE.treatment,
+        replicate_no: STATE.rep,
+        plant_no: STATE.plant,
+        truss_no: trussRaw ? parseInt(trussRaw, 10) : null,
+      };
+    }
+
+    function clearCurrentEntryInputs() {
+      document.getElementById("inpManualValue").value = "";
+      document.getElementById("inpAiExtractedValue").value = "";
+      document.getElementById("inpAiSecondaryCheck").value = "";
+      document.getElementById("inpEntryNote").value = "";
+      document.getElementById("aiVerifyBox").classList.remove("show");
+      document.getElementById("plausibilityAlert").classList.add("hidden");
+      STATE.currentPhotoRelPath = null;
+      STATE.currentAiResult = null;
+    }
+
+    async function saveSingleMeasurement(advanceNext) {
+      if (!getStoredPin()) {
+        openPinModal();
+        return;
+      }
+      const manRaw = document.getElementById("inpManualValue").value;
+      const aiRaw = document.getElementById("inpAiExtractedValue").value;
+      if (manRaw === "" && aiRaw === "") {
+        showToast("Enter a value or snap an AI photo first!", "#d97706");
+        document.getElementById("inpManualValue").focus();
+        return;
+      }
+
+      const base = buildBaseMeasurementPayload();
+      let pkey = STATE.activeParamKey;
+      let plabel = null;
+      let unit = null;
+      let cat = null;
+      if (STATE.customParamOpen) {
+        const cname = document.getElementById("inpCustomParamName").value.trim();
+        if (!cname) {
+          showToast("Enter custom parameter name", "#d97706");
+          return;
+        }
+        pkey = cname.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        plabel = cname;
+        unit = document.getElementById("inpCustomParamUnit").value.trim() || "unit";
+        cat = STATE.tab === "Meters" ? STATE.meterGroup : (STATE.tab === "Lab" ? STATE.labGroup : "morphology");
+      }
+
+      const payload = {
+        ...base,
+        category: cat,
+        parameter_key: pkey,
+        parameter_label: plabel,
+        unit: unit,
+        manual_value: manRaw !== "" ? parseFloat(manRaw) : null,
+        ai_value: aiRaw !== "" ? parseFloat(aiRaw) : null,
+        ai_secondary_value: STATE.currentAiResult?.ai_secondary_value ?? null,
+        verification_status: STATE.currentAiResult?.verification_status || "human_confirmed",
+        ai_confidence: STATE.currentAiResult?.ai_confidence ?? null,
+        ai_model: STATE.currentAiResult?.ai_model ?? null,
+        ai_extra: STATE.currentAiResult?.extra_fields ?? null,
+        photo_rel_path: STATE.currentPhotoRelPath,
+        notes: document.getElementById("inpEntryNote").value.trim(),
+      };
+
+      try {
+        const resp = await fetch("/api/v1/field-data/measurements", {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify(payload),
+        });
+        if (resp.status === 403) {
+          openPinModal();
+          return;
+        }
+        if (!resp.ok) {
+          const err = await resp.json();
+          showToast(err.detail || "Save failed", "#dc2626");
+          return;
+        }
+        const saved = await resp.json();
+        const r = saved.record;
+        STATE.todayRecords = [r, ...(STATE.todayRecords || [])];
+        showToast(`✓ Saved ${r.planter_code} (${r.plant_no}): ${r.parameter_label} = ${r.final_value} ${r.unit}`, "#16a34a");
+        clearCurrentEntryInputs();
+        document.getElementById("inpMeasureTime").value = localIsoNow();
+        if (advanceNext) advanceToNextPlant();
+        refreshRecentMiniTable();
+        refreshTodayFieldProgress();
+      } catch (netErr) {
+        queueOfflineItem(payload);
+        clearCurrentEntryInputs();
+        if (advanceNext) advanceToNextPlant();
+      }
+    }
+
+    async function saveMultiSheet(advanceNext) {
+      if (!getStoredPin()) {
+        openPinModal();
+        return;
+      }
+      const base = buildBaseMeasurementPayload();
+      const note = document.getElementById("inpMultiNote").value.trim();
+      const inputs = document.querySelectorAll("#multiInputsContainer input[data-multikey]");
+      const items = [];
+      inputs.forEach(inp => {
+        if (inp.value !== "") {
+          items.push({
+            ...base,
+            parameter_key: inp.dataset.multikey,
+            manual_value: parseFloat(inp.value),
+            notes: note,
+          });
+        }
+      });
+      if (!items.length) {
+        showToast("Fill at least one parameter box!", "#d97706");
+        return;
+      }
+      const ok = await submitBulkItems(items, advanceNext);
+      if (ok) {
+        inputs.forEach(i => { i.value = ""; });
+        document.getElementById("inpMultiNote").value = "";
+      }
+    }
+
+    async function submitBulkItems(items, advanceNext) {
+      if (!getStoredPin()) {
+        openPinModal();
+        return false;
+      }
+      try {
+        const resp = await fetch("/api/v1/field-data/measurements/bulk", {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify({ items }),
+        });
+        if (resp.status === 403) {
+          openPinModal();
+          return false;
+        }
+        const data = await resp.json();
+        if (Array.isArray(data.records)) {
+          STATE.todayRecords = [...data.records, ...(STATE.todayRecords || [])];
+        }
+        showToast(`✓ Saved ${data.saved_count} measurements!`, "#16a34a");
+        clearCurrentEntryInputs();
+        if (advanceNext) advanceToNextPlant();
+        refreshRecentMiniTable();
+        refreshTodayFieldProgress();
+        return true;
+      } catch (e) {
+        items.forEach(it => queueOfflineItem(it));
+        if (advanceNext) advanceToNextPlant();
+        return true;
+      }
+    }
+
+    // Offline Local Queue Protection
+    function getOfflineQueue() {
+      try { return JSON.parse(localStorage.getItem("phd_field_offline_queue") || "[]"); }
+      catch { return []; }
+    }
+
+    function queueOfflineItem(item) {
+      const q = getOfflineQueue();
+      q.push(item);
+      localStorage.setItem("phd_field_offline_queue", JSON.stringify(q));
+      updateOfflineBadge();
+      showToast(`⚡ Saved to phone offline queue (${q.length} pending)`, "#b45309");
+    }
+
+    function updateOfflineBadge() {
+      const q = getOfflineQueue();
+      const btn = document.getElementById("btnOfflineQueue");
+      if (q.length > 0) {
+        btn.style.display = "inline-flex";
+        btn.textContent = `⚡ Sync (${q.length})`;
+      } else {
+        btn.style.display = "none";
+      }
+    }
+
+    async function syncOfflineQueue() {
+      const q = getOfflineQueue();
+      if (!q.length || !getStoredPin()) return;
+      try {
+        const resp = await fetch("/api/v1/field-data/measurements/bulk", {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify({ items: q }),
+        });
+        if (resp.ok) {
+          localStorage.removeItem("phd_field_offline_queue");
+          updateOfflineBadge();
+          showToast(`✅ Synced ${q.length} offline records to server!`, "#16a34a");
+          refreshRecentMiniTable();
+        }
+      } catch (e) {}
+    }
+    window.addEventListener("online", syncOfflineQueue);
+
+    // Recent Mini Table
+    async function refreshRecentMiniTable() {
+      try {
+        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=${STATE.experiment}&limit=6`);
+        const data = await resp.json();
+        const rows = data.records || [];
+        const tbody = document.getElementById("recentMiniTbody");
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No records yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map(r => `
+          <tr>
+            <td>${String(r.measured_at).slice(5, 16).replace("T", " ")} <span style="color:var(--teal); font-weight:800;">(D${r.dat ?? 0})</span></td>
+            <td><strong>${r.planter_code}</strong> (${r.plant_no})</td>
+            <td>${r.parameter_label}</td>
+            <td>${r.manual_value ?? "—"}</td>
+            <td>${r.ai_value ?? "—"} ${r.photo_url ? `<a href="#" onclick="event.preventDefault();openLightbox('${r.photo_url}')">📷</a>` : ""}</td>
+            <td><strong>${r.final_value} ${r.unit}</strong></td>
+            <td><button type="button" class="btn-action" style="min-height:30px; padding:3px 8px;" onclick='openEditModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>✏️</button></td>
+          </tr>
+        `).join("");
+      } catch (e) {}
+    }
+
+    // ======================================================================
+    // TAB 4: GROUP / SINGLE TREATMENTS & HOBO CLIMATE UPLOAD
+    // ======================================================================
+    function renderTrtBatchButtons() {
+      const box = document.getElementById("trtMultiSelectBtns");
+      box.innerHTML = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"].map(t => `
+        <button type="button" class="param-chip ${STATE.trtSelectedTreatments.includes(t) ? 'active' : ''}" onclick="toggleTrtCode('${t}')">${t}</button>
+      `).join("");
+      updateTrtCountPreview();
+    }
+
+    function toggleTrtCode(t) {
+      if (STATE.trtSelectedTreatments.includes(t)) {
+        if (STATE.trtSelectedTreatments.length > 1) {
+          STATE.trtSelectedTreatments = STATE.trtSelectedTreatments.filter(x => x !== t);
+        }
+      } else {
+        STATE.trtSelectedTreatments.push(t);
+      }
+      renderTrtBatchButtons();
+    }
+
+    function toggleTrtRep(r) {
+      if (STATE.trtSelectedReps.includes(r)) {
+        if (STATE.trtSelectedReps.length > 1) {
+          STATE.trtSelectedReps = STATE.trtSelectedReps.filter(x => x !== r);
+        }
+      } else {
+        STATE.trtSelectedReps.push(r);
+      }
+      document.querySelectorAll("#trtRepSelectBtns button").forEach(b => {
+        b.classList.toggle("active", STATE.trtSelectedReps.includes(b.dataset.trep));
+      });
+      updateTrtCountPreview();
+    }
+
+    function applyTreatmentPreset(preset) {
+      document.getElementById("chkTrtIoT").checked = true;
+      document.getElementById("chkTrtManual").checked = true;
+      STATE.trtSelectedReps = ["R1", "R2", "R3", "R4"];
+      if (preset === "all_h2s") {
+        STATE.trtSelectedTreatments = ["T2", "T4", "T6", "T8"];
+        document.getElementById("trtNahsUm").value = 25;
+      } else if (preset === "all_humic") {
+        STATE.trtSelectedTreatments = ["T3", "T4", "T7", "T8"];
+        document.getElementById("trtHumicMll").value = 4;
+      } else if (preset === "all_salt") {
+        STATE.trtSelectedTreatments = ["T5", "T6", "T7", "T8"];
+        document.getElementById("trtNaclMm").value = 80;
+        document.getElementById("trtAppType").value = "salinity_step";
+      } else if (preset === "all_64") {
+        STATE.trtSelectedTreatments = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"];
+      } else if (preset === "single") {
+        document.getElementById("chkTrtManual").checked = false;
+        STATE.trtSelectedTreatments = [STATE.treatment];
+        STATE.trtSelectedReps = [STATE.rep];
+      }
+      document.querySelectorAll("#trtRepSelectBtns button").forEach(b => {
+        b.classList.toggle("active", STATE.trtSelectedReps.includes(b.dataset.trep));
+      });
+      renderTrtBatchButtons();
+    }
+
+    function updateTrtCountPreview() {
+      const arms = [];
+      if (document.getElementById("chkTrtIoT")?.checked) arms.push("IoT");
+      if (document.getElementById("chkTrtManual")?.checked) arms.push("Manual");
+      const count = arms.length * STATE.trtSelectedTreatments.length * STATE.trtSelectedReps.length;
+      const el = document.getElementById("lblTrtSummaryScope");
+      if (el) {
+        el.textContent = `Target Scope: ${arms.join("+") || "None"} × [${STATE.trtSelectedTreatments.join(",")}] × [${STATE.trtSelectedReps.join(",")}] = ${count} Planters (${count * 2} Plants)`;
+      }
+    }
+
+    async function saveTreatmentApplication() {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const arms = [];
+      if (document.getElementById("chkTrtIoT").checked) arms.push("IoT");
+      if (document.getElementById("chkTrtManual").checked) arms.push("Manual");
+      if (!arms.length) { showToast("Select at least IoT or Manual arm", "#d97706"); return; }
+
+      const hrs = document.getElementById("trtHrsAfter").value;
+      const appType = document.getElementById("trtAppType").value;
+      if (appType === "nahs_humic_pulse" && hrs !== "" && parseFloat(hrs) < 2.0) {
+        if (!confirm("Protocol Alert: Hours after morning fertigation is < 2.0 hours. Save anyway?")) return;
+      }
+
+      const tRaw = document.getElementById("trtAppliedAt").value;
+      const payload = {
+        experiment_code: STATE.experiment,
+        applied_at: tRaw ? new Date(tRaw).toISOString() : new Date().toISOString(),
+        target_arms: arms,
+        target_treatments: STATE.trtSelectedTreatments,
+        target_replicates: STATE.trtSelectedReps,
+        application_type: appType,
+        nahs_um: parseFloat(document.getElementById("trtNahsUm").value || "0"),
+        nahs_stock_mg_100ml: document.getElementById("trtNahsStockMg").value ? parseFloat(document.getElementById("trtNahsStockMg").value) : null,
+        humic_mll: parseFloat(document.getElementById("trtHumicMll").value || "0"),
+        nacl_mm: parseFloat(document.getElementById("trtNaclMm").value || "0"),
+        volume_per_planter_l: document.getElementById("trtVolPlanter").value ? parseFloat(document.getElementById("trtVolPlanter").value) : null,
+        solution_ec_uscm: document.getElementById("trtSolEc").value ? parseInt(document.getElementById("trtSolEc").value, 10) : null,
+        solution_ph: document.getElementById("trtSolPh").value ? parseFloat(document.getElementById("trtSolPh").value) : null,
+        hours_after_morning_irrig: hrs !== "" ? parseFloat(hrs) : null,
+        notes: document.getElementById("trtNotes").value.trim(),
+      };
+
+      const resp = await fetch("/api/v1/field-data/treatments", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      if (resp.ok) {
+        showToast("🧪 Treatment application logged!", "#16a34a");
+        document.getElementById("trtNotes").value = "";
+        loadTreatmentsHistory();
+      }
+    }
+
+    async function loadTreatmentsHistory() {
+      const resp = await fetch(`/api/v1/field-data/treatments?experiment_code=${STATE.experiment}&limit=50`);
+      const data = await resp.json();
+      STATE.dashTreatments = data.treatments || [];
+      const tbody = document.getElementById("trtHistoryTbody");
+      if (!STATE.dashTreatments.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No treatment applications logged yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = STATE.dashTreatments.map(t => `
+        <tr>
+          <td>${String(t.applied_at).slice(0, 16).replace("T", " ")} <strong>(D${t.dat ?? 0})</strong></td>
+          <td>${t.group_label}</td>
+          <td>${t.application_type}</td>
+          <td>H2S: ${t.nahs_um} uM | HS: ${t.humic_mll} mL/L | NaCl: ${t.nacl_mm} mM</td>
+          <td>EC: ${t.solution_ec_uscm ?? "—"} | pH: ${t.solution_ph ?? "—"} | ${t.volume_per_planter_l ?? "—"} L/pot</td>
+          <td>${t.notes || "—"}</td>
+          <td><button type="button" class="btn-action" style="padding:3px 7px; min-height:28px;" onclick="deleteTreatmentItem('${t.batch_app_id}')">🗑️</button></td>
+        </tr>
+      `).join("");
+    }
+
+    async function deleteTreatmentItem(id) {
+      if (!getStoredPin()) { openPinModal(); return; }
+      if (!confirm("Delete this treatment log?")) return;
+      const resp = await fetch(`/api/v1/field-data/treatments/${id}`, { method: "DELETE", headers: apiHeaders() });
+      if (resp.ok) {
+        showToast("Deleted treatment log", "#dc2626");
+        loadTreatmentsHistory();
+      }
+    }
+
+    async function uploadClimateSheet() {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const fileInp = document.getElementById("inpClimateFile");
+      const file = fileInp.files && fileInp.files[0];
+      if (!file) {
+        showToast("Choose a HOBO .csv or .xlsx datasheet first!", "#d97706");
+        return;
+      }
+      const loggerType = document.getElementById("envLoggerType").value;
+      const loc = document.getElementById("envLocationTag").value;
+      const buf = await file.arrayBuffer();
+      const qs = new URLSearchParams({
+        filename: file.name,
+        logger_type: loggerType,
+        location_tag: loc,
+        experiment_code: STATE.experiment,
+      });
+      const resp = await fetch(`/api/v1/field-data/climate/upload?${qs.toString()}`, {
+        method: "POST",
+        headers: { "X-Operator-Pin": getStoredPin(), "Content-Type": "application/octet-stream" },
+        body: buf,
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      const data = await resp.json();
+      if (!resp.ok) {
+        showToast(data.detail || "Upload failed", "#dc2626");
+        return;
+      }
+      showToast(`☁️ Imported ${data.rows_inserted} new logger rows (${data.rows_skipped_duplicate} duplicates skipped)!`, "#16a34a");
+      fileInp.value = "";
+      loadClimateSummary();
+    }
+
+    async function loadClimateSummary() {
+      const resp = await fetch("/api/v1/field-data/climate/summary?limit=1000");
+      const data = await resp.json();
+      STATE.dashClimate = data;
+      const box = document.getElementById("climateSummaryStatsBox");
+      const stats = data.location_stats || [];
+      if (!stats.length) {
+        box.innerHTML = `<div style="font-size:0.78rem; color:var(--text-muted);">No HOBO environmental sheets uploaded yet.</div>`;
+        return;
+      }
+      box.innerHTML = stats.map(s => `
+        <div class="kpi-box" style="border-top-color:#0d9488;">
+          <div class="kpi-lbl">${s.location_tag} (${s.samples} pts)</div>
+          <div style="font-size:0.86rem; font-weight:900; margin-top:4px;">
+            Temp: ${s.mean_temp_c ?? "—"} °C (${s.min_temp_c ?? "—"}..${s.max_temp_c ?? "—"})
+          </div>
+          <div style="font-size:0.8rem; font-weight:800; color:var(--text-sub);">
+            RH: ${s.mean_rh_pct ?? "—"}% • VPD: ${s.mean_vpd_kpa ?? "—"} kPa • Lux: ${s.mean_light_lux ?? "—"}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ======================================================================
+    // TAB 5: DASHBOARD, INLINE EDIT & BILINGUAL (EN/TR) A4 PRINT STUDIO
+    // ======================================================================
+    function populateFilterParameters() {
+      const cat = document.getElementById("fltCategory").value;
+      const params = (CATALOG.parameters || []).filter(p => cat === "ALL" || p.category === cat);
+      const sel = document.getElementById("fltParam");
+      sel.innerHTML = `<option value="ALL">All Parameters (${params.length})</option>` +
+        params.map(p => `<option value="${p.key}">${p.label_en} (${p.unit})</option>`).join("");
+    }
+
+    function onFilterCategoryChange() {
+      populateFilterParameters();
+      loadDashboardData();
+    }
+
+    function buildFilterQuery() {
+      const qs = new URLSearchParams();
+      qs.set("experiment_code", document.getElementById("fltExp").value);
+      const arm = document.getElementById("fltArm").value;
+      if (arm !== "ALL") qs.set("fertigation_arm", arm);
+      const trt = document.getElementById("fltTrt").value;
+      if (trt !== "ALL") qs.set("treatment_no", trt);
+      const cat = document.getElementById("fltCategory").value;
+      if (cat !== "ALL") qs.set("category", cat);
+      const p = document.getElementById("fltParam").value;
+      if (p !== "ALL") qs.set("parameter_key", p);
+      const s = document.getElementById("fltStart").value;
+      if (s) qs.set("start_date", s);
+      const e = document.getElementById("fltEnd").value;
+      if (e) qs.set("end_date", e);
+      return qs;
+    }
+
+    async function loadDashboardData() {
+      const qs = buildFilterQuery();
+      const [mResp, tResp, cResp] = await Promise.all([
+        fetch(`/api/v1/field-data/measurements?${qs.toString()}&limit=2500`),
+        fetch(`/api/v1/field-data/treatments?experiment_code=${document.getElementById("fltExp").value}&limit=25`),
+        fetch(`/api/v1/field-data/climate/summary?limit=500`),
+      ]);
+      const mData = await mResp.json();
+      const tData = await tResp.json();
+      const cData = await cResp.json();
+
+      STATE.dashRecords = mData.records || [];
+      STATE.dashSummary = mData.summary || { summary_rows: [], unique_planters_measured: [] };
+      STATE.dashTreatments = tData.treatments || [];
+      STATE.dashClimate = cData || { location_stats: [] };
+
+      document.getElementById("kpiTotalRecs").textContent = STATE.dashRecords.length;
+      const denom = document.getElementById("fltExp").value === "EXP1" ? 81 : 64;
+      document.getElementById("kpiPlanters").textContent = `${(STATE.dashSummary.unique_planters_measured || []).length} / ${denom}`;
+      document.getElementById("kpiParams").textContent = STATE.dashSummary.parameters_count || 0;
+      document.getElementById("kpiPhotoRecs").textContent = STATE.dashRecords.filter(r => r.photo_url || r.ai_value !== null).length;
+
+      // Populate chart parameter dropdown
+      const seenParams = [];
+      (STATE.dashSummary.summary_rows || []).forEach(sr => {
+        if (!seenParams.some(x => x.key === sr.parameter_key)) {
+          seenParams.push({ key: sr.parameter_key, label: `${sr.parameter_label} (${sr.unit})` });
+        }
+      });
+      const chartSel = document.getElementById("selChartParam");
+      chartSel.innerHTML = seenParams.map(sp => `<option value="${sp.key}">${sp.label}</option>`).join("");
+
+      renderComparisonBars();
+      renderEditableTable();
+      renderA4Report();
+    }
+
+    function renderComparisonBars() {
+      const box = document.getElementById("chartBarsContainer");
+      const pkey = document.getElementById("selChartParam").value;
+      const rows = (STATE.dashSummary.summary_rows || []).filter(r => r.parameter_key === pkey);
+      if (!rows.length) {
+        box.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted);">No data for chart yet.</div>`;
+        return;
+      }
+      const maxVal = Math.max(...rows.map(r => r.mean || 0), 1);
+      box.innerHTML = rows.map(r => {
+        const pct = Math.min(100, Math.max(3, ((r.mean || 0) / maxVal) * 100));
+        const color = r.fertigation_arm === "Manual" ? "#d97706" : "#0284c7";
+        return `
+          <div class="bar-chart-row">
+            <div>${r.fertigation_arm}-${r.treatment_no}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+            <div style="text-align:right;">${r.mean} ± ${r.se}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderEditableTable() {
+      const tbody = document.getElementById("fullDataTbody");
+      if (!STATE.dashRecords.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:18px;">No records match current filters.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = STATE.dashRecords.slice(0, 300).map(r => {
+        const badge = r.verification_status === "dual_ai_consensus"
+          ? `<span style="color:#16a34a; font-size:0.68rem; font-weight:900;">✅ Dual-AI</span>`
+          : (r.verification_status === "flagged_mismatch" ? `<span style="color:#dc2626; font-size:0.68rem; font-weight:900;">⚠️ Check</span>` : "");
+        return `
+          <tr>
+            <td>${String(r.measured_at).slice(0, 16).replace("T", " ")}<br/><span style="color:var(--teal); font-weight:800;">DAT ${r.dat ?? 0}</span></td>
+            <td><strong>${r.planter_code}</strong><br/><span style="font-size:0.68rem; color:var(--text-muted);">${r.treatment_code}</span></td>
+            <td>${r.plant_no}${r.truss_no ? ` (Tr${r.truss_no})` : ""}</td>
+            <td><strong>${r.parameter_label}</strong></td>
+            <td>${r.manual_value ?? "—"}</td>
+            <td>${r.ai_value ?? "—"} ${badge}</td>
+            <td><strong>${r.final_value} ${r.unit}</strong></td>
+            <td>${r.photo_url ? `<img src="${r.photo_url}" style="width:40px; height:32px; object-fit:cover; border-radius:5px; cursor:zoom-in;" onclick="openLightbox('${r.photo_url}')" />` : "—"}</td>
+            <td style="max-width:150px;">${r.notes || ""}</td>
+            <td>
+              <button type="button" class="btn-action" style="min-height:30px; padding:4px 8px;" onclick='openEditModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>✏️ Edit</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openEditModal(r) {
+      if (!getStoredPin()) { openPinModal(); return; }
+      document.getElementById("editRecId").value = r.record_id;
+      document.getElementById("editArm").value = r.fertigation_arm;
+      document.getElementById("editTrt").value = r.treatment_no;
+      document.getElementById("editRep").value = r.replicate_no;
+      document.getElementById("editPlant").value = r.plant_no;
+      document.getElementById("editManualVal").value = r.manual_value ?? "";
+      document.getElementById("editAiVal").value = r.ai_value ?? "";
+      document.getElementById("editFinalVal").value = r.final_value ?? "";
+      document.getElementById("editUnit").value = r.unit || "";
+      document.getElementById("editNotes").value = r.notes || "";
+      document.getElementById("editRecordModal").classList.add("open");
+    }
+
+    async function submitRecordEdit() {
+      const id = document.getElementById("editRecId").value;
+      const payload = {
+        fertigation_arm: document.getElementById("editArm").value,
+        treatment_no: document.getElementById("editTrt").value.trim(),
+        replicate_no: document.getElementById("editRep").value.trim(),
+        plant_no: document.getElementById("editPlant").value,
+        manual_value: document.getElementById("editManualVal").value !== "" ? parseFloat(document.getElementById("editManualVal").value) : null,
+        final_value: parseFloat(document.getElementById("editFinalVal").value),
+        unit: document.getElementById("editUnit").value.trim(),
+        notes: document.getElementById("editNotes").value.trim(),
+      };
+      const resp = await fetch(`/api/v1/field-data/measurements/${id}`, {
+        method: "PUT",
+        headers: apiHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (resp.ok) {
+        closeModal("editRecordModal");
+        showToast("✓ Record updated!", "#16a34a");
+        refreshRecentMiniTable();
+        if (STATE.tab === "ViewPrint") loadDashboardData();
+      }
+    }
+
+    async function deleteCurrentModalRecord() {
+      const id = document.getElementById("editRecId").value;
+      if (!confirm("Permanently delete this measurement record?")) return;
+      const resp = await fetch(`/api/v1/field-data/measurements/${id}`, { method: "DELETE", headers: apiHeaders() });
+      if (resp.ok) {
+        closeModal("editRecordModal");
+        showToast("🗑️ Record deleted", "#dc2626");
+        refreshRecentMiniTable();
+        if (STATE.tab === "ViewPrint") loadDashboardData();
+      }
+    }
+
+    // Bilingual (EN / TR) Professor A4 Print Report Renderer
+    function renderA4Report() {
+      const lang = document.getElementById("selPrintLang").value || "en";
+      const isTr = lang === "tr";
+      const showSum = document.getElementById("chkPrintSummary").checked;
+      const showReps = document.getElementById("chkPrintReps").checked;
+      const showRaw = document.getElementById("chkPrintRaw").checked;
+      const showTrtEnv = document.getElementById("chkPrintTrtEnv").checked;
+
+      document.getElementById("a4UniTitle").textContent = isTr
+        ? "ATATÜRK ÜNİVERSİTESİ • ZİRAAT FAKÜLTESİ"
+        : "ATATÜRK UNIVERSITY • FACULTY OF AGRICULTURE";
+      document.getElementById("a4DeptSub").textContent = isTr
+        ? "Bahçe Bitkileri Bölümü — Doktora Deneme Veri Raporu"
+        : "Department of Horticulture — PhD Experimental Data Report";
+      document.getElementById("a4ExpTitle").textContent = isTr
+        ? "Deneme 2: IoT ve Manuel Fertigasyon × Tuzluluk (0/80 mM NaCl) × NaHS (25 uM) × Hümik Asit (4 mL/L)"
+        : "Experiment 2: IoT vs. Manual Fertigation × Salinity (0/80 mM NaCl) × NaHS (25 uM) × Humic Acid (4 mL/L)";
+      document.getElementById("a4DateLbl").textContent = isTr ? "Rapor Tarihi:" : "Report Date:";
+      document.getElementById("a4DateVal").textContent = new Date().toISOString().slice(0, 10);
+      document.getElementById("a4Sec1Title").textContent = isTr
+        ? "1. Uygulama Özet Tablosu (Ortalama +/- Standart Hata)"
+        : "1. Treatment Summary Table (Mean +/- SE)";
+      document.getElementById("a4Sec2Title").textContent = isTr
+        ? "2. Kaydedilen Bireysel Ölçümler"
+        : "2. Individual Recorded Observations";
+      document.getElementById("a4Sec3Title").textContent = isTr
+        ? "3. Son Uygulamalar ve Sera İklim Özeti"
+        : "3. Recent Treatment Applications & Greenhouse Microclimate";
+      document.getElementById("a4ProfNotesLbl").textContent = isTr
+        ? "Danışman Görüş ve Notları (Prof. Dr. Ertan Yıldırım / İzleme Komitesi):"
+        : "Supervisor Observations / Instructions (Prof. Dr. Ertan Yıldırım / Committee):";
+      document.getElementById("a4SignLbl").textContent = isTr ? "İnceleyen / İmza ve Tarih:" : "Reviewed By / Signature & Date:";
+
+      const dats = STATE.dashRecords.map(r => r.dat).filter(d => d !== null && d !== undefined);
+      const datTxt = dats.length ? `DAT ${Math.min(...dats)} – ${Math.max(...dats)}` : "—";
+      document.getElementById("a4MetaGrid").innerHTML = `
+        <div><strong>${isTr ? "Bitki / Çeşit:" : "Crop / Cultivar:"}</strong> Domates cv. 'Optimum' (3:1 Torf:Perlit)</div>
+        <div><strong>${isTr ? "Kapsanan Saksı:" : "Planters Covered:"}</strong> ${(STATE.dashSummary.unique_planters_measured || []).length} (${STATE.dashRecords.length} ${isTr ? "ölçüm" : "readings"})</div>
+        <div><strong>${isTr ? "Dikim Sonrası Gün:" : "DAT Window:"}</strong> ${datTxt}</div>
+      `;
+
+      // Section 1: Summary Table
+      document.getElementById("a4SummarySection").classList.toggle("hidden", !showSum);
+      const sRows = STATE.dashSummary.summary_rows || [];
+      if (!sRows.length) {
+        document.getElementById("a4SummaryTableWrap").innerHTML = `<p style="font-size:9pt;">${isTr ? "Seçilen filtrede veri bulunamadı." : "No summary rows in current filter."}</p>`;
+      } else {
+        const repHdr = showReps ? `<th>R1</th><th>R2</th><th>R3</th><th>R4</th>` : "";
+        document.getElementById("a4SummaryTableWrap").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>${isTr ? "Parametre" : "Parameter"}</th>
+                <th>${isTr ? "Sistem" : "Arm"}</th>
+                <th>${isTr ? "Uygulama" : "Treatment"}</th>
+                <th>NaCl / H2S / HS</th>
+                <th>N</th>
+                <th>${isTr ? "Ortalama ± SH" : "Mean ± SE"}</th>
+                <th>${isTr ? "% Kontrol" : "% vs Ctrl"}</th>
+                ${repHdr}
+              </tr>
+            </thead>
+            <tbody>
+              ${sRows.map(sr => {
+                const rm = sr.rep_means || {};
+                const repCols = showReps ? `<td>${rm.R1 ?? "—"}</td><td>${rm.R2 ?? "—"}</td><td>${rm.R3 ?? "—"}</td><td>${rm.R4 ?? "—"}</td>` : "";
+                const pName = isTr ? (sr.label_tr || sr.parameter_label) : sr.parameter_label;
+                const pct = sr.pct_vs_t1_ctrl !== null && sr.pct_vs_t1_ctrl !== undefined ? `${sr.pct_vs_t1_ctrl > 0 ? '+' : ''}${sr.pct_vs_t1_ctrl}%` : "—";
+                return `
+                  <tr>
+                    <td><strong>${pName}</strong> (${sr.unit})</td>
+                    <td>${sr.fertigation_arm}</td>
+                    <td><strong>${sr.treatment_no}</strong> (${sr.treatment_code})</td>
+                    <td>${sr.nacl_mm}mM | ${sr.nahs_um}uM | ${sr.humic_mll}mL</td>
+                    <td>${sr.n}</td>
+                    <td><strong>${sr.mean} ± ${sr.se}</strong></td>
+                    <td>${pct}</td>
+                    ${repCols}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Section 2: Raw Observations
+      document.getElementById("a4RawSection").classList.toggle("hidden", !showRaw);
+      if (showRaw) {
+        document.getElementById("a4RawTableWrap").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>${isTr ? "Tarih / DAT" : "Date / DAT"}</th>
+                <th>${isTr ? "Saksı / Bitki" : "Planter / Plant"}</th>
+                <th>${isTr ? "Parametre" : "Parameter"}</th>
+                <th>${isTr ? "Manuel" : "Manual"}</th>
+                <th>AI</th>
+                <th>${isTr ? "Kesin Değer" : "Final Value"}</th>
+                <th>${isTr ? "Not" : "Notes"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${STATE.dashRecords.slice(0, 120).map(r => `
+                <tr>
+                  <td>${String(r.measured_at).slice(0, 16).replace("T", " ")} (D${r.dat ?? 0})</td>
+                  <td>${r.planter_code} (${r.plant_no})</td>
+                  <td>${r.parameter_label}</td>
+                  <td>${r.manual_value ?? "—"}</td>
+                  <td>${r.ai_value ?? "—"}</td>
+                  <td><strong>${r.final_value} ${r.unit}</strong></td>
+                  <td>${r.notes || ""}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Section 3: Treatments & Climate
+      document.getElementById("a4TrtEnvSection").classList.toggle("hidden", !showTrtEnv);
+      if (showTrtEnv) {
+        const cStats = STATE.dashClimate.location_stats || [];
+        const trts = STATE.dashTreatments.slice(0, 8);
+        let html = "";
+        if (trts.length) {
+          html += `
+            <table>
+              <thead>
+                <tr>
+                  <th>${isTr ? "Uygulama Zamanı" : "Applied At"}</th>
+                  <th>${isTr ? "Kapsam" : "Scope"}</th>
+                  <th>${isTr ? "İşlem" : "Type"}</th>
+                  <th>H2S / HS / NaCl</th>
+                  <th>EC / pH</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${trts.map(t => `
+                  <tr>
+                    <td>${String(t.applied_at).slice(0, 16).replace("T", " ")} (D${t.dat ?? 0})</td>
+                    <td>${t.group_label}</td>
+                    <td>${t.application_type}</td>
+                    <td>${t.nahs_um} uM | ${t.humic_mll} mL/L | ${t.nacl_mm} mM</td>
+                    <td>${t.solution_ec_uscm ?? "—"} uS/cm | pH ${t.solution_ph ?? "—"}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+        if (cStats.length) {
+          html += `
+            <table>
+              <thead>
+                <tr>
+                  <th>${isTr ? "İklim Kayıt Noktası" : "Logger Location"}</th>
+                  <th>N</th>
+                  <th>${isTr ? "Ort. Sıcaklık (Min–Maks)" : "Mean Temp (Min–Max)"}</th>
+                  <th>${isTr ? "Ort. Nem (%)" : "Mean RH (%)"}</th>
+                  <th>${isTr ? "Ort. VPD (kPa)" : "Mean VPD (kPa)"}</th>
+                  <th>${isTr ? "Ort. Işık (Lux)" : "Mean Light (Lux)"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cStats.map(s => `
+                  <tr>
+                    <td>${s.location_tag}</td>
+                    <td>${s.samples}</td>
+                    <td>${s.mean_temp_c ?? "—"} °C (${s.min_temp_c ?? "—"} – ${s.max_temp_c ?? "—"})</td>
+                    <td>${s.mean_rh_pct ?? "—"}%</td>
+                    <td>${s.mean_vpd_kpa ?? "—"} kPa</td>
+                    <td>${s.mean_light_lux ?? "—"} lux</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+        document.getElementById("a4TrtEnvWrap").innerHTML = html || `<p style="font-size:8.5pt;">—</p>`;
+      }
+    }
+
+    function triggerA4Print() {
+      renderA4Report();
+      window.print();
+    }
+
+    function exportDataset(kind) {
+      const qs = buildFilterQuery();
+      window.location.href = `/api/v1/field-data/export/${kind}?${qs.toString()}`;
+    }
+
+    // AI Settings Modal
+    async function openAISettingsModal() {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const resp = await fetch("/api/v1/field-data/ai-settings");
+      const cfg = await resp.json();
+      document.getElementById("cfgAiProvider").value = cfg.provider || "openrouter";
+      document.getElementById("cfgPrimaryModel").value = cfg.primary_model || "google/gemini-2.5-flash";
+      document.getElementById("cfgSecondaryModel").value = cfg.secondary_model || "openai/gpt-4o-mini";
+      document.getElementById("cfgDualVerify").checked = Boolean(cfg.dual_verify_enabled);
+      document.getElementById("cfgOpenRouterKey").value = "";
+      document.getElementById("cfgGeminiKey").value = "";
+      document.getElementById("lblOrKeyStatus").textContent = cfg.has_openrouter_key ? `✓ Saved Key: ${cfg.openrouter_key_masked}` : "No OpenRouter key saved yet";
+      document.getElementById("lblGemKeyStatus").textContent = cfg.has_gemini_key ? `✓ Saved Key: ${cfg.gemini_key_masked}` : "No direct Gemini key saved";
+      document.getElementById("aiSettingsModal").classList.add("open");
+    }
+
+    async function saveAISettings() {
+      const payload = {
+        provider: document.getElementById("cfgAiProvider").value,
+        primary_model: document.getElementById("cfgPrimaryModel").value,
+        secondary_model: document.getElementById("cfgSecondaryModel").value,
+        dual_verify_enabled: document.getElementById("cfgDualVerify").checked,
+      };
+      const orVal = document.getElementById("cfgOpenRouterKey").value.trim();
+      if (orVal) payload.openrouter_api_key = orVal;
+      const gemVal = document.getElementById("cfgGeminiKey").value.trim();
+      if (gemVal) payload.gemini_api_key = gemVal;
+
+      const resp = await fetch("/api/v1/field-data/ai-settings", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      if (resp.ok) {
+        closeModal("aiSettingsModal");
+        showToast("✅ PhD Dual-AI Vision settings saved!", "#16a34a");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>

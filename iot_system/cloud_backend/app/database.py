@@ -236,19 +236,19 @@ def init_db() -> None:
 
                 CREATE TABLE IF NOT EXISTS stress_calibration_settings (
                     id INTEGER PRIMARY KEY,
-                    substrate_name TEXT NOT NULL DEFAULT '3:1 Peat : Perlite (v/v)',
+                    substrate_name TEXT NOT NULL DEFAULT 'Agrimix Peat : Perlite 3:1 (v/v)',
                     hilhorst_epsilon_offset REAL NOT NULL DEFAULT 2.5,
                     container_capacity_pct REAL NOT NULL DEFAULT 78.0,
                     wilting_point_pct REAL NOT NULL DEFAULT 30.0,
-                    optimal_vwc_min_pct REAL NOT NULL DEFAULT 50.0,
-                    optimal_vwc_max_pct REAL NOT NULL DEFAULT 78.0,
+                    optimal_vwc_min_pct REAL NOT NULL DEFAULT 40.0,
+                    optimal_vwc_max_pct REAL NOT NULL DEFAULT 72.0,
                     maas_hoffman_threshold_dsm REAL NOT NULL DEFAULT 2.5,
                     maas_hoffman_slope_pct_per_dsm REAL NOT NULL DEFAULT 9.9,
-                    optimal_ph_min REAL NOT NULL DEFAULT 5.5,
-                    optimal_ph_max REAL NOT NULL DEFAULT 6.5,
-                    cwsi_ll_intercept REAL NOT NULL DEFAULT -1.8,
+                    optimal_ph_min REAL NOT NULL DEFAULT 5.8,
+                    optimal_ph_max REAL NOT NULL DEFAULT 6.2,
+                    cwsi_ll_intercept REAL NOT NULL DEFAULT 0.45,
                     cwsi_ll_slope REAL NOT NULL DEFAULT -1.35,
-                    cwsi_ul_degc REAL NOT NULL DEFAULT 3.5,
+                    cwsi_ul_degc REAL NOT NULL DEFAULT 3.8,
                     leaf_outlier_delta_c REAL NOT NULL DEFAULT 2.0,
                     transplant_date TEXT NOT NULL DEFAULT '2026-10-16',
                     updated_at TEXT NOT NULL
@@ -418,19 +418,19 @@ def init_db() -> None:
 
                 CREATE TABLE IF NOT EXISTS stress_calibration_settings (
                     id INTEGER PRIMARY KEY,
-                    substrate_name TEXT NOT NULL DEFAULT '3:1 Peat : Perlite (v/v)',
+                    substrate_name TEXT NOT NULL DEFAULT 'Agrimix Peat : Perlite 3:1 (v/v)',
                     hilhorst_epsilon_offset REAL NOT NULL DEFAULT 2.5,
                     container_capacity_pct REAL NOT NULL DEFAULT 78.0,
                     wilting_point_pct REAL NOT NULL DEFAULT 30.0,
-                    optimal_vwc_min_pct REAL NOT NULL DEFAULT 50.0,
-                    optimal_vwc_max_pct REAL NOT NULL DEFAULT 78.0,
+                    optimal_vwc_min_pct REAL NOT NULL DEFAULT 40.0,
+                    optimal_vwc_max_pct REAL NOT NULL DEFAULT 72.0,
                     maas_hoffman_threshold_dsm REAL NOT NULL DEFAULT 2.5,
                     maas_hoffman_slope_pct_per_dsm REAL NOT NULL DEFAULT 9.9,
-                    optimal_ph_min REAL NOT NULL DEFAULT 5.5,
-                    optimal_ph_max REAL NOT NULL DEFAULT 6.5,
-                    cwsi_ll_intercept REAL NOT NULL DEFAULT -1.8,
+                    optimal_ph_min REAL NOT NULL DEFAULT 5.8,
+                    optimal_ph_max REAL NOT NULL DEFAULT 6.2,
+                    cwsi_ll_intercept REAL NOT NULL DEFAULT 0.45,
                     cwsi_ll_slope REAL NOT NULL DEFAULT -1.35,
-                    cwsi_ul_degc REAL NOT NULL DEFAULT 3.5,
+                    cwsi_ul_degc REAL NOT NULL DEFAULT 3.8,
                     leaf_outlier_delta_c REAL NOT NULL DEFAULT 2.0,
                     transplant_date TEXT NOT NULL DEFAULT '2026-10-16',
                     updated_at TEXT NOT NULL
@@ -501,7 +501,7 @@ def init_db() -> None:
                     setting_id, save_interval_sec, default_min_moisture, default_max_moisture,
                     global_auto_mode, high_ec_alarm_threshold, low_moisture_alarm_threshold,
                     high_temp_alarm_threshold, auto_sync_plc_clock, updated_at
-                ) VALUES (1, 60, 45.0, 80.0, 1, 2500, 35.0, 35.0, 1, %s)
+                ) VALUES (1, 60, 50.0, 70.0, 1, 2500, 35.0, 35.0, 1, %s)
                 ON CONFLICT (setting_id) DO NOTHING
             """, (now_iso,))
         else:
@@ -510,7 +510,7 @@ def init_db() -> None:
                     setting_id, save_interval_sec, default_min_moisture, default_max_moisture,
                     global_auto_mode, high_ec_alarm_threshold, low_moisture_alarm_threshold,
                     high_temp_alarm_threshold, auto_sync_plc_clock, updated_at
-                ) VALUES (1, 60, 45.0, 80.0, 1, 2500, 35.0, 35.0, 1, ?)
+                ) VALUES (1, 60, 50.0, 70.0, 1, 2500, 35.0, 35.0, 1, ?)
             """, (now_iso,))
 
         # Seed default 8-line PhD treatment profiles (Zones 1..8)
@@ -615,6 +615,55 @@ def init_db() -> None:
                 now_iso,
             ))
 
+        # Safe protocol migration for legacy untouched calibration & 100 mM / 2.5 mL/L defaults
+        _exec(
+            cur,
+            """
+            UPDATE stress_calibration_settings
+            SET optimal_vwc_min_pct = 40.0,
+                optimal_vwc_max_pct = 72.0,
+                optimal_ph_min = 5.8,
+                optimal_ph_max = 6.2,
+                cwsi_ll_intercept = 0.45,
+                cwsi_ul_degc = 3.8,
+                updated_at = ?
+            WHERE id = 1 AND cwsi_ll_intercept = -1.8
+            """,
+            (now_iso,),
+        )
+        _exec(
+            cur,
+            """
+            UPDATE line_treatment_profiles
+            SET nacl_mm = 50.0,
+                target_solution_ec_uscm = 7500,
+                salinity_regime = 'Salinized (80 mM NaCl)',
+                updated_at = ?
+            WHERE zone_id >= 5 AND nacl_mm = 100.0 AND target_solution_ec_uscm = 11500
+            """,
+            (now_iso,),
+        )
+        _exec(
+            cur,
+            """
+            UPDATE line_treatment_profiles
+            SET humic_dose_mll = 4.0,
+                updated_at = ?
+            WHERE zone_id IN (3, 4, 7, 8) AND humic_dose_mll = 2.5
+            """,
+            (now_iso,),
+        )
+        _exec(
+            cur,
+            """
+            UPDATE line_treatment_profiles
+            SET target_solution_ec_uscm = 2300,
+                updated_at = ?
+            WHERE zone_id <= 4 AND nacl_mm = 0.0 AND target_solution_ec_uscm = 2000
+            """,
+            (now_iso,),
+        )
+
 
 def _exec(cur, sql_sqlite: str, params: tuple = ()):
     if IS_POSTGRES:
@@ -702,6 +751,10 @@ def store_telemetry_batches(
             sensors = b.get("sensors", [])
             valves = b.get("valves", {})
 
+            if not allow_simulated and not any(s.get("soil_moisture") is not None for s in sensors):
+                skipped += 1
+                continue
+
             if IS_POSTGRES:
                 cur.execute("""
                     INSERT INTO telemetry_batches (
@@ -737,6 +790,9 @@ def store_telemetry_batches(
                 sph = float(s["soil_ph"]) if s.get("soil_ph") is not None else None
                 lh = float(s["leaf_humidity"]) if s.get("leaf_humidity") is not None else None
                 lt = float(s["leaf_temp"]) if s.get("leaf_temp") is not None else None
+
+                if sm is None and st is None and sec is None and lh is None:
+                    continue
 
                 if IS_POSTGRES:
                     cur.execute("""
@@ -1896,7 +1952,7 @@ def get_zone_history(
 
 
 def get_stress_calibration() -> Dict[str, Any]:
-    """Return the active biophysical & substrate calibration settings."""
+    """Return the active biophysical & substrate calibration settings with canonical + alias keys."""
     with get_conn() as conn:
         cur = conn.cursor()
         _exec(cur, "SELECT * FROM stress_calibration_settings WHERE id = 1")
@@ -1904,31 +1960,68 @@ def get_stress_calibration() -> Dict[str, Any]:
         if not rows:
             return dict(DEFAULT_CALIBRATION)
         row = rows[0]
-        return {
+        eps0 = float(row.get("hilhorst_epsilon_offset", DEFAULT_CALIBRATION["hilhorst_epsilon_0"]))
+        cc_pct = float(row.get("container_capacity_pct", DEFAULT_CALIBRATION["container_capacity_pct"]))
+        wp_pct = float(row.get("wilting_point_pct", DEFAULT_CALIBRATION["wilting_point_pct"]))
+        vwc_min = float(row.get("optimal_vwc_min_pct", DEFAULT_CALIBRATION["optimal_vwc_min_pct"]))
+        vwc_max = float(row.get("optimal_vwc_max_pct", DEFAULT_CALIBRATION["optimal_vwc_max_pct"]))
+        mh_th = float(row.get("maas_hoffman_threshold_dsm", DEFAULT_CALIBRATION["maas_hoffman_threshold_dsm"]))
+        mh_sl = float(row.get("maas_hoffman_slope_pct_per_dsm", DEFAULT_CALIBRATION["maas_hoffman_slope_pct_per_dsm"]))
+        ph_min = float(row.get("optimal_ph_min", DEFAULT_CALIBRATION["optimal_ph_min"]))
+        ph_max = float(row.get("optimal_ph_max", DEFAULT_CALIBRATION["optimal_ph_max"]))
+        ll_int = float(row.get("cwsi_ll_intercept", DEFAULT_CALIBRATION["cwsi_ll_intercept"]))
+        ll_slp = float(row.get("cwsi_ll_slope", DEFAULT_CALIBRATION["cwsi_ll_slope"]))
+        ul_dt = float(row.get("cwsi_ul_degc", DEFAULT_CALIBRATION["cwsi_ul_degc"]))
+        out_dt = float(row.get("leaf_outlier_delta_c", DEFAULT_CALIBRATION["leaf_outlier_delta_c"]))
+        out = dict(DEFAULT_CALIBRATION)
+        out.update({
             "id": int(row.get("id", 1)),
             "substrate_name": str(row.get("substrate_name", DEFAULT_CALIBRATION["substrate_name"])),
-            "hilhorst_epsilon_offset": float(row.get("hilhorst_epsilon_offset", 2.5)),
-            "container_capacity_pct": float(row.get("container_capacity_pct", 78.0)),
-            "wilting_point_pct": float(row.get("wilting_point_pct", 30.0)),
-            "optimal_vwc_min_pct": float(row.get("optimal_vwc_min_pct", 50.0)),
-            "optimal_vwc_max_pct": float(row.get("optimal_vwc_max_pct", 78.0)),
-            "maas_hoffman_threshold_dsm": float(row.get("maas_hoffman_threshold_dsm", 2.5)),
-            "maas_hoffman_slope_pct_per_dsm": float(row.get("maas_hoffman_slope_pct_per_dsm", 9.9)),
-            "optimal_ph_min": float(row.get("optimal_ph_min", 5.5)),
-            "optimal_ph_max": float(row.get("optimal_ph_max", 6.5)),
-            "cwsi_ll_intercept": float(row.get("cwsi_ll_intercept", -1.8)),
-            "cwsi_ll_slope": float(row.get("cwsi_ll_slope", -1.35)),
-            "cwsi_ul_degc": float(row.get("cwsi_ul_degc", 3.5)),
-            "leaf_outlier_delta_c": float(row.get("leaf_outlier_delta_c", 2.0)),
+            "hilhorst_epsilon_offset": eps0,
+            "hilhorst_epsilon_0": eps0,
+            "container_capacity_pct": cc_pct,
+            "container_capacity_vwc": cc_pct,
+            "wilting_point_pct": wp_pct,
+            "optimal_vwc_min_pct": vwc_min,
+            "optimal_vwc_min": vwc_min,
+            "optimal_vwc_max_pct": vwc_max,
+            "optimal_vwc_max": vwc_max,
+            "maas_hoffman_threshold_dsm": mh_th,
+            "ec_threshold_dsm": mh_th,
+            "maas_hoffman_slope_pct_per_dsm": mh_sl,
+            "ec_slope_pct_per_dsm": mh_sl,
+            "optimal_ph_min": ph_min,
+            "optimal_ph_max": ph_max,
+            "cwsi_ll_intercept": ll_int,
+            "cwsi_ll_slope": ll_slp,
+            "cwsi_ul_degc": ul_dt,
+            "cwsi_ul_delta_t": ul_dt,
+            "leaf_outlier_delta_c": out_dt,
+            "line_leaf_outlier_c": out_dt,
             "transplant_date": str(row.get("transplant_date", "2026-10-16")),
             "updated_at": row.get("updated_at"),
-        }
+        })
+        return out
 
 
 def update_stress_calibration(updates: Dict[str, Any]) -> Dict[str, Any]:
-    """Update biophysical & substrate calibration settings."""
+    """Update biophysical & substrate calibration settings (accepts canonical or alias keys)."""
     current = get_stress_calibration()
-    merged = {**current, **{k: v for k, v in updates.items() if v is not None}}
+    clean_upd = {k: v for k, v in updates.items() if v is not None}
+    alias_pairs = [
+        ("hilhorst_epsilon_0", "hilhorst_epsilon_offset"),
+        ("container_capacity_vwc", "container_capacity_pct"),
+        ("optimal_vwc_min", "optimal_vwc_min_pct"),
+        ("optimal_vwc_max", "optimal_vwc_max_pct"),
+        ("ec_threshold_dsm", "maas_hoffman_threshold_dsm"),
+        ("ec_slope_pct_per_dsm", "maas_hoffman_slope_pct_per_dsm"),
+        ("cwsi_ul_delta_t", "cwsi_ul_degc"),
+        ("line_leaf_outlier_c", "leaf_outlier_delta_c"),
+    ]
+    for k_src, k_dst in alias_pairs:
+        if k_src in clean_upd and k_dst not in clean_upd:
+            clean_upd[k_dst] = clean_upd[k_src]
+    merged = {**current, **clean_upd}
     now_iso = datetime.now(timezone.utc).isoformat()
     with get_conn() as conn:
         cur = conn.cursor()

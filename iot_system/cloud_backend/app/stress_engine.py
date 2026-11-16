@@ -19,19 +19,19 @@ DEFAULT_CALIBRATION: Dict[str, Any] = {
     "hilhorst_epsilon_offset": 2.5,
     "container_capacity_vwc": 78.0,    # Measured container capacity (%) for 3:1 peat-perlite
     "container_capacity_pct": 78.0,
-    "wilting_point_pct": 30.0,
-    "optimal_vwc_min": 55.0,           # 70% of container capacity
-    "optimal_vwc_max": 80.0,           # PLC upper cut-off band
-    "optimal_vwc_min_pct": 55.0,
-    "optimal_vwc_max_pct": 80.0,
-    "critical_vwc_low": 35.0,          # Drought / peat shrinkage / BER risk threshold
+    "wilting_point_pct": 28.0,
+    "optimal_vwc_min": 40.0,           # Active PLC v2.13 auto-start threshold (<= 40% ON)
+    "optimal_vwc_max": 72.0,           # Active PLC v2.13 auto-stop ceiling (>= 70% OFF + 2% drainage settle)
+    "optimal_vwc_min_pct": 40.0,
+    "optimal_vwc_max_pct": 72.0,
+    "critical_vwc_low": 25.0,          # Drought / peat shrinkage / BER risk threshold
     "critical_vwc_high": 90.0,         # Root hypoxia / waterlogging threshold
     "ec_threshold_dsm": 2.5,           # Maas & Hoffman tomato salinity threshold (2.5 dS/m = 2500 uS/cm)
     "maas_hoffman_threshold_dsm": 2.5,
     "ec_slope_pct_per_dsm": 9.9,       # Maas & Hoffman yield loss slope (9.9% per dS/m above 2.5)
     "maas_hoffman_slope_pct_per_dsm": 9.9,
     "optimal_ec_max_uscm": 2500.0,     # Control nutrient solution upper bound
-    "saline_target_ec_uscm": 7500.0,   # 50 mM NaCl nutrient solution nominal EC (~7.3-7.8 mS/cm)
+    "saline_target_ec_uscm": 7500.0,   # 80 mM NaCl nutrient solution nominal EC (~7.3-7.8 mS/cm)
     "salt_coeff_expected": 0.55,       # Default TDS/EC salt conversion factor (mg/L per uS/cm)
     "optimal_ph_min": 5.8,
     "optimal_ph_max": 6.2,
@@ -131,7 +131,7 @@ DEFAULT_LINE_PROFILES: Dict[int, Dict[str, Any]] = {
     5: {
         "zone_id": 5,
         "treatment_code": "I-S-0",
-        "treatment_label": "Salinity (50 mM NaCl) + No Biostimulant (Positive Stress Control)",
+        "treatment_label": "Salinity (80 mM NaCl) + No Biostimulant (Positive Stress Control)",
         "salinity_regime": "Salinity Stress (NaCl)",
         "fertigation_mode": "IoT",
         "growth_stage": "Solution 1 — Vegetative",
@@ -150,7 +150,7 @@ DEFAULT_LINE_PROFILES: Dict[int, Dict[str, Any]] = {
     6: {
         "zone_id": 6,
         "treatment_code": "I-S-H2S",
-        "treatment_label": "Salinity (50 mM NaCl) + 25 uM NaHS Pulse",
+        "treatment_label": "Salinity (80 mM NaCl) + 25 uM NaHS Pulse",
         "salinity_regime": "Salinity Stress (NaCl)",
         "fertigation_mode": "IoT",
         "growth_stage": "Solution 1 — Vegetative",
@@ -169,7 +169,7 @@ DEFAULT_LINE_PROFILES: Dict[int, Dict[str, Any]] = {
     7: {
         "zone_id": 7,
         "treatment_code": "I-S-HS",
-        "treatment_label": "Salinity (50 mM NaCl) + 4 mL/L LIQHUMUS NK Pulse",
+        "treatment_label": "Salinity (80 mM NaCl) + 4 mL/L LIQHUMUS NK Pulse",
         "salinity_regime": "Salinity Stress (NaCl)",
         "fertigation_mode": "IoT",
         "growth_stage": "Solution 1 — Vegetative",
@@ -188,7 +188,7 @@ DEFAULT_LINE_PROFILES: Dict[int, Dict[str, Any]] = {
     8: {
         "zone_id": 8,
         "treatment_code": "I-S-H2S+HS",
-        "treatment_label": "Salinity (50 mM NaCl) + 25 uM NaHS + 4 mL/L Humic (Synergy)",
+        "treatment_label": "Salinity (80 mM NaCl) + 25 uM NaHS + 4 mL/L Humic (Synergy)",
         "salinity_regime": "Salinity Stress (NaCl)",
         "fertigation_mode": "IoT",
         "growth_stage": "Solution 1 — Vegetative",
@@ -273,6 +273,76 @@ def compute_h2s_speciation(
     }
 
 
+def sanitize_sensor_channels(
+    soil_moisture: Optional[float],
+    soil_temp: Optional[float],
+    soil_ec: Optional[float],
+    soil_salt: Optional[float],
+    leaf_humidity: Optional[float],
+    leaf_temp: Optional[float],
+) -> Dict[str, Any]:
+    """
+    Physical plausibility & RS485 dropout filter.
+    Disconnected Modbus RTU leaf probes (Slave 101-124) return 0.0 deg C and 0.0% RH,
+    which previously produced -50 deg C dew points and artificial CWSI scores.
+    """
+    moist = _safe_float(soil_moisture)
+    stemp = _safe_float(soil_temp)
+    sec = _safe_float(soil_ec)
+    ssalt = _safe_float(soil_salt)
+    lhum = _safe_float(leaf_humidity)
+    ltemp = _safe_float(leaf_temp)
+
+    # Soil probe offline check: all zeros or outside physical bounds
+    soil_all_zero = (
+        (moist is None or moist <= 0.5)
+        and (stemp is None or stemp <= 0.5)
+        and (sec is None or sec <= 0.0)
+    )
+    if soil_all_zero:
+        soil_online = False
+        moist, stemp, sec, ssalt = None, None, None, None
+    else:
+        if moist is not None and (moist < 0.5 or moist > 100.0):
+            moist = None
+        if stemp is not None and (stemp <= 1.0 or stemp > 55.0):
+            stemp = None
+        if sec is not None and sec < 0.0:
+            sec = None
+        if ssalt is not None and ssalt < 0.0:
+            ssalt = None
+        soil_online = any(v is not None for v in (moist, stemp, sec))
+
+    soil_saturated = bool(moist is not None and moist >= 98.0)
+
+    # Leaf probe offline check: heated greenhouse leaf temp cannot be <= 2.0 C or > 52.0 C,
+    # and RH cannot be <= 2.0% (0.0 C / 0.0-0.4% RH is an unplugged RS485 register dropout)
+    leaf_temp_valid = ltemp is not None and 2.5 <= ltemp <= 52.0
+    leaf_hum_valid = lhum is not None and 2.5 <= lhum <= 100.0
+    if not leaf_temp_valid:
+        ltemp = None
+    if not leaf_hum_valid:
+        lhum = None
+    # Require valid leaf temperature for canopy microclimate online status
+    if ltemp is None:
+        lhum = None
+        leaf_online = False
+    else:
+        leaf_online = True
+
+    return {
+        "soil_online": soil_online,
+        "soil_saturated": soil_saturated,
+        "leaf_online": leaf_online,
+        "soil_moisture": moist,
+        "soil_temp": stemp,
+        "soil_ec": sec,
+        "soil_salt": ssalt,
+        "leaf_humidity": lhum,
+        "leaf_temp": ltemp,
+    }
+
+
 def compute_vpd_and_dewpoint(
     temp_c: Optional[float] = None,
     rh_pct: Optional[float] = None,
@@ -282,6 +352,7 @@ def compute_vpd_and_dewpoint(
 ) -> Dict[str, Optional[float]]:
     """
     Returns dict with vpd_kpa, dew_point_c, dew_point_margin_c, sat_vp_kpa from temperature (deg C) and relative humidity (%).
+    Guards against 0.0 deg C / 0.0% RH RS485 register dropouts.
     """
     t_in = leaf_temp_c if leaf_temp_c is not None else temp_c
     rh_in = leaf_rh_pct if leaf_rh_pct is not None else rh_pct
@@ -293,7 +364,15 @@ def compute_vpd_and_dewpoint(
             "sat_vp_kpa": None,
         }
     t = float(t_in)
-    rh = _clamp(float(rh_in), 1.0, 100.0)
+    rh_raw = float(rh_in)
+    if t <= 2.0 or t > 55.0 or rh_raw <= 2.0:
+        return {
+            "vpd_kpa": None,
+            "dew_point_c": None,
+            "dew_point_margin_c": None,
+            "sat_vp_kpa": None,
+        }
+    rh = _clamp(rh_raw, 2.5, 100.0)
     es = 0.61078 * math.exp((17.27 * t) / (t + 237.3))
     ea = es * (rh / 100.0)
     vpd = max(0.0, es - ea)
@@ -373,11 +452,15 @@ def compute_single_sensor_stress(
     line_mean_leaf_temp_c: Optional[float] = None,
     *,
     sensor_row: Optional[Dict[str, Any]] = None,
+    logged_ph: Optional[float] = None,
+    zone_min_vwc: Optional[float] = None,
+    zone_max_vwc: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
     Calculates all biophysical parameters, 6 stress sub-indices (0-100), Composite PSI (0-100),
-    Plant Vitality Index (PVI, 0-100), CWSI, and Dominant Stress Diagnosis for a single plot/row.
-    Preserves None when raw hardware data is absent.
+    Plant Vitality Index (PVI, 0-100), Physiological Strain (0-100), Target EC Drift,
+    CWSI, and Plain-English Actionable Diagnosis for a single plot/row.
+    Preserves None when raw hardware data is absent or offline (0.0 C / 0.0% RH dropouts).
     """
     if reading is None:
         reading = sensor_row or {}
@@ -389,24 +472,53 @@ def compute_single_sensor_stress(
     if line_profile:
         prof.update({k: v for k, v in line_profile.items() if v is not None})
 
-    moist = _safe_float(reading.get("soil_moisture") if "soil_moisture" in reading else reading.get("avg_soil_moisture"))
-    stemp = _safe_float(reading.get("soil_temp") if "soil_temp" in reading else reading.get("avg_soil_temp"))
-    sec = _safe_float(reading.get("soil_ec") if "soil_ec" in reading else reading.get("avg_soil_ec"))
-    ssalt = _safe_float(reading.get("soil_salt") if "soil_salt" in reading else reading.get("avg_soil_salt"))
+    raw_moist = _safe_float(reading.get("soil_moisture") if "soil_moisture" in reading else reading.get("avg_soil_moisture"))
+    raw_stemp = _safe_float(reading.get("soil_temp") if "soil_temp" in reading else reading.get("avg_soil_temp"))
+    raw_sec = _safe_float(reading.get("soil_ec") if "soil_ec" in reading else reading.get("avg_soil_ec"))
+    raw_ssalt = _safe_float(reading.get("soil_salt") if "soil_salt" in reading else reading.get("avg_soil_salt"))
     sph_raw = _safe_float(reading.get("soil_ph") if "soil_ph" in reading else reading.get("avg_soil_ph"))
-    lhum = _safe_float(reading.get("leaf_humidity") if "leaf_humidity" in reading else reading.get("avg_leaf_humidity"))
-    ltemp = _safe_float(reading.get("leaf_temp") if "leaf_temp" in reading else reading.get("avg_leaf_temp"))
+    raw_lhum = _safe_float(reading.get("leaf_humidity") if "leaf_humidity" in reading else reading.get("avg_leaf_humidity"))
+    raw_ltemp = _safe_float(reading.get("leaf_temp") if "leaf_temp" in reading else reading.get("avg_leaf_temp"))
+
+    san = sanitize_sensor_channels(raw_moist, raw_stemp, raw_sec, raw_ssalt, raw_lhum, raw_ltemp)
+    moist = san["soil_moisture"]
+    stemp = san["soil_temp"]
+    sec = san["soil_ec"]
+    ssalt = san["soil_salt"]
+    lhum = san["leaf_humidity"]
+    ltemp = san["leaf_temp"]
+    soil_online = san["soil_online"]
+    soil_saturated = san["soil_saturated"]
+    leaf_online = san["leaf_online"]
+
+    if sph_raw is not None and 3.0 <= sph_raw <= 9.5:
+        eff_ph = round(sph_raw, 2)
+        ph_source = "live_rs485"
+    elif logged_ph is not None and 3.0 <= logged_ph <= 9.5:
+        eff_ph = round(float(logged_ph), 2)
+        ph_source = "logged_measurement"
+    else:
+        eff_ph = round(float(_safe_float(prof.get("ref_soil_ph")) or cal["default_ref_ph"]), 2)
+        ph_source = "reference_anchor"
+
+    nacl_mm = float(prof.get("nacl_mm", prof.get("nacl_level_mm", 0.0)) or 0.0)
+    target_ec_uscm = float(prof.get("target_solution_ec_uscm", prof.get("target_ec_uscm", 2300)) or 2300.0)
+    target_ec_dsm = round(target_ec_uscm / 1000.0, 2)
 
     has_any_data = any(v is not None for v in (moist, stemp, sec, ssalt, lhum, ltemp))
-    eff_ph = sph_raw if sph_raw is not None else _safe_float(prof.get("ref_soil_ph")) or cal["default_ref_ph"]
-    ph_source = "live_rs485" if sph_raw is not None else "reference_anchor"
 
     if not has_any_data:
         spec = compute_h2s_speciation(eff_ph, 22.0, float(prof.get("nahs_dose_um", 0.0)))
         return {
             "has_data": False,
+            "soil_online": False,
+            "soil_saturated_flag": False,
+            "leaf_online": False,
             "effective_ph": eff_ph,
             "ph_source": ph_source,
+            "target_pore_ec_dsm": target_ec_dsm,
+            "ec_drift_dsm": None,
+            "ec_status": "no_data",
             "ec_25_uscm": None,
             "pore_ec_uscm": None,
             "pore_ec_dsm": None,
@@ -436,18 +548,40 @@ def compute_single_sensor_stress(
                 "leaf_cwsi_stress_pct": None,
                 "ph_stress_pct": None,
             },
+            "physio_strain_index": None,
             "composite_psi": None,
             "vitality_pvi": None,
             "plant_vitality_pvi": None,
             "stress_category": "No Live Data (—)",
             "dominant_stress": "Waiting for PLC / HMI Telemetry",
+            "action_status": "no_data",
+            "recommended_action": "Waiting for PLC / RS485 telemetry sync",
         }
 
     # 1. Hilhorst Pore-Water EC & Temp-Corrected EC25
-    hil = compute_hilhorst_pore_ec(moist, sec, stemp, epsilon_0=float(cal["hilhorst_epsilon_0"]))
+    eps_0 = float(cal.get("hilhorst_epsilon_0", cal.get("hilhorst_epsilon_offset", 2.5)))
+    hil = compute_hilhorst_pore_ec(moist, sec, stemp, epsilon_0=eps_0)
     ec_25 = hil["ec_25_uscm"]
     pore_ec_uscm = hil["pore_ec_uscm"] if hil["pore_ec_uscm"] is not None else ec_25
     pore_ec_dsm = round(pore_ec_uscm / 1000.0, 3) if pore_ec_uscm is not None else None
+    ec_drift_dsm = round(pore_ec_dsm - target_ec_dsm, 2) if pore_ec_dsm is not None else None
+
+    if pore_ec_dsm is None:
+        ec_status = "no_data"
+    elif nacl_mm <= 0.0:
+        if pore_ec_dsm < 0.8:
+            ec_status = "low_nutrient"
+        elif pore_ec_dsm <= 3.6:
+            ec_status = "on_target"
+        else:
+            ec_status = "salt_buildup"
+    else:
+        if pore_ec_dsm > max(9.5, target_ec_dsm + 2.0):
+            ec_status = "salt_buildup"
+        elif pore_ec_dsm < 4.5:
+            ec_status = "below_saline_target"
+        else:
+            ec_status = "expected_saline"
 
     # 2. Salt Coefficient (K_salt = Salt / EC) & Effective Pore TDS
     salt_coeff: Optional[float] = None
@@ -463,8 +597,8 @@ def compute_single_sensor_stress(
     t_kelvin_ratio = ((stemp if stemp is not None else 22.0) + 273.15) / 298.15
     if pore_ec_dsm is not None:
         osmotic_mpa = round(-0.036 * pore_ec_dsm * t_kelvin_ratio, 3)
-        th_dsm = float(cal["ec_threshold_dsm"])
-        slope_pct = float(cal["ec_slope_pct_per_dsm"])
+        th_dsm = float(cal.get("ec_threshold_dsm", cal.get("maas_hoffman_threshold_dsm", 2.5)))
+        slope_pct = float(cal.get("ec_slope_pct_per_dsm", cal.get("maas_hoffman_slope_pct_per_dsm", 9.9)))
         yield_loss_pct = round(_clamp(slope_pct * max(0.0, pore_ec_dsm - th_dsm), 0.0, 100.0), 1)
 
     # 4. Leaf Microclimate: VPD_leaf, Dew Point, Leaf-Air Delta T, Intra-Line Outlier, and CWSI
@@ -473,13 +607,14 @@ def compute_single_sensor_stress(
     leaf_dew_c = vpd_info["dew_point_c"]
     ref_amb = ambient_canopy_temp_c if ambient_canopy_temp_c is not None else (stemp + 1.2 if stemp is not None else 23.0)
     leaf_delta_t_c = round(ltemp - ref_amb, 2) if (ltemp is not None and ref_amb is not None) else None
-    line_anomaly_c = round(ltemp - line_mean_leaf_temp_c, 2) if (ltemp is not None and line_mean_leaf_temp_c is not None) else 0.0
-    outlier_flag = bool(line_anomaly_c is not None and abs(line_anomaly_c) >= float(cal["line_leaf_outlier_c"]))
+    line_anomaly_c = round(ltemp - line_mean_leaf_temp_c, 2) if (ltemp is not None and line_mean_leaf_temp_c is not None) else None
+    outlier_th = float(cal.get("line_leaf_outlier_c", cal.get("leaf_outlier_delta_c", 2.0)))
+    outlier_flag = bool(line_anomaly_c is not None and abs(line_anomaly_c) >= outlier_th)
 
     cwsi: Optional[float] = None
     if leaf_delta_t_c is not None and leaf_vpd_kpa is not None:
         dt_ll = float(cal["cwsi_ll_slope"]) * leaf_vpd_kpa + float(cal["cwsi_ll_intercept"])
-        dt_ul = float(cal["cwsi_ul_delta_t"])
+        dt_ul = float(cal.get("cwsi_ul_delta_t", cal.get("cwsi_ul_degc", 3.8)))
         span = max(0.5, dt_ul - dt_ll)
         cwsi = round(_clamp((leaf_delta_t_c - dt_ll) / span, 0.0, 1.0), 3)
 
@@ -489,13 +624,13 @@ def compute_single_sensor_stress(
     # -------------------------------------------------------------------------
     # 6. Compute the 6 Normalized Sub-Indices (0.0 to 100.0%)
     # -------------------------------------------------------------------------
-    # (a) Moisture Stress (S_moist)
+    # (a) Moisture Stress (S_moist) — aligned with PLC v2.13 40% ON / 70% OFF hysteresis
     s_moist: Optional[float] = None
+    opt_min = float(zone_min_vwc) if zone_min_vwc is not None else float(cal.get("optimal_vwc_min", cal.get("optimal_vwc_min_pct", 40.0)))
+    opt_max = max(opt_min + 10.0, (float(zone_max_vwc) + 2.0) if zone_max_vwc is not None else float(cal.get("optimal_vwc_max", cal.get("optimal_vwc_max_pct", 72.0))))
     if moist is not None:
-        opt_min = float(cal["optimal_vwc_min"])
-        opt_max = float(cal["optimal_vwc_max"])
-        crit_low = float(cal["critical_vwc_low"])
-        crit_high = float(cal["critical_vwc_high"])
+        crit_low = min(opt_min - 5.0, float(cal.get("critical_vwc_low", 25.0)))
+        crit_high = max(opt_max + 8.0, float(cal.get("critical_vwc_high", 90.0)))
         if opt_min <= moist <= opt_max:
             s_moist = 0.0
         elif moist < opt_min:
@@ -507,12 +642,10 @@ def compute_single_sensor_stress(
     # (b) Osmotic / Pore-Water EC Stress (S_ec)
     s_ec: Optional[float] = None
     if pore_ec_uscm is not None:
-        opt_ec = float(cal["optimal_ec_max_uscm"])
+        opt_ec = float(cal.get("optimal_ec_max_uscm", 2500.0))
         if pore_ec_uscm <= opt_ec:
-            # Check nutrient deficiency if extremely low (< 700 uS/cm)
             s_ec = round(_clamp(((700.0 - pore_ec_uscm) / 700.0) * 35.0, 0.0, 35.0), 1) if pore_ec_uscm < 700.0 else 0.0
         else:
-            # Above 2500 uS/cm -> scales up to 100% around 10,500 uS/cm (10.5 dS/m)
             s_ec = round(_clamp(((pore_ec_uscm - opt_ec) / 8000.0) * 100.0, 0.0, 100.0), 1)
 
     # (c) Salt Coefficient / Ionic Stress (S_salt)
@@ -523,7 +656,7 @@ def compute_single_sensor_stress(
             salt_mass_stress = _clamp(((ssalt - 1350.0) / 3650.0) * 100.0, 0.0, 100.0)
         coeff_dev_stress = 0.0
         if salt_coeff is not None:
-            exp_k = float(cal["salt_coeff_expected"])
+            exp_k = float(cal.get("salt_coeff_expected", 0.55))
             dev = abs(salt_coeff - exp_k)
             if dev > 0.06:
                 coeff_dev_stress = _clamp(((dev - 0.06) / 0.25) * 60.0, 0.0, 60.0)
@@ -533,8 +666,8 @@ def compute_single_sensor_stress(
     s_temp: Optional[float] = None
     temp_scores: List[float] = []
     if stemp is not None:
-        st_min = float(cal["optimal_soil_temp_min"])
-        st_max = float(cal["optimal_soil_temp_max"])
+        st_min = float(cal.get("optimal_soil_temp_min", 18.0))
+        st_max = float(cal.get("optimal_soil_temp_max", 25.0))
         if stemp < st_min:
             temp_scores.append(_clamp(((st_min - stemp) / 10.0) * 100.0, 0.0, 100.0))
         elif stemp > st_max:
@@ -542,8 +675,8 @@ def compute_single_sensor_stress(
         else:
             temp_scores.append(0.0)
     if ltemp is not None:
-        lt_min = float(cal["optimal_leaf_temp_min"])
-        lt_max = float(cal["optimal_leaf_temp_max"])
+        lt_min = float(cal.get("optimal_leaf_temp_min", 18.0))
+        lt_max = float(cal.get("optimal_leaf_temp_max", 27.0))
         if ltemp < lt_min:
             temp_scores.append(_clamp(((lt_min - ltemp) / 10.0) * 100.0, 0.0, 100.0))
         elif ltemp > lt_max:
@@ -553,9 +686,9 @@ def compute_single_sensor_stress(
     if temp_scores:
         s_temp = round(max(temp_scores), 1)
 
-    # (e) Leaf Stomatal / VPD / CWSI / Wetness Stress (S_leaf)
+    # (e) Leaf Stomatal / VPD / CWSI / Wetness Stress (S_leaf) — only when leaf probe is online
     s_leaf: Optional[float] = None
-    if cwsi is not None or leaf_vpd_kpa is not None or lhum is not None:
+    if leaf_online and (cwsi is not None or leaf_vpd_kpa is not None or lhum is not None):
         cwsi_score = (cwsi * 100.0) if cwsi is not None else 0.0
         vpd_score = 0.0
         if leaf_vpd_kpa is not None:
@@ -570,8 +703,8 @@ def compute_single_sensor_stress(
         s_leaf = round(_clamp(max(cwsi_score, 0.6 * cwsi_score + 0.4 * vpd_score, wet_score, outlier_score), 0.0, 100.0), 1)
 
     # (f) Root-Zone pH Stress (S_ph)
-    ph_min = float(cal["optimal_ph_min"])
-    ph_max = float(cal["optimal_ph_max"])
+    ph_min = float(cal.get("optimal_ph_min", 5.8))
+    ph_max = float(cal.get("optimal_ph_max", 6.2))
     if ph_min <= eff_ph <= ph_max:
         s_ph = 0.0
     elif eff_ph < ph_min:
@@ -593,13 +726,29 @@ def compute_single_sensor_stress(
     weighted_sum = sum(float(val) * w for _, val, w in active_w) / total_w
     max_label, max_val, _ = max(active_w, key=lambda x: float(x[1])) if active_w else ("None", 0.0, 1.0)
 
-    # Max-hazard boost so severe single-factor stress is never masked
     if float(max_val) > 65.0:
         composite_psi = round(_clamp(0.55 * weighted_sum + 0.45 * float(max_val), 0.0, 100.0), 1)
     else:
         composite_psi = round(_clamp(weighted_sum, 0.0, 100.0), 1)
 
     vitality_pvi = round(100.0 - composite_psi, 1)
+
+    # 8. Target-Aware Plant Physiological Strain (0-100): excludes intended 80 mM NaCl baseline unless salt drifts over target
+    excess_ec_penalty = 0.0
+    if ec_status == "salt_buildup" and ec_drift_dsm is not None:
+        excess_ec_penalty = _clamp((ec_drift_dsm / 4.0) * 100.0, 20.0, 100.0)
+    strain_parts = [
+        (s_moist, 0.35),
+        (s_leaf, 0.35),
+        (s_temp, 0.15),
+        (s_ph, 0.05),
+        (excess_ec_penalty if pore_ec_dsm is not None else None, 0.10),
+    ]
+    act_st = [(v, w) for (v, w) in strain_parts if v is not None]
+    physio_strain = round(
+        _clamp(sum(float(v) * w for v, w in act_st) / (sum(w for _, w in act_st) or 1.0), 0.0, 100.0),
+        1,
+    ) if act_st else None
 
     if composite_psi <= 20.0:
         stress_cat = "Optimal (Unstressed)"
@@ -612,26 +761,65 @@ def compute_single_sensor_stress(
     else:
         stress_cat = "Critical Stress"
 
-    # Dominant stress classifier
-    if composite_psi <= 18.0 and not outlier_flag:
-        dom_stress = "Optimal Root-Zone & Stomatal Status"
-    elif outlier_flag:
+    # Dominant stress & plain-English actionable recommendation
+    action_status = "optimal"
+    rec_action = "Within target band — no action needed"
+
+    if soil_saturated:
+        action_status = "action_needed"
+        dom_stress = f"Waterlogged / Saturated Root-Zone (VWC {moist:.1f}%)"
+        rec_action = "Inspect drainage tray & probe contact (hypoxia risk at >=98% VWC)"
+    elif moist is not None and moist < opt_min - 3.0:
+        action_status = "action_needed"
+        dom_stress = f"Root-Zone Drying Deficit (VWC {moist:.1f}% < {opt_min:.0f}% ON trigger)"
+        rec_action = "Check 2x4 L/h base drippers & solenoid valve supply"
+    elif ec_status == "salt_buildup" and pore_ec_dsm is not None:
+        action_status = "action_needed"
+        dom_stress = f"Excess Salt Buildup (ECp {pore_ec_dsm:.2f} vs {target_ec_dsm:.1f} dS/m target)"
+        rec_action = "Leach root-zone to achieve 20–30% drainage fraction"
+    elif outlier_flag and line_anomaly_c is not None:
+        action_status = "action_needed"
         dom_stress = f"Canopy Leaf Outlier ({line_anomaly_c:+.1f} deg C vs Line)"
-    elif s_ec is not None and s_ec >= 40.0 and s_ec >= (s_moist or 0.0):
-        dom_stress = f"Salinity Osmotic Stress (ECp {pore_ec_dsm:.2f} dS/m, {osmotic_mpa:.2f} MPa)"
-    elif s_moist is not None and s_moist >= 35.0 and (moist or 50.0) < float(cal["optimal_vwc_min"]):
-        dom_stress = f"Root-Zone Drying Deficit (VWC {moist:.1f}%)"
-    elif s_leaf is not None and (lhum or 0.0) >= 85.0:
+        rec_action = "Inspect plant turgor & leaf sensor clip for midday stomatal closure"
+    elif leaf_online and lhum is not None and lhum >= 85.0:
+        action_status = "watch"
         dom_stress = f"High Leaf Surface Wetness / Fungal Risk (RH {lhum:.1f}%)"
-    elif s_leaf is not None and cwsi is not None and cwsi > 0.36:
+        rec_action = "Increase greenhouse ventilation to prevent Botrytis condensation"
+    elif moist is not None and moist > opt_max + 10.0:
+        action_status = "watch"
+        dom_stress = f"High Substrate Moisture (VWC {moist:.1f}% > {opt_max:.0f}%)"
+        rec_action = "Allow drainage drawdown before next pulse"
+    elif leaf_online and cwsi is not None and cwsi >= 0.45:
+        action_status = "watch"
         dom_stress = f"Stomatal Closure Stress (CWSI {cwsi:.2f})"
+        rec_action = "Monitor midday canopy cooling & verify root moisture"
+    elif eff_ph > 6.5 and float(prof.get("nahs_dose_um", 0.0)) > 0:
+        action_status = "watch"
+        dom_stress = f"Alkaline Root-Zone pH Drift (pH {eff_ph:.2f})"
+        rec_action = "Adjust pulse feed to pH 6.0 +/- 0.2 so >90% NaHS stays active H2S(aq)"
+    elif ec_status == "expected_saline" and pore_ec_dsm is not None:
+        action_status = "optimal"
+        dom_stress = f"Expected {nacl_mm:.0f} mM NaCl Treatment (ECp {pore_ec_dsm:.2f} dS/m)"
+        rec_action = "Salinity on target — maintain 20–30% drainage & 10-day pulse schedule"
+    elif ec_status == "below_saline_target" and pore_ec_dsm is not None:
+        action_status = "watch"
+        dom_stress = f"Saline Line Below Target EC (ECp {pore_ec_dsm:.2f} vs {target_ec_dsm:.1f} dS/m)"
+        rec_action = "Verify stepped NaCl stage (25 -> 80 mM) or salinized feed tank EC"
+    elif composite_psi <= 20.0:
+        dom_stress = "Optimal Root-Zone & Stomatal Status"
     else:
         dom_stress = f"{max_label} ({max_val:.0f}%)"
 
     return {
         "has_data": True,
+        "soil_online": soil_online,
+        "soil_saturated_flag": soil_saturated,
+        "leaf_online": leaf_online,
         "effective_ph": eff_ph,
         "ph_source": ph_source,
+        "target_pore_ec_dsm": target_ec_dsm,
+        "ec_drift_dsm": ec_drift_dsm,
+        "ec_status": ec_status,
         "ec_25_uscm": ec_25,
         "epsilon_b": hil["epsilon_b"],
         "epsilon_w": hil["epsilon_w"],
@@ -663,11 +851,14 @@ def compute_single_sensor_stress(
             "leaf_cwsi_stress_pct": s_leaf,
             "ph_stress_pct": s_ph,
         },
+        "physio_strain_index": physio_strain,
         "composite_psi": composite_psi,
         "vitality_pvi": vitality_pvi,
         "plant_vitality_pvi": vitality_pvi,
         "stress_category": stress_cat,
         "dominant_stress": dom_stress,
+        "action_status": action_status,
+        "recommended_action": rec_action,
     }
 
 
@@ -713,24 +904,144 @@ def _normalize_line_profiles(line_profiles: Any) -> Dict[int, Dict[str, Any]]:
     return out
 
 
+def _build_protocol_schedule(
+    dat: int,
+    recorded_at: Optional[str],
+    recent_treatments: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Computes Experiment 2 Kaymak 4-stage nutrient schedule, stepped NaCl status,
+    and 10-day root-zone NaHS + LIQHUMUS pulse countdown.
+    """
+    if dat <= 4:
+        nutrient_stage = "Plain Water Establishment (0–4 DAT)"
+        nutrient_short = "Plain Water (0–4 DAT)"
+    elif dat <= 15:
+        nutrient_stage = "Kaymak Solution 1 — Starter (5–15 DAT)"
+        nutrient_short = "Kaymak Sol. 1 Starter"
+    elif dat <= 30:
+        nutrient_stage = "Kaymak Solution 2 — Vegetative (16–30 DAT)"
+        nutrient_short = "Kaymak Sol. 2 Vegetative"
+    else:
+        nutrient_stage = "Kaymak Solution 3 — Flowering & Fruiting (30–140 DAT)"
+        nutrient_short = "Kaymak Sol. 3 Flowering/Fruiting"
+
+    if dat < 10:
+        salinity_stage_note = "Pre-salinity establishment (0 mM NaCl on all lines until 10 DAT)"
+    elif dat < 14:
+        salinity_stage_note = "Salinity Step 1 (25 mM NaCl half-step on Lines 5–8)"
+    else:
+        salinity_stage_note = "Full 80 mM NaCl active on Lines 5–8 (Target ~7.5 dS/m)"
+
+    ref_dt = _parse_iso_ts(recorded_at) or datetime.now(timezone.utc)
+    pulse_rows: List[Tuple[datetime, Dict[str, Any]]] = []
+    for t in recent_treatments:
+        h2s_on = bool(t.get("h2s_applied")) or (_safe_float(t.get("h2s_dose_um")) or 0.0) > 0
+        hs_on = bool(t.get("humic_applied")) or (_safe_float(t.get("humic_dose_mll")) or 0.0) > 0
+        if h2s_on or hs_on:
+            dt_t = _parse_iso_ts(t.get("applied_at"))
+            if dt_t is not None:
+                pulse_rows.append((dt_t, t))
+
+    pulse_rows.sort(key=lambda x: x[0], reverse=True)
+    last_pulse_at: Optional[str] = None
+    days_since_last_pulse: Optional[float] = None
+    next_pulse_due_in_days: Optional[float] = None
+    pulse_due_soon = False
+    pulse_overdue = False
+
+    if pulse_rows:
+        last_dt, last_row = pulse_rows[0]
+        last_pulse_at = str(last_row.get("applied_at") or last_dt.isoformat())
+        days_since_last_pulse = round(max(0.0, (ref_dt - last_dt).total_seconds() / 86400.0), 1)
+        next_pulse_due_in_days = round(10.0 - days_since_last_pulse, 1)
+        pulse_overdue = next_pulse_due_in_days < 0.0
+        pulse_due_soon = next_pulse_due_in_days <= 1.5
+        if pulse_overdue:
+            pulse_status_label = f"10-day pulse OVERDUE by {abs(next_pulse_due_in_days):.1f} d (pH 6.0 +/- 0.2)"
+        elif next_pulse_due_in_days <= 0.5:
+            pulse_status_label = "10-day NaHS + LIQHUMUS pulse DUE TODAY (>=2h after morning drip)"
+        elif pulse_due_soon:
+            pulse_status_label = f"Next 10-day pulse due in {next_pulse_due_in_days:.1f} d (prep fresh NaHS at pH 6.0)"
+        else:
+            pulse_status_label = f"Next 10-day pulse in {next_pulse_due_in_days:.1f} d (last: {days_since_last_pulse:.1f} d ago)"
+    else:
+        pulse_due_soon = dat >= 10
+        pulse_status_label = "No NaHS / LIQHUMUS pulse logged yet — log Day-10 pulse when applied"
+
+    return {
+        "dat": dat,
+        "nutrient_stage": nutrient_stage,
+        "nutrient_stage_short": nutrient_short,
+        "salinity_stage_note": salinity_stage_note,
+        "pulse_interval_days": 10,
+        "last_pulse_at": last_pulse_at,
+        "days_since_last_pulse": days_since_last_pulse,
+        "next_pulse_due_in_days": next_pulse_due_in_days,
+        "pulse_due_soon": pulse_due_soon,
+        "pulse_overdue": pulse_overdue,
+        "pulse_status_label": pulse_status_label,
+    }
+
+
 def compute_live_stress_report(
     latest_telemetry: Optional[Dict[str, Any]] = None,
     line_profiles: Any = None,
     calibration: Optional[Dict[str, Any]] = None,
     recent_treatments: Optional[List[Dict[str, Any]]] = None,
     recent_notes: Optional[List[Dict[str, Any]]] = None,
+    zone_configs: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Computes the complete live 8-Line and 24-Plot Stress & Recovery Report,
-    including Stress Recovery Index (SRI %), NaHS x Humic Synergy, and monitoring alerts.
+    including RS485 plausibility filtering, target-aware EC drift, dynamic logged pH,
+    10-day pulse schedule, plain-English action advisories, and bounded SRI %.
     """
     cal = dict(DEFAULT_CALIBRATION)
     if calibration:
         cal.update({k: v for k, v in calibration.items() if v is not None})
 
     prof_map = _normalize_line_profiles(line_profiles)
-    recent_treatments = recent_treatments or []
-    recent_notes = recent_notes or []
+    recent_treatments = list(recent_treatments or [])
+    recent_notes = list(recent_notes or [])
+
+    zone_cfg_map: Dict[int, Dict[str, Optional[float]]] = {}
+    for zc in (zone_configs or []):
+        if isinstance(zc, dict) and zc.get("zone_id") is not None:
+            zid_cfg = int(zc["zone_id"])
+            zone_cfg_map[zid_cfg] = {
+                "min_moisture": _safe_float(zc.get("min_moisture")),
+                "max_moisture": _safe_float(zc.get("max_moisture")),
+            }
+
+    # Resolve latest logged solution / drainage pH per zone from treatment logs (newest first)
+    sorted_trts = sorted(
+        recent_treatments,
+        key=lambda t: _parse_iso_ts(t.get("applied_at")) or datetime.min.replace(tzinfo=timezone.utc),
+        reverse=True,
+    )
+    zone_logged_ph: Dict[int, Optional[float]] = {}
+    for zid in range(1, 9):
+        found_ph: Optional[float] = None
+        for t in sorted_trts:
+            tz = t.get("zone_id")
+            if tz is not None and int(tz) not in (0, zid):
+                continue
+            cand = _safe_float(t.get("drainage_ph"))
+            if cand is None:
+                cand = _safe_float(t.get("supplied_solution_ph"))
+            if cand is not None and 3.0 <= cand <= 9.5:
+                # Prefer exact zone match over global (zone_id=0/None) if scanning
+                if tz is not None and int(tz) == zid:
+                    found_ph = round(cand, 2)
+                    break
+                if found_ph is None:
+                    found_ph = round(cand, 2)
+        if found_ph is None:
+            ref_dph = _safe_float(prof_map[zid].get("ref_drainage_ph"))
+            if ref_dph is not None and 3.0 <= ref_dph <= 9.5:
+                found_ph = round(ref_dph, 2)
+        zone_logged_ph[zid] = found_ph
 
     recorded_at = (latest_telemetry or {}).get("recorded_at")
     plc_online = bool((latest_telemetry or {}).get("plc_online", False))
@@ -738,22 +1049,35 @@ def compute_live_stress_report(
     sensors_raw = (latest_telemetry or {}).get("sensors") or []
     sensors_by_id = {int(s["sensor_id"]): s for s in sensors_raw if "sensor_id" in s}
 
-    # Compute reference ambient canopy temperature from Control lines (Zones 1..4) or overall mean
+    # Sanitize all 24 plots first so 0.0 deg C / 0.0% RH RS485 dropouts never pollute canopy baselines
+    sanitized_by_id: Dict[int, Dict[str, Any]] = {}
+    for sid in range(1, 25):
+        raw_s = sensors_by_id.get(sid, {})
+        sanitized_by_id[sid] = sanitize_sensor_channels(
+            raw_s.get("soil_moisture"),
+            raw_s.get("soil_temp"),
+            raw_s.get("soil_ec"),
+            raw_s.get("soil_salt"),
+            raw_s.get("leaf_humidity"),
+            raw_s.get("leaf_temp"),
+        )
+
     control_leaf_temps = [
-        _safe_float(s.get("leaf_temp"))
-        for s in sensors_raw
-        if int(s.get("zone_id") or 1) in (1, 2, 3, 4) and _safe_float(s.get("leaf_temp")) is not None
+        sanitized_by_id[sid]["leaf_temp"]
+        for sid in range(1, 25)
+        if (((sid - 1) % 8) + 1) in (1, 2, 3, 4) and sanitized_by_id[sid]["leaf_temp"] is not None
     ]
-    all_leaf_temps = [_safe_float(s.get("leaf_temp")) for s in sensors_raw if _safe_float(s.get("leaf_temp")) is not None]
+    all_leaf_temps = [
+        sanitized_by_id[sid]["leaf_temp"]
+        for sid in range(1, 25)
+        if sanitized_by_id[sid]["leaf_temp"] is not None
+    ]
     ambient_canopy_c = _avg(control_leaf_temps, 2) if control_leaf_temps else _avg(all_leaf_temps, 2)
 
-    # Compute per-line mean leaf temperature for Manuscript Section 2.8 (+2.0 deg C outlier rule)
+    # Compute per-line mean leaf temperature from valid online leaf probes only
     line_leaf_means: Dict[int, Optional[float]] = {}
     for zid in range(1, 9):
-        z_ltemps = [
-            _safe_float(sensors_by_id.get(sid, {}).get("leaf_temp"))
-            for sid in [zid, zid + 8, zid + 16]
-        ]
+        z_ltemps = [sanitized_by_id[sid]["leaf_temp"] for sid in [zid, zid + 8, zid + 16]]
         line_leaf_means[zid] = _avg(z_ltemps, 2)
 
     plots_report: List[Dict[str, Any]] = []
@@ -764,13 +1088,18 @@ def compute_live_stress_report(
         zid = ((sid - 1) % 8) + 1
         rep_num = ((sid - 1) // 8) + 1
         raw = sensors_by_id.get(sid, {"sensor_id": sid, "zone_id": zid})
+        san = sanitized_by_id[sid]
         prof = prof_map[zid]
+        z_cfg = zone_cfg_map.get(zid, {})
         st = compute_single_sensor_stress(
             reading=raw,
             line_profile=prof,
             calibration=cal,
             ambient_canopy_temp_c=ambient_canopy_c,
             line_mean_leaf_temp_c=line_leaf_means.get(zid),
+            logged_ph=zone_logged_ph.get(zid),
+            zone_min_vwc=z_cfg.get("min_moisture"),
+            zone_max_vwc=z_cfg.get("max_moisture"),
         )
         plot_item = {
             "sensor_id": sid,
@@ -782,13 +1111,15 @@ def compute_live_stress_report(
             "nacl_level_mm": prof.get("nacl_level_mm", 0.0),
             "nahs_dose_um": prof.get("nahs_dose_um", 0.0),
             "humic_dose_mll": prof.get("humic_dose_mll", 0.0),
-            "soil_moisture": _safe_float(raw.get("soil_moisture")),
-            "soil_temp": _safe_float(raw.get("soil_temp")),
-            "soil_ec": _safe_float(raw.get("soil_ec")),
-            "soil_salt": _safe_float(raw.get("soil_salt")),
+            "soil_moisture": san["soil_moisture"],
+            "soil_temp": san["soil_temp"],
+            "soil_ec": san["soil_ec"],
+            "soil_salt": san["soil_salt"],
             "soil_ph": _safe_float(raw.get("soil_ph")),
-            "leaf_humidity": _safe_float(raw.get("leaf_humidity")),
-            "leaf_temp": _safe_float(raw.get("leaf_temp")),
+            "leaf_humidity": san["leaf_humidity"],
+            "leaf_temp": san["leaf_temp"],
+            "raw_leaf_humidity": _safe_float(raw.get("leaf_humidity")),
+            "raw_leaf_temp": _safe_float(raw.get("leaf_temp")),
             **st,
         }
         plots_report.append(plot_item)
@@ -804,31 +1135,52 @@ def compute_live_stress_report(
                 "title": f"Plot R{sid} (Line {zid}) Leaf Temp Outlier ({st['line_leaf_anomaly_c']:+.1f} deg C)",
                 "message": "Manuscript Section 2.8 Alert: Leaf-air temperature difference exceeds line peers by >= 2.0 deg C (Monitoring only; irrigation unchanged).",
             })
-        if st.get("composite_psi") is not None and st["composite_psi"] >= 68.0:
+        if st.get("action_status") == "action_needed":
             monitoring_alerts.append({
                 "severity": "warning",
-                "type": "high_composite_stress",
+                "type": "plot_action_needed",
                 "zone_id": zid,
                 "sensor_id": sid,
                 "plot_tag": f"R{sid}",
-                "title": f"Plot R{sid} (Line {zid}) High Stress (PSI {st['composite_psi']:.1f}/100)",
-                "message": f"Dominant factor: {st['dominant_stress']} (Treatment: {prof.get('treatment_code')}).",
+                "title": f"Plot R{sid} (Line {zid}): {st['dominant_stress']}",
+                "message": st["recommended_action"],
             })
 
-    # First pass over 8 Lines to compute Zone Means, Mins, Maxes
+    # Sensor health summary across 24 soil (COM1) and 24 leaf (COM2) probes
+    soil_online_total = sum(1 for p in plots_report if p.get("soil_online"))
+    leaf_online_total = sum(1 for p in plots_report if p.get("leaf_online"))
+    offline_soil_plots = [p["plot_tag"] for p in plots_report if not p.get("soil_online")]
+    offline_leaf_plots = [p["plot_tag"] for p in plots_report if not p.get("leaf_online")]
+    saturated_soil_plots = [p["plot_tag"] for p in plots_report if p.get("soil_saturated_flag")]
+    sensor_health = {
+        "soil_online_count": soil_online_total,
+        "soil_total_count": 24,
+        "leaf_online_count": leaf_online_total,
+        "leaf_total_count": 24,
+        "offline_soil_plots": offline_soil_plots,
+        "offline_leaf_plots": offline_leaf_plots,
+        "saturated_soil_plots": saturated_soil_plots,
+        "summary_label": f"Soil {soil_online_total}/24 • Leaf {leaf_online_total}/24",
+    }
+
+    # First pass over 8 Lines to compute Zone Means, Mins, Maxes, Target EC Drift & Action Status
     lines_report: List[Dict[str, Any]] = []
     for zid in range(1, 9):
         zplots = plots_by_zone[zid]
         prof = prof_map[zid]
+        z_cfg = zone_cfg_map.get(zid, {})
+        z_min_vwc = float(z_cfg.get("min_moisture") if z_cfg.get("min_moisture") is not None else cal.get("optimal_vwc_min", 40.0))
+        z_max_vwc = float(z_cfg.get("max_moisture") if z_cfg.get("max_moisture") is not None else 70.0)
+
         psis = [p["composite_psi"] for p in zplots]
         pvis = [p["vitality_pvi"] for p in zplots]
+        strains = [p.get("physio_strain_index") for p in zplots]
         cwsis = [p["cwsi"] for p in zplots]
         ecps = [p["pore_ec_dsm"] for p in zplots]
         osms = [p["osmotic_potential_mpa"] for p in zplots]
         ksalts = [p["salt_coeff"] for p in zplots]
         vpds = [p["leaf_vpd_kpa"] for p in zplots]
         dts = [p["leaf_delta_t_c"] for p in zplots]
-        h2s_fracs = [p["h2s_gas_fraction_pct"] for p in zplots]
 
         sub_keys = [
             "moisture_stress_pct",
@@ -843,10 +1195,44 @@ def compute_live_stress_report(
 
         mean_psi = _avg(psis, 1)
         mean_pvi = _avg(pvis, 1)
+        mean_strain = _avg(strains, 1)
         avg_stemp = _avg([p["soil_temp"] for p in zplots], 1)
         avg_sph = _avg([p["soil_ph"] for p in zplots], 2)
-        eff_ph = avg_sph if avg_sph is not None else float(prof.get("ref_soil_ph", 6.0))
+        if avg_sph is not None and 3.0 <= avg_sph <= 9.5:
+            eff_ph = avg_sph
+            ph_source = "live_rs485"
+        elif zone_logged_ph.get(zid) is not None:
+            eff_ph = float(zone_logged_ph[zid])
+            ph_source = "logged_measurement"
+        else:
+            eff_ph = float(prof.get("ref_soil_ph", 6.0))
+            ph_source = "reference_anchor"
+
         z_spec = compute_h2s_speciation(eff_ph, avg_stemp or 22.0, float(prof.get("nahs_dose_um", 0.0)))
+
+        nacl_mm = float(prof.get("nacl_mm", prof.get("nacl_level_mm", 0.0)) or 0.0)
+        target_ec_uscm = int(prof.get("target_solution_ec_uscm", prof.get("target_ec_uscm", 2300)) or 2300)
+        target_pore_ec_dsm = round(target_ec_uscm / 1000.0, 2)
+        avg_ecp = _avg(ecps, 3)
+        max_ecp = _max_val(ecps, 3)
+        ec_drift_dsm = round(avg_ecp - target_pore_ec_dsm, 2) if avg_ecp is not None else None
+
+        if avg_ecp is None:
+            ec_status = "no_data"
+        elif nacl_mm <= 0.0:
+            if avg_ecp < 0.8:
+                ec_status = "low_nutrient"
+            elif avg_ecp <= 3.6 and (max_ecp is None or max_ecp <= 4.2):
+                ec_status = "on_target"
+            else:
+                ec_status = "salt_buildup"
+        else:
+            if avg_ecp > max(9.5, target_pore_ec_dsm + 2.0) or (max_ecp is not None and max_ecp > max(10.5, target_pore_ec_dsm + 3.0)):
+                ec_status = "salt_buildup"
+            elif avg_ecp < 4.5:
+                ec_status = "below_saline_target"
+            else:
+                ec_status = "expected_saline"
 
         if mean_psi is None:
             s_class = "no_data"
@@ -859,11 +1245,70 @@ def compute_live_stress_report(
         else:
             s_class = "severe"
 
+        # Determine clear per-line action badge & plain-English recommendation
+        dry_plots = [p for p in zplots if p["soil_moisture"] is not None and p["soil_moisture"] < z_min_vwc - 3.0]
+        sat_plots = [p for p in zplots if p.get("soil_saturated_flag")]
+        outlier_plots = [p for p in zplots if p.get("line_leaf_outlier_flag")]
+        wet_leaf_plots = [p for p in zplots if p.get("leaf_online") and p["leaf_humidity"] is not None and p["leaf_humidity"] >= 85.0]
+        any_has_data = any(p.get("has_data") for p in zplots)
+
+        if not any_has_data:
+            line_action_status = "no_data"
+            line_dom_stress = "Waiting for PLC / RS485 Telemetry"
+            line_rec_action = "Check PLC gateway connection"
+        elif dry_plots:
+            p0 = min(dry_plots, key=lambda x: float(x["soil_moisture"]))
+            line_action_status = "action_needed"
+            line_dom_stress = f"{p0['plot_tag']} Dry ({p0['soil_moisture']:.1f}% < {z_min_vwc:.0f}% ON)"
+            line_rec_action = f"Inspect {p0['plot_tag']} 2x4 L/h drippers & solenoid line"
+        elif ec_status == "salt_buildup" and avg_ecp is not None:
+            line_action_status = "action_needed"
+            line_dom_stress = f"Salt Buildup (ECp {avg_ecp:.2f} vs {target_pore_ec_dsm:.1f} dS/m)"
+            line_rec_action = "Increase leaching to 20–30% drainage & check leachate EC"
+        elif sat_plots:
+            tags_s = ", ".join(p["plot_tag"] for p in sat_plots)
+            line_action_status = "action_needed"
+            line_dom_stress = f"Saturated Root-Zone ({tags_s} >=98% VWC)"
+            line_rec_action = f"Check {tags_s} tray drainage holes & probe seating"
+        elif outlier_plots:
+            p0 = outlier_plots[0]
+            line_action_status = "action_needed"
+            line_dom_stress = f"{p0['plot_tag']} Canopy Temp Outlier ({p0['line_leaf_anomaly_c']:+.1f} deg C)"
+            line_rec_action = f"Inspect {p0['plot_tag']} leaf turgor & clip alignment"
+        elif wet_leaf_plots:
+            line_action_status = "watch"
+            line_dom_stress = "High Leaf RH (>=85% Botrytis Risk)"
+            line_rec_action = "Ventilate greenhouse to reduce canopy humidity"
+        elif eff_ph > 6.5 and float(prof.get("nahs_dose_um", 0.0)) > 0:
+            line_action_status = "watch"
+            line_dom_stress = f"pH Drift ({eff_ph:.2f} reduces active H2S)"
+            line_rec_action = "Buffer next pulse to pH 6.0 +/- 0.2 (>90% H2S(aq))"
+        elif ec_status == "below_saline_target" and avg_ecp is not None:
+            line_action_status = "watch"
+            line_dom_stress = f"Below 80 mM Target (ECp {avg_ecp:.2f} vs {target_pore_ec_dsm:.1f} dS/m)"
+            line_rec_action = "Verify stepped NaCl stage or saline tank EC (~7.5 dS/m)"
+        elif ec_status == "low_nutrient" and avg_ecp is not None:
+            line_action_status = "watch"
+            line_dom_stress = f"Low Root-Zone Nutrient EC (ECp {avg_ecp:.2f} dS/m)"
+            line_rec_action = "Check Kaymak nutrient stock tank dosing"
+        elif nacl_mm > 0:
+            line_action_status = "optimal"
+            line_dom_stress = f"80 mM NaCl Treatment Active (ECp {avg_ecp:.2f} dS/m)" if avg_ecp is not None else "80 mM NaCl Regime"
+            line_rec_action = "On saline target — keep 20–30% drainage & 10-day pulses"
+        else:
+            line_action_status = "optimal"
+            line_dom_stress = "Optimal Control Band"
+            line_rec_action = "Within target band — no action needed"
+
         lines_report.append({
             "zone_id": zid,
             "line_name": f"Line {zid}",
             "line_label": f"Line {zid} (Zone {zid})",
-            "has_data": any(p.get("has_data") for p in zplots),
+            "has_data": any_has_data,
+            "soil_online_count": sum(1 for p in zplots if p.get("soil_online")),
+            "leaf_online_count": sum(1 for p in zplots if p.get("leaf_online")),
+            "min_moisture_target": z_min_vwc,
+            "max_moisture_target": z_max_vwc,
             "plot_tags": [p["plot_tag"] for p in zplots],
             "sensor_ids": [p["sensor_id"] for p in zplots],
             "treatment_code": prof.get("treatment_code", f"Line-{zid}"),
@@ -871,14 +1316,19 @@ def compute_live_stress_report(
             "salinity_regime": prof.get("salinity_regime", prof.get("treatment_label", "")),
             "fertigation_mode": prof.get("fertigation_mode", "IoT"),
             "growth_stage": prof.get("growth_stage", "Solution 1 — Vegetative"),
-            "nacl_level_mm": float(prof.get("nacl_level_mm", prof.get("nacl_mm", 0.0))),
-            "nacl_mm": float(prof.get("nacl_mm", prof.get("nacl_level_mm", 0.0))),
-            "target_ec_uscm": int(prof.get("target_ec_uscm", prof.get("target_solution_ec_uscm", 2300))),
-            "target_solution_ec_uscm": int(prof.get("target_solution_ec_uscm", prof.get("target_ec_uscm", 2300))),
+            "nacl_level_mm": nacl_mm,
+            "nacl_mm": nacl_mm,
+            "target_ec_uscm": target_ec_uscm,
+            "target_solution_ec_uscm": target_ec_uscm,
+            "target_pore_ec_dsm": target_pore_ec_dsm,
+            "ec_drift_dsm": ec_drift_dsm,
+            "ec_status": ec_status,
             "nahs_dose_um": float(prof.get("nahs_dose_um", 0.0)),
             "humic_dose_mll": float(prof.get("humic_dose_mll", 0.0)),
             "nutrient_matched": int(prof.get("nutrient_matched", 1)),
             "ref_soil_ph": float(prof.get("ref_soil_ph", 6.0)),
+            "effective_ph": eff_ph,
+            "ph_source": ph_source,
             "ref_drainage_ec_uscm": prof.get("ref_drainage_ec_uscm"),
             "ref_drainage_ph": prof.get("ref_drainage_ph"),
             "avg_soil_moisture": _avg([p["soil_moisture"] for p in zplots], 1),
@@ -893,8 +1343,8 @@ def compute_live_stress_report(
             "avg_leaf_temp": _avg([p["leaf_temp"] for p in zplots], 1),
             "min_leaf_temp": _min_val([p["leaf_temp"] for p in zplots], 1),
             "max_leaf_temp": _max_val([p["leaf_temp"] for p in zplots], 1),
-            "avg_pore_ec_dsm": _avg(ecps, 3),
-            "max_pore_ec_dsm": _max_val(ecps, 3),
+            "avg_pore_ec_dsm": avg_ecp,
+            "max_pore_ec_dsm": max_ecp,
             "avg_osmotic_mpa": _avg(osms, 3),
             "avg_osmotic_potential_mpa": _avg(osms, 3),
             "avg_salt_coeff": _avg(ksalts, 3),
@@ -903,8 +1353,9 @@ def compute_live_stress_report(
             "avg_leaf_delta_t_c": _avg(dts, 2),
             "avg_cwsi": _avg(cwsis, 3),
             "max_cwsi": _max_val(cwsis, 3),
-            "avg_h2s_gas_fraction_pct": _avg(h2s_fracs, 2),
+            "avg_h2s_gas_fraction_pct": z_spec["h2s_gas_fraction_pct"],
             "h2s_speciation": z_spec,
+            "avg_physio_strain": mean_strain,
             "mean_psi": mean_psi,
             "avg_psi": mean_psi,
             "min_psi": _min_val(psis, 1),
@@ -921,14 +1372,17 @@ def compute_live_stress_report(
             "avg_s_canopy": sub_means.get("leaf_cwsi_stress_pct"),
             "sub_indices_mean": sub_means,
             "sub_indices_max": sub_maxes,
-            "dominant_stress": zplots[0]["dominant_stress"] if zplots else "—",
+            "dominant_stress": line_dom_stress,
+            "action_status": line_action_status,
+            "recommended_action": line_rec_action,
             "stress_recovery_index_sri_pct": None,
             "recovery_sri_pct": None,
+            "physio_recovery_pct": None,
             "psi_reduction_vs_salt_ctrl": None,
             "cwsi_recovery_index_pct": None,
         })
 
-    # Second pass: Compute Stress Recovery Index (SRI %) and NaHS x Humic Synergy
+    # Second pass: Compute bounded Stress Recovery Index (SRI %, [-100, 100]) and NaHS x Humic Synergy
     ctrl_lines = [l for l in lines_report if l["nacl_level_mm"] == 0 and l["nahs_dose_um"] == 0 and l["humic_dose_mll"] == 0]
     salt_untreated_lines = [l for l in lines_report if l["nacl_level_mm"] > 0 and l["nahs_dose_um"] == 0 and l["humic_dose_mll"] == 0]
 
@@ -937,6 +1391,12 @@ def compute_live_stress_report(
         salt_untreated_lines[0]["mean_psi"]
         if (salt_untreated_lines and salt_untreated_lines[0]["mean_psi"] is not None)
         else _max_val([l["mean_psi"] for l in lines_report], 1)
+    )
+    strain_ctrl = ctrl_lines[0]["avg_physio_strain"] if (ctrl_lines and ctrl_lines[0]["avg_physio_strain"] is not None) else 5.0
+    strain_salt_base = (
+        salt_untreated_lines[0]["avg_physio_strain"]
+        if (salt_untreated_lines and salt_untreated_lines[0]["avg_physio_strain"] is not None)
+        else _max_val([l["avg_physio_strain"] for l in lines_report], 1)
     )
     cwsi_ctrl = ctrl_lines[0]["avg_cwsi"] if (ctrl_lines and ctrl_lines[0]["avg_cwsi"] is not None) else 0.15
     cwsi_salt_base = (
@@ -947,21 +1407,27 @@ def compute_live_stress_report(
 
     for l in lines_report:
         if l["mean_psi"] is not None and psi_salt_base is not None:
-            denom = max(2.0, float(psi_salt_base) - float(psi_ctrl))
-            sri = round(_clamp(((float(psi_salt_base) - float(l["mean_psi"])) / denom) * 100.0, -50.0, 150.0), 1)
+            denom = max(4.0, float(psi_salt_base) - float(psi_ctrl))
+            sri = round(_clamp(((float(psi_salt_base) - float(l["mean_psi"])) / denom) * 100.0, -100.0, 100.0), 1)
             l["stress_recovery_index_sri_pct"] = sri
             l["recovery_sri_pct"] = sri
             l["psi_reduction_vs_salt_ctrl"] = round(float(psi_salt_base) - float(l["mean_psi"]), 1)
+        if l["avg_physio_strain"] is not None and strain_salt_base is not None:
+            s_denom = max(4.0, float(strain_salt_base) - float(strain_ctrl))
+            l["physio_recovery_pct"] = round(
+                _clamp(((float(strain_salt_base) - float(l["avg_physio_strain"])) / s_denom) * 100.0, -100.0, 100.0),
+                1,
+            )
         if l["avg_cwsi"] is not None and cwsi_salt_base is not None and cwsi_ctrl is not None:
             c_denom = max(0.05, float(cwsi_salt_base) - float(cwsi_ctrl))
             c_sri = ((float(cwsi_salt_base) - float(l["avg_cwsi"])) / c_denom) * 100.0
-            l["cwsi_recovery_index_pct"] = round(_clamp(c_sri, -50.0, 150.0), 1)
+            l["cwsi_recovery_index_pct"] = round(_clamp(c_sri, -100.0, 100.0), 1)
 
     for p in plots_report:
         if p["composite_psi"] is not None and psi_salt_base is not None:
-            denom = max(2.0, float(psi_salt_base) - float(psi_ctrl))
+            denom = max(4.0, float(psi_salt_base) - float(psi_ctrl))
             p["stress_recovery_index_sri_pct"] = round(
-                _clamp(((float(psi_salt_base) - float(p["composite_psi"])) / denom) * 100.0, -50.0, 150.0),
+                _clamp(((float(psi_salt_base) - float(p["composite_psi"])) / denom) * 100.0, -100.0, 100.0),
                 1,
             )
         else:
@@ -990,6 +1456,120 @@ def compute_live_stress_report(
         else:
             synergy_summary["interaction_type"] = f"Sub-additive ({excess_over_best:+.1f}% vs best single agent)"
 
+    protocol_schedule = _build_protocol_schedule(dat, recorded_at, recent_treatments)
+
+    # Build top plain-English Action Advisories (max 5 ranked items, passive / zero valve control)
+    action_advisories: List[Dict[str, Any]] = []
+    any_telemetry = any(p.get("has_data") for p in plots_report)
+
+    if any_telemetry:
+        all_dry_plots = [
+            p for p in plots_report
+            if p["soil_moisture"] is not None
+            and p["soil_moisture"] < (lines_by_id[p["zone_id"]]["min_moisture_target"] - 3.0)
+        ]
+        if all_dry_plots:
+            p_worst = min(all_dry_plots, key=lambda x: float(x["soil_moisture"]))
+            tags = ", ".join(f"{p['plot_tag']} ({p['soil_moisture']:.0f}%)" for p in all_dry_plots[:4])
+            action_advisories.append({
+                "severity": "critical" if float(p_worst["soil_moisture"]) < 30.0 else "warning",
+                "category": "moisture_deficit",
+                "zone_id": p_worst["zone_id"],
+                "plot_tag": p_worst["plot_tag"],
+                "title": f"Dry Plot Below 40% Trigger: {tags}",
+                "detail": f"{len(all_dry_plots)} plot(s) dropped below the PLC ON setpoint despite automatic monitoring.",
+                "action": "Inspect 2x4 L/h pressure-compensated drippers & line manifold for clogging.",
+            })
+
+        salt_lines = [l for l in lines_report if l["ec_status"] == "salt_buildup" and l["avg_pore_ec_dsm"] is not None]
+        if salt_lines:
+            l_worst = max(salt_lines, key=lambda x: float(x["ec_drift_dsm"] or 0.0))
+            desc = ", ".join(f"L{l['zone_id']} ({l['avg_pore_ec_dsm']:.1f} vs {l['target_pore_ec_dsm']:.1f} dS/m)" for l in salt_lines[:4])
+            action_advisories.append({
+                "severity": "warning",
+                "category": "salt_buildup",
+                "zone_id": l_worst["zone_id"],
+                "plot_tag": None,
+                "title": f"Excess Root-Zone Salt Buildup: {desc}",
+                "detail": "Pore-water ECp exceeds intended treatment target (insufficient leaching fraction).",
+                "action": "Verify 20–30% drainage runoff per fertigation event & log leachate EC/pH.",
+            })
+
+        if saturated_soil_plots:
+            p_sat = next(p for p in plots_report if p.get("soil_saturated_flag"))
+            tags_sat = ", ".join(saturated_soil_plots[:5])
+            action_advisories.append({
+                "severity": "warning",
+                "category": "saturation_hypoxia",
+                "zone_id": p_sat["zone_id"],
+                "plot_tag": p_sat["plot_tag"],
+                "title": f"Saturated Substrate (>=98% VWC): {tags_sat}",
+                "detail": "Persistent 98–100% VWC risks root-zone hypoxia or indicates water pooling around RS485 pins.",
+                "action": "Check 14 L planter bottom drainage holes & reseat soil probe vertically.",
+            })
+
+        canopy_outliers = [p for p in plots_report if p.get("line_leaf_outlier_flag")]
+        wet_canopy = [p for p in plots_report if p.get("leaf_online") and p["leaf_humidity"] is not None and p["leaf_humidity"] >= 85.0]
+        if canopy_outliers:
+            p_out = canopy_outliers[0]
+            action_advisories.append({
+                "severity": "warning",
+                "category": "canopy_stomatal",
+                "zone_id": p_out["zone_id"],
+                "plot_tag": p_out["plot_tag"],
+                "title": f"Canopy Temp Outlier on {p_out['plot_tag']} ({p_out['line_leaf_anomaly_c']:+.1f} deg C)",
+                "detail": "Leaf temperature exceeds line peers by >=2.0 deg C (midday stomatal closure signal).",
+                "action": "Inspect plant turgor and verify leaf clip contact on abaxial lamina.",
+            })
+        elif wet_canopy:
+            action_advisories.append({
+                "severity": "warning",
+                "category": "fungal_wetness",
+                "zone_id": wet_canopy[0]["zone_id"],
+                "plot_tag": wet_canopy[0]["plot_tag"],
+                "title": f"High Leaf RH (>=85%) on {len(wet_canopy)} Plot(s)",
+                "detail": "Boundary-layer humidity favors Botrytis cinerea condensation.",
+                "action": "Increase greenhouse side/roof ventilation.",
+            })
+
+        alkaline_nahs = [l for l in lines_report if l["nahs_dose_um"] > 0 and l["effective_ph"] > 6.5]
+        if alkaline_nahs:
+            l_ph = alkaline_nahs[0]
+            action_advisories.append({
+                "severity": "warning",
+                "category": "ph_speciation",
+                "zone_id": l_ph["zone_id"],
+                "plot_tag": None,
+                "title": f"Root-Zone pH Drift on Line {l_ph['zone_id']} (pH {l_ph['effective_ph']:.2f})",
+                "detail": f"Active H2S(aq) drops to {l_ph['avg_h2s_gas_fraction_pct']:.0f}% at pH {l_ph['effective_ph']:.2f} (shifts to HS-).",
+                "action": "Buffer next 25 uM NaHS pulse to pH 6.0 +/- 0.2 (>90% active H2S(aq)).",
+            })
+
+        if protocol_schedule["pulse_overdue"] or protocol_schedule["pulse_due_soon"]:
+            action_advisories.append({
+                "severity": "info" if not protocol_schedule["pulse_overdue"] else "warning",
+                "category": "pulse_schedule",
+                "zone_id": 8,
+                "plot_tag": None,
+                "title": protocol_schedule["pulse_status_label"],
+                "detail": "Lines 2,6: 25 uM NaHS | Lines 3,7: 4 mL/L LIQHUMUS | Lines 4,8: Combo (K/S matched).",
+                "action": "Mix fresh NaHS at pH 6.0 +/- 0.2 & apply within 30 min (>=2h after morning drip).",
+            })
+
+        if leaf_online_total < 24:
+            offline_cnt = 24 - leaf_online_total
+            action_advisories.append({
+                "severity": "info",
+                "category": "sensor_health",
+                "zone_id": None,
+                "plot_tag": None,
+                "title": f"{offline_cnt}/24 Leaf Probes Offline on RS485 COM2 (0.0 deg C filtered)",
+                "detail": "Unplugged/zero leaf channels are automatically excluded so VPD & CWSI stay accurate.",
+                "action": "Check COM2 Modbus wiring (Slaves 101–124) when convenient.",
+            })
+
+    action_advisories = action_advisories[:5]
+
     mean_stemp = _avg([p["soil_temp"] for p in plots_report], 1) or 22.0
     speciation_curve = []
     for step in range(45, 86):
@@ -1001,6 +1581,9 @@ def compute_live_stress_report(
             "hs_ion_pct": sp["hs_ion_fraction_pct"],
         })
 
+    ctrl_ecps = [l["avg_pore_ec_dsm"] for l in lines_report if l["nacl_level_mm"] <= 0]
+    saline_ecps = [l["avg_pore_ec_dsm"] for l in lines_report if l["nacl_level_mm"] > 0]
+
     return {
         "monitoring_only_mode": True,
         "valve_control_disabled_in_engine": True,
@@ -1010,19 +1593,27 @@ def compute_live_stress_report(
         "ambient_canopy_ref_c": ambient_canopy_c,
         "mean_soil_temp_c": mean_stemp,
         "calibration": cal,
+        "sensor_health": sensor_health,
+        "protocol_schedule": protocol_schedule,
+        "action_advisories": action_advisories,
         "line_profiles": list(prof_map.values()),
         "overall": {
             "mean_psi": _avg([p["composite_psi"] for p in plots_report], 1),
             "max_psi": _max_val([p["composite_psi"] for p in plots_report], 1),
             "min_psi": _min_val([p["composite_psi"] for p in plots_report], 1),
+            "mean_physio_strain": _avg([p.get("physio_strain_index") for p in plots_report], 1),
             "mean_vitality_pvi": _avg([p["vitality_pvi"] for p in plots_report], 1),
             "mean_cwsi": _avg([p["cwsi"] for p in plots_report], 3),
             "max_cwsi": _max_val([p["cwsi"] for p in plots_report], 3),
             "mean_pore_ec_dsm": _avg([p["pore_ec_dsm"] for p in plots_report], 3),
             "max_pore_ec_dsm": _max_val([p["pore_ec_dsm"] for p in plots_report], 3),
+            "control_mean_pore_ec_dsm": _avg(ctrl_ecps, 2),
+            "saline_mean_pore_ec_dsm": _avg(saline_ecps, 2),
+            "mean_soil_moisture": _avg([p["soil_moisture"] for p in plots_report], 1),
             "mean_osmotic_mpa": _avg([p["osmotic_potential_mpa"] for p in plots_report], 3),
             "mean_salt_coeff": _avg([p["salt_coeff"] for p in plots_report], 3),
             "mean_leaf_vpd_kpa": _avg([p["leaf_vpd_kpa"] for p in plots_report], 3),
+            "action_needed_lines_count": sum(1 for l in lines_report if l["action_status"] == "action_needed"),
         },
         "synergy_h3": synergy_summary,
         "lines": lines_report,
@@ -1139,8 +1730,8 @@ def compute_historical_stress_report(
                 z_sdh["samples"] += 1
                 z_sdh["stress_degree_hours"] += max(0.0, float(psi_val) - 20.0) * 0.0833
                 if psi_s is not None:
-                    denom = max(2.0, float(psi_s) - float(psi_c))
-                    r["sri_pct"] = round(_clamp(((float(psi_s) - float(psi_val)) / denom) * 100.0, -50.0, 150.0), 1)
+                    denom = max(4.0, float(psi_s) - float(psi_c))
+                    r["sri_pct"] = round(_clamp(((float(psi_s) - float(psi_val)) / denom) * 100.0, -100.0, 100.0), 1)
                     z_sdh["recovery_degree_hours"] += max(0.0, float(r["sri_pct"])) * 0.0833
                 else:
                     r["sri_pct"] = None
@@ -1171,9 +1762,18 @@ def compute_historical_stress_report(
         dts = [r.get("leaf_delta_t_c") for r in scoped]
         moists = [_safe_float(r.get("avg_soil_moisture")) for r in scoped]
         ecs = [_safe_float(r.get("avg_soil_ec")) for r in scoped]
-        ltemps = [_safe_float(r.get("avg_leaf_temp")) for r in scoped]
-        lhums = [_safe_float(r.get("avg_leaf_humidity")) for r in scoped]
-        stemps = [_safe_float(r.get("avg_soil_temp")) for r in scoped]
+        ltemps = [
+            v for v in (_safe_float(r.get("avg_leaf_temp")) for r in scoped)
+            if v is not None and 2.5 <= v <= 52.0
+        ]
+        lhums = [
+            v for v in (_safe_float(r.get("avg_leaf_humidity")) for r in scoped)
+            if v is not None and 2.5 <= v <= 100.0
+        ]
+        stemps = [
+            v for v in (_safe_float(r.get("avg_soil_temp")) for r in scoped)
+            if v is not None and 1.0 < v <= 55.0
+        ]
 
         mean_psi = _avg(psis, 1)
         if mean_psi is not None:

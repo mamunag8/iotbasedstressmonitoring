@@ -28,7 +28,9 @@ from plc_modbus_client import GLC196RModbusDriver, decode_ieee754_float, encode_
 
 
 @pytest.fixture(autouse=True)
-def setup_test_db():
+def setup_test_db(tmp_path, monkeypatch):
+    isolated_db = tmp_path / "plc_sync_test.db"
+    monkeypatch.setattr(db, "DATABASE_URL", f"sqlite:///{isolated_db}")
     db.init_db()
     yield
 
@@ -88,8 +90,21 @@ def test_offline_queue_and_idempotent_cloud_sync():
     for i in range(5):
         snap = driver.poll_snapshot()
         snap["batch_id"] = f"test_hw_batch_{i}"
+        snap["recorded_at"] = f"2026-11-14T08:0{i}:00Z"
         snap["plc_online"] = True
         snap["source"] = "plc_hardware_196r"
+        for s in snap["sensors"]:
+            s["soil_moisture"] = 56.0 + i * 0.5
+            s["soil_temp"] = 22.0
+            s["soil_ec"] = 1600
+            s["soil_salt"] = 880
+        for z in snap["zones"]:
+            z["avg_soil_moisture"] = 56.0 + i * 0.5
+            z["avg_soil_temp"] = 22.0
+            z["avg_soil_ec"] = 1600
+            z["avg_soil_salt"] = 880
+            z["valve_open"] = False
+        snap["valves"] = {f"vana{z}": False for z in range(1, 9)}
         queue.enqueue(snap)
 
     counts = queue.queue_counts()

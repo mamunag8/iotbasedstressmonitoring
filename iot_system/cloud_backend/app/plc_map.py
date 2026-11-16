@@ -97,8 +97,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_1_9",
         "sum_tag_2": "ortlama_1_9_17",
         "avg_tag": "son_ortlama_1_9_17",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     2: {
         "zone_id": 2,
@@ -114,8 +114,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_2_10",
         "sum_tag_2": "ortlama_2_10_18",
         "avg_tag": "son_ortlama_2_10_18",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     3: {
         "zone_id": 3,
@@ -131,8 +131,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_3_11",
         "sum_tag_2": "ortlama_3_11_19",
         "avg_tag": "son_ortlama_3_11_19",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     4: {
         "zone_id": 4,
@@ -148,8 +148,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_4_12",
         "sum_tag_2": "ortlama_4_12_20",
         "avg_tag": "son_ortlama_4_12_20",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     5: {
         "zone_id": 5,
@@ -165,8 +165,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_5_13",
         "sum_tag_2": "ortlama_5_13_21",
         "avg_tag": "son_ortlama_5_13_21",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     6: {
         "zone_id": 6,
@@ -182,8 +182,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_6_14",
         "sum_tag_2": "ortlama_6_14_22",
         "avg_tag": "son_ortlama_6_14_22",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     7: {
         "zone_id": 7,
@@ -199,8 +199,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_7_15",
         "sum_tag_2": "ortlama_7_15_23",
         "avg_tag": "son_ortlama_7_15_23",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
     8: {
         "zone_id": 8,
@@ -216,8 +216,8 @@ ZONES: Dict[int, ZoneDefinition] = {
         "sum_tag_1": "ortlama_8_16",
         "sum_tag_2": "ortlama_8_16_24",
         "avg_tag": "son_ortlama_8_16_24",
-        "default_min_moisture": 45.0,
-        "default_max_moisture": 80.0,
+        "default_min_moisture": 50.0,
+        "default_max_moisture": 70.0,
     },
 }
 
@@ -310,9 +310,9 @@ PLC_RULES_SPEC: Dict[str, Any] = {
         },
         {
             "rule_id": "RULE_3_HYSTERESIS_VALVE_CONTROL",
-            "title_en": "Automatic Hysteresis Solenoid Relay Control (Start < 45.0% -> SET dc, Stop >= 80.0% -> RST dc)",
-            "title_tr": "Otomatik Histerezisli Solenoid Röle Kontrolü (Başlat < %45.0 -> SET dc, Durdur >= %80.0 -> RST dc)",
-            "formula": "--| vana{Z} |-- [ son_ortlama < 45 ] --> --(S)-- dc{Z}   |   --| vana{Z} |-- [ son_ortlama >= 80 ] --> --(R)-- dc{Z}   |   --|/| vana{Z} |-- --> --(R)-- dc{Z}",
+            "title_en": "Automatic Hysteresis Solenoid Relay Control (Start <= 50.0% -> SET dc, Stop >= 70.0% -> RST dc)",
+            "title_tr": "Otomatik Histerezisli Solenoid Röle Kontrolü (Başlat <= %50.0 -> SET dc, Durdur >= %70.0 -> RST dc)",
+            "formula": "--| vana{Z} |-- [ son_ortlama <= 50 ] --> --(S)-- dc{Z}   |   --| vana{Z} |-- [ son_ortlama >= 70 ] --> --(R)-- dc{Z}   |   --|/| vana{Z} |-- --> --(R)-- dc{Z}",
             "details_en": (
                 "Decoded directly from PLC(196R).gpf AnaProgram (Y=5596.0..9855.0): Each zone uses vana1..vana8 (0X Coils 1..8) as an enable contact (--| vana{Z} |--). "
                 "When vana{Z}=1 and average moisture son_ortlama < 45.0% (Tag 610 = 45), the PLC executes --(S)-- dc{Z} (energizing physical relay QP0..QP5 or Exp01_QP6..QP7). "

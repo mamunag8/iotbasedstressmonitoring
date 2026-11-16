@@ -28,7 +28,9 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from . import database as db
+from . import field_data_db
 from . import stress_engine
+from .field_data_router import router as field_data_router
 from .plc_map import FLOW_METER_SPEC, PLC_PROBLEMS_REPORT, PLC_RULES_SPEC, SENSORS, ZONES
 
 
@@ -57,8 +59,8 @@ class ZoneSummaryModel(BaseModel):
     relay_tag: str
     valve_open: Optional[bool] = False
     auto_mode: bool = True
-    min_moisture: float = 48.0
-    max_moisture: float = 90.0
+    min_moisture: float = 50.0
+    max_moisture: float = 70.0
     avg_soil_moisture: Optional[float] = None
     avg_soil_temp: Optional[float] = None
     avg_soil_ec: Optional[float] = None
@@ -101,8 +103,8 @@ class AllZonesModeRequest(BaseModel):
 class ZoneConfigUpdateRequest(BaseModel):
     zone_id: int = Field(..., ge=1, le=8)
     auto_mode: bool = True
-    min_moisture: float = Field(45.0, ge=5.0, le=95.0)
-    max_moisture: float = Field(80.0, ge=10.0, le=100.0)
+    min_moisture: float = Field(50.0, ge=5.0, le=95.0)
+    max_moisture: float = Field(70.0, ge=10.0, le=100.0)
     nominal_flow_lpm: Optional[float] = Field(None, ge=0.1, le=30.0)
     requested_by: str = "mobile_app"
 
@@ -119,8 +121,8 @@ class FlowMeterUpdateRequest(BaseModel):
 
 class SystemSettingsUpdateRequest(BaseModel):
     save_interval_sec: int = Field(60, ge=10, le=86400)
-    default_min_moisture: float = Field(45.0, ge=5.0, le=95.0)
-    default_max_moisture: float = Field(80.0, ge=10.0, le=100.0)
+    default_min_moisture: float = Field(50.0, ge=5.0, le=95.0)
+    default_max_moisture: float = Field(70.0, ge=10.0, le=100.0)
     global_auto_mode: bool = True
     high_ec_alarm_threshold: int = Field(2500, ge=100, le=20000)
     low_moisture_alarm_threshold: float = Field(35.0, ge=5.0, le=90.0)
@@ -191,18 +193,26 @@ class ResearchNoteRequest(BaseModel):
 class StressCalibrationRequest(BaseModel):
     substrate_name: Optional[str] = None
     hilhorst_epsilon_offset: Optional[float] = None
+    hilhorst_epsilon_0: Optional[float] = None
     container_capacity_pct: Optional[float] = None
+    container_capacity_vwc: Optional[float] = None
     wilting_point_pct: Optional[float] = None
     optimal_vwc_min_pct: Optional[float] = None
+    optimal_vwc_min: Optional[float] = None
     optimal_vwc_max_pct: Optional[float] = None
+    optimal_vwc_max: Optional[float] = None
     maas_hoffman_threshold_dsm: Optional[float] = None
+    ec_threshold_dsm: Optional[float] = None
     maas_hoffman_slope_pct_per_dsm: Optional[float] = None
+    ec_slope_pct_per_dsm: Optional[float] = None
     optimal_ph_min: Optional[float] = None
     optimal_ph_max: Optional[float] = None
     cwsi_ll_intercept: Optional[float] = None
     cwsi_ll_slope: Optional[float] = None
     cwsi_ul_degc: Optional[float] = None
+    cwsi_ul_delta_t: Optional[float] = None
     leaf_outlier_delta_c: Optional[float] = None
+    line_leaf_outlier_c: Optional[float] = None
     transplant_date: Optional[str] = None
 
 
@@ -236,6 +246,7 @@ ws_manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
+    field_data_db.init_field_data_db()
     db.purge_simulated_data()
     db.prune_to_5min_intervals()
     yield
@@ -254,6 +265,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(field_data_router)
 
 
 @app.get("/api/v1/health")
@@ -1228,14 +1241,15 @@ async def export_excel(
     ws_stress = wb.create_sheet(title="PhD_Stress_And_Recovery")
     stress_headers = [
         "Zone ID", "Line Label", "Treatment Code", "Salinity Regime",
-        "NaCl (mM)", "NaHS Dose (uM)", "Humic Dose (mL/L)", "Ref Soil pH",
-        "Avg Moisture (%)", "Avg Bulk EC (uS/cm)", "Hilhorst Pore ECp (dS/m)",
+        "NaCl (mM)", "NaHS Dose (uM)", "Humic Dose (mL/L)", "Effective Root-Zone pH",
+        "Avg Moisture (%)", "Avg Bulk EC (uS/cm)", "Hilhorst Pore ECp (dS/m)", "Target Pore ECp (dS/m)", "ECp Drift (dS/m)",
         "Osmotic Potential (MPa)", "Salt Coefficient (mg/L per uS/cm)",
         "Leaf VPD (kPa)", "Jackson CWSI (0-1)",
         "Moisture Stress (0-100)", "Salinity Stress (0-100)", "Canopy Stress (0-100)",
-        "Composite PSI (0-100)", "Plant Vitality PVI (0-100)", "Stress Class",
+        "Physiological Strain (0-100)", "Composite PSI (0-100)", "Plant Vitality PVI (0-100)", "Stress Class",
         "Recovery Index SRI vs I-S-0 (%)", "PSI Reduction vs I-S-0 (pts)",
-        "Molecular H2S Fraction (%)", "Active Molecular H2S (uM)"
+        "Molecular H2S Fraction (%)", "Active Molecular H2S (uM)",
+        "Action Status", "Recommended Action"
     ]
     ws_stress.append(stress_headers)
     for cell in ws_stress[1]:
@@ -1248,6 +1262,7 @@ async def export_excel(
         calibration=db.get_stress_calibration(),
         recent_treatments=db.get_treatment_applications(limit=25),
         recent_notes=db.get_research_notes(limit=25),
+        zone_configs=db.get_zone_configs(),
     )
     for z in live_stress.get("zones", []):
         ws_stress.append([
@@ -1258,10 +1273,12 @@ async def export_excel(
             z["nacl_mm"],
             z["nahs_dose_um"],
             z["humic_dose_mll"],
-            z["ref_soil_ph"],
+            z.get("effective_ph", z["ref_soil_ph"]),
             _fmt_cell(z.get("avg_soil_moisture")),
             _fmt_cell(z.get("avg_soil_ec")),
             _fmt_cell(z.get("avg_pore_ec_dsm")),
+            _fmt_cell(z.get("target_pore_ec_dsm")),
+            _fmt_cell(z.get("ec_drift_dsm")),
             _fmt_cell(z.get("avg_osmotic_potential_mpa")),
             _fmt_cell(z.get("avg_salt_coeff")),
             _fmt_cell(z.get("avg_vpd_kpa")),
@@ -1269,6 +1286,7 @@ async def export_excel(
             _fmt_cell(z.get("avg_s_moisture")),
             _fmt_cell(z.get("avg_s_salinity")),
             _fmt_cell(z.get("avg_s_canopy")),
+            _fmt_cell(z.get("avg_physio_strain")),
             _fmt_cell(z.get("avg_psi")),
             _fmt_cell(z.get("avg_pvi")),
             z.get("stress_class", "no_data"),
@@ -1276,6 +1294,8 @@ async def export_excel(
             _fmt_cell(z.get("psi_reduction_vs_salt_ctrl")),
             _fmt_cell((z.get("h2s_speciation") or {}).get("f_h2s_pct")),
             _fmt_cell((z.get("h2s_speciation") or {}).get("active_h2s_um")),
+            z.get("action_status", "no_data"),
+            z.get("recommended_action", ""),
         ])
 
     # Sheet 6: Treatment Applications Log (H2S / Humic / NaCl / Solution & Drainage EC/pH)
@@ -1383,12 +1403,14 @@ async def get_live_stress_api():
     calibration = db.get_stress_calibration()
     treatments = db.get_treatment_applications(limit=50)
     notes = db.get_research_notes(limit=50)
+    zone_configs = db.get_zone_configs()
     return stress_engine.compute_live_stress_report(
         latest_telemetry=latest,
         line_profiles=profiles,
         calibration=calibration,
         recent_treatments=treatments,
         recent_notes=notes,
+        zone_configs=zone_configs,
     )
 
 
