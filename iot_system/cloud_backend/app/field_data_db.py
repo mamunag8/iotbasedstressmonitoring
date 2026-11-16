@@ -319,6 +319,9 @@ PARAMETER_CATALOG: List[Dict[str, Any]] = [
     # 7. CI-202 Leaf Area & Destructive Biomass (0.0001 g Balance)
     {"key": "leaf_area_cm2", "category": "biomass_leaf_area", "label_en": "Total Plant Leaf Area (CI-202)", "label_tr": "Toplam Yaprak Alani (CI-202)", "unit": "cm2", "min": 5.0, "max": 35000.0, "decimals": 2, "ai_profile": "leaf_area_lcd"},
     {"key": "single_leaf_area_cm2", "category": "biomass_leaf_area", "label_en": "Single Leaf Area (CI-202)", "label_tr": "Tek Yaprak Alani (CI-202)", "unit": "cm2", "min": 1.0, "max": 2500.0, "decimals": 2, "ai_profile": "leaf_area_lcd"},
+    {"key": "leaf_length_cm", "category": "biomass_leaf_area", "label_en": "Leaf Length (CI-202)", "label_tr": "Yaprak Uzunlugu (CI-202)", "unit": "cm", "min": 0.5, "max": 80.0, "decimals": 2, "ai_profile": "leaf_area_lcd"},
+    {"key": "leaf_width_cm", "category": "biomass_leaf_area", "label_en": "Leaf Width (CI-202)", "label_tr": "Yaprak Genisligi (CI-202)", "unit": "cm", "min": 0.5, "max": 60.0, "decimals": 2, "ai_profile": "leaf_area_lcd"},
+    {"key": "leaf_perimeter_cm", "category": "biomass_leaf_area", "label_en": "Leaf Perimeter (CI-202)", "label_tr": "Yaprak Cevresi (CI-202)", "unit": "cm", "min": 1.0, "max": 300.0, "decimals": 2, "ai_profile": "leaf_area_lcd"},
     {"key": "shoot_fw_g", "category": "biomass_leaf_area", "label_en": "Shoot Fresh Weight", "label_tr": "Surgun Yas Agirligi", "unit": "g", "min": 0.5, "max": 5000.0, "decimals": 4, "ai_profile": "balance_lcd"},
     {"key": "shoot_dw_g", "category": "biomass_leaf_area", "label_en": "Shoot Dry Weight (65-70 C)", "label_tr": "Surgun Kuru Agirligi", "unit": "g", "min": 0.05, "max": 1000.0, "decimals": 4, "ai_profile": "balance_lcd"},
     {"key": "root_fw_g", "category": "biomass_leaf_area", "label_en": "Root Fresh Weight", "label_tr": "Kok Yas Agirligi", "unit": "g", "min": 0.1, "max": 1500.0, "decimals": 4, "ai_profile": "balance_lcd"},

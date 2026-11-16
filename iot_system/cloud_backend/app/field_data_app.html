@@ -1159,9 +1159,9 @@
 
         <div class="save-row">
           <button type="button" class="btn-save" id="btnSaveAndNext" onclick="saveSingleMeasurement(true)">
-            💾 Save &amp; Next (<span id="lblNextTarget">P2</span>) ➔
+            <span id="lblSingleSavePrefix">💾 Save</span> &amp; Next (<span id="lblNextTarget">P2</span>) ➔
           </button>
-          <button type="button" class="btn-save secondary" onclick="saveSingleMeasurement(false)">
+          <button type="button" class="btn-save secondary" id="btnSaveAndStay" onclick="saveSingleMeasurement(false)">
             ✓ Save &amp; Stay on Plant
           </button>
         </div>
@@ -1169,9 +1169,18 @@
 
       <!-- MULTI-PARAMETER FAST SHEET MODE -->
       <div id="multiEntryPanel" class="hidden">
-        <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:10px; font-weight:700;">
-          Type multiple traits for <strong id="lblMultiPlantTag">IoT-T1-R1 (P1)</strong> at once — blank boxes are skipped automatically:
+        <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:8px; font-weight:700;">
+          Type multiple traits or snap <strong>1 screen photo</strong> for <strong id="lblMultiPlantTag">IoT-T1-R1 (P1)</strong> — all detected values record together with time:
         </p>
+        <div class="cam-grid" style="margin-bottom:10px;">
+          <button type="button" class="cam-btn primary-cam" onclick="document.getElementById('fileCameraCapture').click()">
+            📷 Live Camera (Auto-Fill All Screen Data)
+          </button>
+          <button type="button" class="cam-btn" onclick="document.getElementById('fileGalleryUpload').click()">
+            🖼️ Upload Screen Photo (Group AI Read)
+          </button>
+        </div>
+        <div id="multiAiStatusStrip" class="hidden" style="margin-bottom:10px; padding:9px 12px; border-radius:10px; border:1.5px solid #0284c7; background:var(--surface-alt); font-size:0.78rem; font-weight:800;"></div>
         <div class="multi-grid" id="multiInputsContainer"></div>
         <div style="margin-top:8px;">
           <input type="text" id="inpMultiNote" placeholder="Optional note for this batch..." style="min-height:42px;" />
@@ -2626,15 +2635,21 @@
       const badge = document.getElementById("aiStatusBadge");
       const msgEl = document.getElementById("aiMessageText");
       const extraBox = document.getElementById("aiExtraChannelsBox");
+      const multiStrip = document.getElementById("multiAiStatusStrip");
       box.classList.add("show");
       badge.className = "status-pill warn";
       badge.textContent = "⏳ Reading Screen with Dual-AI...";
-      msgEl.textContent = "Compressing & verifying digits...";
+      msgEl.textContent = "Compressing & verifying all visible values...";
       extraBox.innerHTML = "";
+      if (multiStrip) {
+        multiStrip.classList.remove("hidden");
+        multiStrip.textContent = "⏳ Reading screen photo with Dual-AI & auto-filling all detected boxes...";
+      }
 
       try {
         const b64 = await compressImageToBase64(file);
         document.getElementById("imgAiPreview").src = b64;
+        document.getElementById("inpMeasureTime").value = localIsoNow();
 
         const resp = await fetch("/api/v1/field-data/ai-read", {
           method: "POST",
@@ -2670,33 +2685,93 @@
           badge.textContent = "📷 Photo Saved (Enter Value)";
         }
 
-        // Render multi-channel button if Porometer / LI-COR extra fields exist
+        // Populate all detected group screen channels into UI & Multi-Parameter Sheet
         const extras = data.extra_fields || {};
+        const extrasSec = data.extra_fields_secondary || {};
         const extraKeys = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k));
+
+        // Reset multi-sheet AI markers before applying new scan
+        document.querySelectorAll("#multiInputsContainer input[data-multikey]").forEach(inp => {
+          delete inp.dataset.aiVal;
+          delete inp.dataset.aiSecVal;
+          if (extraKeys.includes(inp.dataset.multikey)) {
+            const v = extras[inp.dataset.multikey];
+            inp.value = v;
+            inp.dataset.aiVal = String(v);
+            if (extrasSec[inp.dataset.multikey] !== null && extrasSec[inp.dataset.multikey] !== undefined) {
+              inp.dataset.aiSecVal = String(extrasSec[inp.dataset.multikey]);
+            }
+          }
+        });
+
+        const prefixEl = document.getElementById("lblSingleSavePrefix");
         if (extraKeys.length > 1) {
-          const summaryTxt = extraKeys.map(k => `${k}: ${extras[k]}`).join(" | ");
+          const rowsHtml = extraKeys.map(k => {
+            const p = CATALOG.parameters.find(x => x.key === k);
+            const v2 = extrasSec[k];
+            const secTxt = (v2 !== null && v2 !== undefined) ? ` (M2: ${v2})` : "";
+            return `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed var(--border); padding:2px 0;">
+              <span>${p ? p.label_en : k}</span>
+              <strong>${extras[k]} ${p ? p.unit : ""}${secTxt}</strong>
+            </div>`;
+          }).join("");
+          const clkBadge = data.screen_time ? ` • Clock: ${data.screen_time}` : "";
           extraBox.innerHTML = `
-            <div style="font-size:0.72rem; font-weight:800; color:var(--teal); margin-bottom:4px;">Multi-Value Screen Detected: ${summaryTxt}</div>
-            <button type="button" class="btn-action teal" style="width:100%; justify-content:center;" onclick="saveAllExtractedScreenChannels()">
-              💾 Save All ${extraKeys.length} Screen Readings at Once
-            </button>
+            <div style="font-size:0.72rem; font-weight:800; color:var(--teal); margin-bottom:4px;">
+              📋 Group Screen Read (${extraKeys.length} parameters${clkBadge}) — all save together with timestamp:
+            </div>
+            <div style="font-size:0.73rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; margin-bottom:6px;">
+              ${rowsHtml}
+            </div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.74rem; font-weight:800; cursor:pointer; margin-bottom:4px;">
+              <input type="checkbox" id="chkSaveAllGroupChannels" checked onchange="updateGroupSaveButtonLabel()" />
+              Save all ${extraKeys.length} screen readings together with timestamp
+            </label>
           `;
+          if (prefixEl) prefixEl.textContent = `💾 Save All (${extraKeys.length})`;
+          if (multiStrip) {
+            multiStrip.textContent = `✅ Auto-filled ${extraKeys.length} screen values${clkBadge} (${data.verification_status}). Review boxes below & tap Save All!`;
+          }
+        } else {
+          if (prefixEl) prefixEl.textContent = "💾 Save";
+          if (multiStrip) {
+            multiStrip.textContent = data.ai_value !== null && data.ai_value !== undefined
+              ? `✅ AI read ${data.ai_value} for active parameter.`
+              : `📷 Photo saved. ${data.message || ""}`;
+          }
         }
       } catch (err) {
         badge.className = "status-pill err";
         badge.textContent = "Network Error";
         msgEl.textContent = String(err);
+        if (multiStrip) multiStrip.textContent = `Network Error: ${err}`;
       }
     }
 
-    async function saveAllExtractedScreenChannels() {
-      if (!STATE.currentAiResult || !STATE.currentAiResult.extra_fields) return;
+    function updateGroupSaveButtonLabel() {
+      const prefixEl = document.getElementById("lblSingleSavePrefix");
+      const chk = document.getElementById("chkSaveAllGroupChannels");
+      const extras = (STATE.currentAiResult && STATE.currentAiResult.extra_fields) || {};
+      const cnt = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k)).length;
+      if (prefixEl) {
+        prefixEl.textContent = (chk && chk.checked && cnt > 1) ? `💾 Save All (${cnt})` : "💾 Save";
+      }
+    }
+
+    async function saveAllExtractedScreenChannels(advanceNext = true) {
+      if (!STATE.currentAiResult || !STATE.currentAiResult.extra_fields) return false;
       const extras = STATE.currentAiResult.extra_fields;
+      const extrasSec = STATE.currentAiResult.extra_fields_secondary || {};
       const base = buildBaseMeasurementPayload();
+      const userNote = document.getElementById("inpEntryNote").value.trim();
+      const clkTag = STATE.currentAiResult.screen_time ? `[Meter Clock: ${STATE.currentAiResult.screen_time}]` : "";
+      const instTag = STATE.currentAiResult.instrument_detected ? `[${STATE.currentAiResult.instrument_detected}]` : "";
+      const combinedNote = [instTag, clkTag, userNote].filter(Boolean).join(" ");
       const items = [];
       for (const [k, v] of Object.entries(extras)) {
         const p = CATALOG.parameters.find(x => x.key === k);
         if (p && v !== null && v !== "" && !Number.isNaN(Number(v))) {
+          const secVal = extrasSec[k];
           items.push({
             ...base,
             category: p.category,
@@ -2704,15 +2779,18 @@
             parameter_label: p.label_en,
             unit: p.unit,
             ai_value: Number(v),
+            ai_secondary_value: (secVal !== null && secVal !== undefined && !Number.isNaN(Number(secVal))) ? Number(secVal) : null,
             verification_status: STATE.currentAiResult.verification_status || "ai_photo",
             ai_confidence: STATE.currentAiResult.ai_confidence,
             ai_model: STATE.currentAiResult.ai_model,
+            ai_extra: STATE.currentAiResult.extra_fields,
             photo_rel_path: STATE.currentPhotoRelPath,
+            notes: combinedNote,
           });
         }
       }
-      if (!items.length) return;
-      await submitBulkItems(items, true);
+      if (!items.length) return false;
+      return await submitBulkItems(items, advanceNext);
     }
 
     function buildBaseMeasurementPayload() {
@@ -2735,8 +2813,17 @@
       document.getElementById("inpAiExtractedValue").value = "";
       document.getElementById("inpAiSecondaryCheck").value = "";
       document.getElementById("inpEntryNote").value = "";
+      document.getElementById("aiExtraChannelsBox").innerHTML = "";
       document.getElementById("aiVerifyBox").classList.remove("show");
       document.getElementById("plausibilityAlert").classList.add("hidden");
+      const prefixEl = document.getElementById("lblSingleSavePrefix");
+      if (prefixEl) prefixEl.textContent = "💾 Save";
+      const multiStrip = document.getElementById("multiAiStatusStrip");
+      if (multiStrip) { multiStrip.classList.add("hidden"); multiStrip.textContent = ""; }
+      document.querySelectorAll("#multiInputsContainer input[data-multikey]").forEach(inp => {
+        delete inp.dataset.aiVal;
+        delete inp.dataset.aiSecVal;
+      });
       STATE.currentPhotoRelPath = null;
       STATE.currentAiResult = null;
     }
@@ -2748,6 +2835,19 @@
       }
       const manRaw = document.getElementById("inpManualValue").value;
       const aiRaw = document.getElementById("inpAiExtractedValue").value;
+
+      // If AI read a multi-parameter screen (e.g., Decagon SC-1 Porometer) and group save is checked, record all channels together with exact same timestamp
+      const chkGroup = document.getElementById("chkSaveAllGroupChannels");
+      if (chkGroup && chkGroup.checked && STATE.currentAiResult && STATE.currentAiResult.extra_fields) {
+        const extras = STATE.currentAiResult.extra_fields;
+        const validExtraCount = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k)).length;
+        if (validExtraCount > 1 && manRaw === "") {
+          await saveAllExtractedScreenChannels(advanceNext);
+          document.getElementById("inpMeasureTime").value = localIsoNow();
+          return;
+        }
+      }
+
       if (manRaw === "" && aiRaw === "") {
         showToast("Enter a value or snap an AI photo first!", "#d97706");
         document.getElementById("inpManualValue").focus();
@@ -2825,15 +2925,29 @@
         return;
       }
       const base = buildBaseMeasurementPayload();
-      const note = document.getElementById("inpMultiNote").value.trim();
+      const userNote = document.getElementById("inpMultiNote").value.trim();
+      const clkTag = STATE.currentAiResult?.screen_time ? `[Meter Clock: ${STATE.currentAiResult.screen_time}]` : "";
+      const note = [clkTag, userNote].filter(Boolean).join(" ");
       const inputs = document.querySelectorAll("#multiInputsContainer input[data-multikey]");
       const items = [];
       inputs.forEach(inp => {
         if (inp.value !== "") {
+          const numVal = parseFloat(inp.value);
+          const aiValRaw = inp.dataset.aiVal;
+          const aiSecRaw = inp.dataset.aiSecVal;
+          const hasAi = aiValRaw !== undefined && aiValRaw !== "";
+          const aiValNum = hasAi ? parseFloat(aiValRaw) : null;
+          const matchesAi = hasAi && Math.abs(numVal - aiValNum) < 1e-6;
           items.push({
             ...base,
             parameter_key: inp.dataset.multikey,
-            manual_value: parseFloat(inp.value),
+            manual_value: matchesAi ? null : numVal,
+            ai_value: hasAi ? aiValNum : null,
+            ai_secondary_value: (aiSecRaw !== undefined && aiSecRaw !== "") ? parseFloat(aiSecRaw) : null,
+            verification_status: hasAi ? (STATE.currentAiResult?.verification_status || "ai_photo") : "human_confirmed",
+            ai_confidence: hasAi ? (STATE.currentAiResult?.ai_confidence ?? null) : null,
+            ai_model: hasAi ? (STATE.currentAiResult?.ai_model ?? null) : null,
+            photo_rel_path: hasAi ? STATE.currentPhotoRelPath : null,
             notes: note,
           });
         }
@@ -2846,6 +2960,7 @@
       if (ok) {
         inputs.forEach(i => { i.value = ""; });
         document.getElementById("inpMultiNote").value = "";
+        document.getElementById("inpMeasureTime").value = localIsoNow();
       }
     }
 

@@ -331,3 +331,84 @@ def test_exp2_64_plot_field_layout_and_walk_controls():
     assert "buildWalkSequence" in html
     assert "computeNextTargetObj" in html
     assert "guideModal" in html
+    assert "multiAiStatusStrip" in html
+    assert "chkSaveAllGroupChannels" in html
+
+
+def test_group_multi_value_screen_photo_records_together_with_time(monkeypatch):
+    client = TestClient(app)
+
+    client.post(
+        "/api/v1/field-data/ai-settings",
+        headers=PIN_HEADERS,
+        json={
+            "provider": "openrouter",
+            "openrouter_api_key": "sk-or-v1-testkey1234567890",
+            "primary_model": "google/gemini-2.5-flash",
+            "secondary_model": "openai/gpt-4o-mini",
+            "dual_verify_enabled": True,
+        },
+    )
+
+    tiny_png = base64.b64encode(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00\x18\xdd\x8d\xb0\x00\x00\x00\x00IEND\xaeB`\x82"
+    ).decode("ascii")
+
+    async def mock_sc1(api_key, model, b64_str, mime_type, prompt):
+        return {
+            "primary_value": 31.6,
+            "detected_unit": "mmol/m2/s",
+            "screen_time": "00:11",
+            "instrument_detected": "Decagon SC-1 Leaf Porometer",
+            "confidence": 0.99,
+            "unreadable": False,
+            "extra_fields": {
+                "stomatal_conductance_gs": 31.6,
+                "porometer_leaf_temp_c": 23.1,
+                "porometer_sensor_temp_c": 22.9,
+                "porometer_leaf_rh_pct": 58.9,
+                "porometer_sensor_rh_pct": 48.3,
+            },
+            "_model_used": model,
+        }
+
+    monkeypatch.setattr(fai, "_call_openrouter_vision", mock_sc1)
+
+    r_ai = client.post(
+        "/api/v1/field-data/ai-read",
+        headers=PIN_HEADERS,
+        json={"image_base64": tiny_png, "parameter_key": "stomatal_conductance_gs"},
+    )
+    assert r_ai.status_code == 200
+    d = r_ai.json()
+    assert d["verification_status"] == "dual_ai_consensus"
+    assert d["screen_time"] == "00:11"
+    assert len(d["extra_fields"]) == 5
+    assert d["extra_fields_secondary"]["porometer_leaf_rh_pct"] == 58.9
+    assert all(d["extra_fields_consensus"].values())
+
+    # Record all 5 channels together with exact shared timestamp
+    shared_ts = "2026-11-16T14:38:00+03:00"
+    bulk_items = [
+        {
+            "experiment_code": "EXP2",
+            "measured_at": shared_ts,
+            "fertigation_arm": "IoT",
+            "treatment_no": "T4",
+            "replicate_no": "R2",
+            "plant_no": "P1",
+            "parameter_key": k,
+            "ai_value": v,
+            "ai_secondary_value": d["extra_fields_secondary"][k],
+            "verification_status": d["verification_status"],
+            "photo_rel_path": d["photo_rel_path"],
+            "notes": f"[Decagon SC-1] [Meter Clock: {d['screen_time']}]",
+        }
+        for k, v in d["extra_fields"].items()
+    ]
+    r_bulk = client.post("/api/v1/field-data/measurements/bulk", headers=PIN_HEADERS, json={"items": bulk_items})
+    assert r_bulk.status_code == 200
+    assert r_bulk.json()["saved_count"] == 5
+    recs = r_bulk.json()["records"]
+    assert all(r["measured_at"] == shared_ts for r in recs)
+    assert all(r["ai_value"] is not None and r["manual_value"] is None for r in recs)

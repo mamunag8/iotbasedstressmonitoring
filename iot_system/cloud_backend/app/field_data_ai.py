@@ -67,28 +67,35 @@ def _build_vision_prompt(parameter_key: str, ai_profile: str, expected_unit: str
     profile_instructions = {
         "porometer_lcd": (
             "INSTRUMENT: Decagon SC-1 Leaf Porometer LCD screen.\n"
-            "On the SC-1 screen, carefully extract:\n"
-            "1. Main stomatal conductance reading in mmol/(m2*s) -> key 'stomatal_conductance_gs'\n"
-            "2. Leaf temperature in C -> key 'porometer_leaf_temp_c'\n"
-            "3. Sensor temperature in C -> key 'porometer_sensor_temp_c'\n"
-            "4. Leaf relative humidity in % -> key 'porometer_leaf_rh_pct'\n"
-            "5. Sensor relative humidity in % -> key 'porometer_sensor_rh_pct'\n"
-            "Put ALL visible readings inside 'extra_fields' and put the requested parameter's value in 'primary_value'."
+            "On the SC-1 screen, extract ALL 5 numerical readings simultaneously into 'extra_fields':\n"
+            "1. Top main stomatal conductance reading in mmol/(m2*s) -> 'stomatal_conductance_gs'\n"
+            "2. Middle-left temperature in C -> 'porometer_leaf_temp_c'\n"
+            "3. Middle-right temperature in C -> 'porometer_sensor_temp_c'\n"
+            "4. Bottom-left relative humidity in % -> 'porometer_leaf_rh_pct'\n"
+            "5. Bottom-right relative humidity in % -> 'porometer_sensor_rh_pct'\n"
+            "Also extract the top-right screen clock/timer (e.g., '00:11') into 'screen_time'.\n"
+            "Put ALL 5 readings inside 'extra_fields' and put the requested target parameter's value in 'primary_value'."
         ),
         "licor_lcd": (
             "INSTRUMENT: LI-COR LI-6400XT Photosynthesis / Gas Exchange screen.\n"
-            "Extract Pn ('photosynthesis_pn'), Tr ('transpiration_tr'), gs ('stomatal_conductance_gs'), and Ci ('intercellular_ci') into 'extra_fields'."
+            "Extract ALL visible parameters into 'extra_fields': Pn ('photosynthesis_pn'), Tr ('transpiration_tr'), "
+            "gs ('stomatal_conductance_gs'), Ci ('intercellular_ci'), leaf temp ('porometer_leaf_temp_c'), and leaf RH ('porometer_leaf_rh_pct')."
         ),
         "ir_thermometer_lcd": (
             "INSTRUMENT: Spectrum Technologies Item #2958 IR / Penetration Probe Thermometer LCD.\n"
             "Read the digital temperature carefully. Check if screen shows 'C' or 'F'. "
-            "If shown in Fahrenheit ('F'), convert to Celsius: (F - 32) * 5 / 9, put Celsius in 'primary_value', and mention original F in 'notes'."
+            "If shown in Fahrenheit ('F'), convert to Celsius: (F - 32) * 5 / 9, put Celsius in 'primary_value', and mention original F in 'notes'. "
+            "If multiple temperatures (e.g. surface/min/max/probe) are visible on screen, include them in 'extra_fields'."
         ),
         "ec_ph_lcd": (
-            "INSTRUMENT: Handheld Digital ATC EC/TDS or pH Meter LCD.\n"
-            "Check unit indicator carefully: 'uS/cm', 'mS/cm', 'ppm', or 'pH'. Also read bottom ATC temperature (°C) into extra_fields.temp_c if visible.\n"
+            "INSTRUMENT: Handheld Digital ATC EC/TDS/pH/Temp Combo Meter or 4-in-1 Soil/Leaf Meter LCD.\n"
+            "Check unit indicator carefully: 'uS/cm', 'mS/cm', 'ppm', or 'pH'.\n"
             f"IMPORTANT UNIT CHECK: Expected target unit is '{expected_unit}'. "
-            "If the meter screen displays 'mS/cm' (e.g. 2.35 mS/cm) and expected unit is 'uS/cm', multiply by 1000 (2350) for 'primary_value' and note it."
+            "If the meter screen displays 'mS/cm' (e.g. 2.35 mS/cm) and expected unit is 'uS/cm', multiply by 1000 (2350).\n"
+            "If multiple values are displayed simultaneously on the screen (e.g., EC + TDS + pH + Temp, or Soil VWC + EC + pH + Temp), "
+            "extract ALL of them into 'extra_fields' using matching keys: "
+            "for Drainage/Feed meters use 'drainage_ec_uscm', 'drainage_tds_ppm', 'drainage_ph', 'probe_solution_temp_c'; "
+            "for Handheld 4-in-1 Soil/Leaf meters use 'hh_soil_vwc_pct', 'hh_soil_ec_uscm', 'hh_soil_ph', 'hh_soil_temp_c', 'hh_leaf_temp_c', 'hh_leaf_rh_pct'."
         ),
         "balance_lcd": (
             "INSTRUMENT: Analytical / Precision Laboratory Balance (e.g., OHAUS Pioneer 0.0001 g).\n"
@@ -96,7 +103,8 @@ def _build_vision_prompt(parameter_key: str, ai_profile: str, expected_unit: str
         ),
         "leaf_area_lcd": (
             "INSTRUMENT: CID Bio-Science CI-202 Portable Laser Leaf Area Meter LCD.\n"
-            "Extract the leaf area reading in cm2 (and length/width into extra_fields if visible on the LCD)."
+            "Extract ALL visible parameters on the CI-202 screen into 'extra_fields': "
+            "Area in cm2 ('single_leaf_area_cm2'), Length in cm ('leaf_length_cm'), Width in cm ('leaf_width_cm'), and Perimeter in cm ('leaf_perimeter_cm')."
         ),
         "caliper_lcd": (
             "INSTRUMENT: Digital Vernier Caliper LCD.\n"
@@ -104,7 +112,7 @@ def _build_vision_prompt(parameter_key: str, ai_profile: str, expected_unit: str
         ),
         "spad_lcd": (
             "INSTRUMENT: Konica Minolta SPAD-502 Chlorophyll Meter LCD.\n"
-            "Read the SPAD value accurately to 1 decimal place (e.g., 46.8)."
+            "Read the SPAD value accurately to 1 decimal place (e.g., 46.8). If average/sample count is shown, note it."
         ),
         "plant_count": (
             "TASK: Count the target plant organs (leaves, trusses, flowers, or fruits) clearly visible on the target tomato plant.\n"
@@ -115,17 +123,26 @@ def _build_vision_prompt(parameter_key: str, ai_profile: str, expected_unit: str
         ),
     }
 
-    specific = profile_instructions.get(ai_profile, "Read the primary numerical measurement shown on the instrument screen or scale.")
+    specific = profile_instructions.get(ai_profile, "Read the primary numerical measurement and any secondary readings shown on the instrument screen.")
 
-    return f"""You are a ultra-precise PhD laboratory & greenhouse scientific instrument reader.
+    return f"""You are an ultra-precise PhD laboratory & greenhouse scientific instrument reader.
 Target parameter key: "{parameter_key}" (Expected unit: "{expected_unit}").
 {specific}
 
-CRITICAL ZERO-ERROR RULES FOR 7-SEGMENT LCD SCREENS:
-1. Inspect every segment of each digit carefully:
+UNIVERSAL MULTI-VALUE SCREEN AUTO-DETECTION:
+- Even if a different target parameter key was selected, if the photo shows a multi-value instrument screen, ALWAYS extract ALL visible readings into "extra_fields":
+  * Decagon SC-1 Leaf Porometer: "stomatal_conductance_gs" (mmol/m2s), "porometer_leaf_temp_c" (left °C), "porometer_sensor_temp_c" (right °C), "porometer_leaf_rh_pct" (left %), "porometer_sensor_rh_pct" (right %).
+  * LI-6400XT: "photosynthesis_pn", "transpiration_tr", "stomatal_conductance_gs", "intercellular_ci".
+  * Handheld 4-in-1 Soil/Leaf sensor: "hh_soil_vwc_pct", "hh_soil_ec_uscm", "hh_soil_ph", "hh_soil_temp_c", "hh_leaf_temp_c", "hh_leaf_rh_pct".
+  * CI-202 Leaf Area Meter: "single_leaf_area_cm2", "leaf_length_cm", "leaf_width_cm", "leaf_perimeter_cm".
+  * Combo EC/TDS/pH/Temp meter: "drainage_ec_uscm", "drainage_tds_ppm", "drainage_ph", "probe_solution_temp_c".
+- If a clock or timer (e.g., "00:11" or "14:32") is visible on the instrument screen header, return it in "screen_time".
+
+CRITICAL ZERO-ERROR RULES FOR 7-SEGMENT & DOT-MATRIX LCD SCREENS:
+1. Inspect every segment/pixel of each digit carefully:
    - Distinguish '6' (top-right segment OFF) vs '8' (all 7 segments ON).
    - Distinguish '5' (bottom-left OFF) vs '6' (bottom-left ON).
-   - Distinguish '1' vs '7', and '0' (center bar OFF) vs '8' (center bar ON).
+   - Distinguish '1' vs '7', '2' vs '3', and '0' (center bar OFF) vs '8' (center bar ON).
 2. Check carefully for the DECIMAL POINT ('.') between digits! Never drop a visible decimal point.
 3. Check for a leading minus sign ('-').
 4. NEVER guess or fabricate numbers if glare/blur makes a digit unreadable — set "unreadable": true and "primary_value": null.
@@ -135,6 +152,8 @@ Return ONLY valid JSON matching this exact structure (no markdown fences):
   "primary_value": <number or null>,
   "detected_unit": "<string>",
   "raw_screen_text": "<exact characters seen on screen>",
+  "screen_time": "<HH:MM shown on meter screen or null>",
+  "instrument_detected": "<short instrument name>",
   "confidence": <number from 0.0 to 1.0>,
   "unreadable": <true or false>,
   "extra_fields": {{}},
@@ -317,7 +336,39 @@ async def analyze_field_photo(
         val_a = float(res_a["primary_value"]) if res_a.get("primary_value") is not None else None
         val_b = float(res_b["primary_value"]) if (isinstance(res_b, dict) and res_b.get("primary_value") is not None) else None
         conf_a = float(res_a.get("confidence") or 0.9)
-        extra = res_a.get("extra_fields") if isinstance(res_a.get("extra_fields"), dict) else {}
+        raw_extra_a = res_a.get("extra_fields") if isinstance(res_a.get("extra_fields"), dict) else {}
+        raw_extra_b = res_b.get("extra_fields") if (isinstance(res_b, dict) and isinstance(res_b.get("extra_fields"), dict)) else {}
+
+        extra: Dict[str, float] = {}
+        for k, v in raw_extra_a.items():
+            if v is not None and v != "":
+                try:
+                    extra[k] = float(v)
+                except (ValueError, TypeError):
+                    pass
+        if val_a is not None and parameter_key in fdb.PARAM_MAP and parameter_key not in extra:
+            extra[parameter_key] = val_a
+
+        extra_sec: Dict[str, Optional[float]] = {}
+        extra_consensus: Dict[str, bool] = {}
+        for k, v1 in extra.items():
+            v2_raw = raw_extra_b.get(k)
+            if v2_raw is None and k == parameter_key and val_b is not None:
+                v2_raw = val_b
+            v2_num: Optional[float] = None
+            if v2_raw is not None and v2_raw != "":
+                try:
+                    v2_num = float(v2_raw)
+                except (ValueError, TypeError):
+                    v2_num = None
+            extra_sec[k] = v2_num
+            extra_consensus[k] = _values_match(v1, v2_num) if v2_num is not None else True
+
+        screen_time = str(res_a.get("screen_time") or (res_b.get("screen_time") if isinstance(res_b, dict) else "") or "").strip() or None
+        if screen_time and screen_time.lower() in ("null", "none", "n/a"):
+            screen_time = None
+        instrument_detected = str(res_a.get("instrument_detected") or "").strip() or None
+        captured_at_iso = datetime.now(timezone.utc).isoformat()
         model_label = res_a.get("_model_used", primary_model)
 
         if res_a.get("unreadable") or val_a is None:
@@ -327,17 +378,20 @@ async def analyze_field_photo(
         elif isinstance(res_b, dict):
             model_b_lbl = res_b.get("_model_used", secondary_model)
             model_label = f"{model_label} + {model_b_lbl}"
-            if _values_match(val_a, val_b):
+            all_extra_ok = all(extra_consensus.values()) if len(extra) > 1 else True
+            if _values_match(val_a, val_b) and all_extra_ok:
                 ver_status = "dual_ai_consensus"
                 consensus = True
                 conf_a = round(max(conf_a, float(res_b.get("confidence") or 0.95)), 3)
-                msg = f"100% Dual-AI Verified: Both {res_a.get('_model_used')} & {model_b_lbl} read {val_a} {expected_unit}."
+                grp_note = f" ({len(extra)} screen values extracted together)" if len(extra) > 1 else ""
+                time_note = f" [Screen Clock: {screen_time}]" if screen_time else ""
+                msg = f"100% Dual-AI Verified: Both {res_a.get('_model_used')} & {model_b_lbl} read {val_a} {expected_unit}{grp_note}{time_note}."
             else:
                 ver_status = "flagged_mismatch"
                 consensus = False
                 msg = (
-                    f"VERIFY DIGIT CAREFULLY: Model 1 ({res_a.get('_model_used')}) read {val_a}, "
-                    f"Model 2 ({model_b_lbl}) read {val_b}. Compare against the zoomed photo!"
+                    f"VERIFY DIGITS CAREFULLY: Model 1 ({res_a.get('_model_used')}) read {val_a}, "
+                    f"Model 2 ({model_b_lbl}) read {val_b}. Compare all group values against the zoomed photo!"
                 )
         else:
             ver_status = "single_ai_read"
@@ -350,6 +404,9 @@ async def analyze_field_photo(
             "status": "ok",
             "photo_rel_path": photo_rel_path,
             "photo_url": photo_url,
+            "captured_at_iso": captured_at_iso,
+            "screen_time": screen_time,
+            "instrument_detected": instrument_detected,
             "ai_value": val_a,
             "ai_secondary_value": val_b,
             "detected_unit": res_a.get("detected_unit") or expected_unit,
@@ -359,6 +416,8 @@ async def analyze_field_photo(
             "verification_status": ver_status,
             "consensus_matched": consensus,
             "extra_fields": extra,
+            "extra_fields_secondary": extra_sec,
+            "extra_fields_consensus": extra_consensus,
             "notes": res_a.get("notes") or "",
             "plausibility_warning": plausibility_warn,
             "message": msg,
