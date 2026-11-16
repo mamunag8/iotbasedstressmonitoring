@@ -98,6 +98,23 @@ class MeasurementUpdateRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class BulkMeasurementsDeleteRequest(BaseModel):
+    record_ids: List[str]
+
+
+class BulkMeasurementsUpdateRequest(BaseModel):
+    record_ids: List[str]
+    updates: MeasurementUpdateRequest
+    notes_mode: str = "keep"  # keep | replace | append
+    value_mode: str = "keep"  # keep | set | adjust
+    scale_factor: Optional[float] = None
+    add_offset: Optional[float] = None
+
+
+class BulkTreatmentsDeleteRequest(BaseModel):
+    batch_ids: List[str]
+
+
 class TreatmentBatchCreateRequest(BaseModel):
     experiment_code: str = "EXP2"
     applied_at: str
@@ -317,6 +334,37 @@ async def list_measurements_endpoint(
     }
 
 
+@router.post("/api/v1/field-data/measurements/bulk-update")
+async def bulk_update_measurements_endpoint(
+    req: BulkMeasurementsUpdateRequest,
+    x_operator_pin: Optional[str] = Header(None),
+):
+    _verify_pin(x_operator_pin)
+    if not req.record_ids:
+        raise HTTPException(status_code=400, detail="No record IDs selected")
+    updated = fdb.bulk_update_measurements(
+        record_ids=req.record_ids,
+        updates=req.updates.model_dump(exclude_unset=True),
+        notes_mode=req.notes_mode,
+        value_mode=req.value_mode,
+        scale_factor=req.scale_factor,
+        add_offset=req.add_offset,
+    )
+    return {"status": "updated", "updated_count": len(updated), "records": updated}
+
+
+@router.post("/api/v1/field-data/measurements/bulk-delete")
+async def bulk_delete_measurements_endpoint(
+    req: BulkMeasurementsDeleteRequest,
+    x_operator_pin: Optional[str] = Header(None),
+):
+    _verify_pin(x_operator_pin)
+    if not req.record_ids:
+        raise HTTPException(status_code=400, detail="No record IDs selected")
+    deleted = fdb.bulk_delete_measurements(req.record_ids)
+    return {"status": "deleted", "deleted_count": deleted}
+
+
 @router.put("/api/v1/field-data/measurements/{record_id}")
 async def update_measurement_endpoint(
     record_id: str,
@@ -372,6 +420,18 @@ async def list_treatment_batches_endpoint(
             limit=limit,
         )
     }
+
+
+@router.post("/api/v1/field-data/treatments/bulk-delete")
+async def bulk_delete_treatment_batches_endpoint(
+    req: BulkTreatmentsDeleteRequest,
+    x_operator_pin: Optional[str] = Header(None),
+):
+    _verify_pin(x_operator_pin)
+    if not req.batch_ids:
+        raise HTTPException(status_code=400, detail="No treatment batch IDs selected")
+    deleted = fdb.bulk_delete_treatment_batches(req.batch_ids)
+    return {"status": "deleted", "deleted_count": deleted}
 
 
 @router.delete("/api/v1/field-data/treatments/{batch_id}")

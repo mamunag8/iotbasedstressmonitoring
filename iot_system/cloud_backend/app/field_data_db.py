@@ -923,7 +923,10 @@ def update_measurement(record_id: str, updates: Dict[str, Any]) -> Optional[Dict
     measured_at = (updates.get("measured_at") or existing["measured_at"]).strip()
     dat = updates.get("dat") if updates.get("dat") is not None else compute_dat(measured_at, get_transplant_date())
     plant_no = str(updates.get("plant_no") if updates.get("plant_no") is not None else existing["plant_no"]).strip()
-    truss_no = int(updates["truss_no"]) if updates.get("truss_no") not in (None, "") else existing.get("truss_no")
+    if "truss_no" in updates:
+        truss_no = int(updates["truss_no"]) if updates["truss_no"] not in (None, "") else None
+    else:
+        truss_no = existing.get("truss_no")
 
     pkey = str(updates.get("parameter_key") or existing["parameter_key"]).strip()
     pdef = PARAM_MAP.get(pkey, {})
@@ -1015,6 +1018,94 @@ def delete_measurement(record_id: str) -> bool:
         cur = conn.cursor()
         db._exec(cur, "DELETE FROM field_measurements WHERE record_id = ?", (record_id,))
         return cur.rowcount > 0
+
+
+def bulk_delete_measurements(record_ids: List[str]) -> int:
+    clean_ids = list(dict.fromkeys(str(rid).strip() for rid in (record_ids or []) if str(rid).strip()))
+    if not clean_ids:
+        return 0
+    placeholders = ",".join(["?"] * len(clean_ids))
+    with db.get_conn() as conn:
+        cur = conn.cursor()
+        db._exec(cur, f"DELETE FROM field_measurements WHERE record_id IN ({placeholders})", tuple(clean_ids))
+        return max(0, int(cur.rowcount or 0))
+
+
+def bulk_update_measurements(
+    record_ids: List[str],
+    updates: Dict[str, Any],
+    notes_mode: str = "keep",
+    value_mode: str = "keep",
+    scale_factor: Optional[float] = None,
+    add_offset: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    clean_ids = list(dict.fromkeys(str(rid).strip() for rid in (record_ids or []) if str(rid).strip()))
+    if not clean_ids:
+        return []
+
+    updated_rows: List[Dict[str, Any]] = []
+    common_keys = (
+        "experiment_code",
+        "fertigation_arm",
+        "treatment_no",
+        "replicate_no",
+        "plant_no",
+        "measured_at",
+        "dat",
+        "parameter_key",
+        "parameter_label",
+        "category",
+        "unit",
+        "verification_status",
+    )
+
+    for rid in clean_ids:
+        existing = get_measurement_by_id(rid)
+        if not existing:
+            continue
+        row_upd: Dict[str, Any] = {}
+        for k in common_keys:
+            if k in updates and updates[k] not in (None, ""):
+                row_upd[k] = updates[k]
+        if "truss_no" in updates:
+            row_upd["truss_no"] = updates["truss_no"]
+
+        # When parameter_key changes without explicit parameter_label/category/unit, reset to catalog metadata
+        if "parameter_key" in row_upd:
+            pdef = PARAM_MAP.get(str(row_upd["parameter_key"]).strip(), {})
+            if "parameter_label" not in row_upd and pdef.get("label_en"):
+                row_upd["parameter_label"] = pdef["label_en"]
+            if "category" not in row_upd and pdef.get("category"):
+                row_upd["category"] = pdef["category"]
+            if "unit" not in row_upd and pdef.get("unit"):
+                row_upd["unit"] = pdef["unit"]
+
+        if value_mode == "set":
+            if "manual_value" in updates:
+                row_upd["manual_value"] = updates["manual_value"]
+            if "final_value" in updates and updates["final_value"] not in (None, ""):
+                row_upd["final_value"] = float(updates["final_value"])
+        elif value_mode == "adjust":
+            sc = float(scale_factor) if scale_factor is not None else 1.0
+            off = float(add_offset) if add_offset is not None else 0.0
+            cur_final = float(existing["final_value"])
+            row_upd["final_value"] = round(cur_final * sc + off, 4)
+            if existing.get("manual_value") is not None:
+                row_upd["manual_value"] = round(float(existing["manual_value"]) * sc + off, 4)
+
+        if notes_mode == "replace":
+            row_upd["notes"] = str(updates.get("notes") or "").strip()
+        elif notes_mode == "append":
+            extra_note = str(updates.get("notes") or "").strip()
+            if extra_note:
+                prev_note = str(existing.get("notes") or "").strip()
+                row_upd["notes"] = f"{prev_note} | {extra_note}" if prev_note else extra_note
+
+        res = update_measurement(rid, row_upd)
+        if res:
+            updated_rows.append(res)
+
+    return updated_rows
 
 
 def query_measurements(
@@ -1379,6 +1470,17 @@ def delete_treatment_batch(batch_id: str) -> bool:
         cur = conn.cursor()
         db._exec(cur, "DELETE FROM field_treatment_batches WHERE batch_app_id = ?", (batch_id,))
         return cur.rowcount > 0
+
+
+def bulk_delete_treatment_batches(batch_ids: List[str]) -> int:
+    clean_ids = list(dict.fromkeys(str(bid).strip() for bid in (batch_ids or []) if str(bid).strip()))
+    if not clean_ids:
+        return 0
+    placeholders = ",".join(["?"] * len(clean_ids))
+    with db.get_conn() as conn:
+        cur = conn.cursor()
+        db._exec(cur, f"DELETE FROM field_treatment_batches WHERE batch_app_id IN ({placeholders})", tuple(clean_ids))
+        return max(0, int(cur.rowcount or 0))
 
 
 # ==============================================================================

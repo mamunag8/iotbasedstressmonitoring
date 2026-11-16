@@ -651,6 +651,34 @@
     .btn-action.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
     .btn-action.teal { background: var(--teal); color: #fff; border-color: #0f766e; }
     .btn-action.amber { background: var(--amber); color: #fff; border-color: #b45309; }
+    .btn-action.danger { background: #dc2626; color: #fff; border-color: #991b1b; }
+    .btn-action:disabled { opacity: 0.45; cursor: not-allowed; }
+    .row-chk {
+      width: 19px;
+      height: 19px;
+      cursor: pointer;
+      accent-color: var(--primary);
+      vertical-align: middle;
+    }
+    tr.row-selected td {
+      background: rgba(2, 132, 199, 0.14) !important;
+    }
+    .bulk-bar {
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .bulk-bar.has-sel {
+      border-color: var(--primary);
+      background: rgba(2, 132, 199, 0.09);
+    }
 
     /* Multi-Trait Grid */
     .multi-grid {
@@ -1206,16 +1234,23 @@
       </div>
     </section>
 
-    <!-- Recent 5 Entries Quick Strip (Below Input Card so user sees instant confirmation) -->
+    <!-- Recent Entries Quick Strip (Below Input Card so user sees instant confirmation + fast bulk edit/delete) -->
     <section class="card" id="recentMiniCard">
       <div class="card-title">
-        <span>🕒 Last Saved Entries (Tap ✏️ to Edit)</span>
-        <button type="button" class="btn-action" style="min-height:32px; padding:4px 10px; font-size:0.74rem;" onclick="switchAppTab('ViewPrint')">View All / Print A4 ➔</button>
+        <span>🕒 Last Saved Entries (Select Multiple or Tap ✏️)</span>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <span id="recentBulkBtns" class="hidden" style="display:inline-flex; gap:5px; align-items:center;">
+            <button type="button" class="btn-action primary" style="min-height:32px; padding:4px 9px; font-size:0.74rem;" onclick="openBulkEditModal('recent')">✏️ Bulk Edit (<span id="lblRecentSelCnt">0</span>)</button>
+            <button type="button" class="btn-action danger" style="min-height:32px; padding:4px 9px; font-size:0.74rem;" onclick="bulkDeleteSelected('recent')">🗑️ Delete (<span id="lblRecentDelCnt">0</span>)</button>
+          </span>
+          <button type="button" class="btn-action" style="min-height:32px; padding:4px 10px; font-size:0.74rem;" onclick="switchAppTab('ViewPrint')">View All / Print A4 ➔</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width:34px;"><input type="checkbox" class="row-chk" id="chkSelectAllRecent" onchange="toggleSelectAllRecent(this.checked)" title="Select All Recent Entries" /></th>
               <th>Time / DAT</th>
               <th>Planter</th>
               <th>Parameter</th>
@@ -1226,7 +1261,7 @@
             </tr>
           </thead>
           <tbody id="recentMiniTbody">
-            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No entries yet — select a plant above to start!</td></tr>
+            <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No entries yet — select a plant above to start!</td></tr>
           </tbody>
         </table>
       </div>
@@ -1332,10 +1367,16 @@
           <button type="button" class="btn-save" style="width:100%;" onclick="saveTreatmentApplication()">🧪 Save Treatment Application</button>
         </div>
 
+        <div id="trtBulkBar" class="hidden" style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 10px; border-radius:9px; background:rgba(220,38,38,0.08); border:1px solid #fca5a5;">
+          <span style="font-size:0.78rem; font-weight:800;"><span id="lblTrtSelCnt">0</span> treatment log(s) selected</span>
+          <button type="button" class="btn-action danger" style="min-height:32px; padding:4px 10px; font-size:0.75rem;" onclick="bulkDeleteSelectedTreatments()">🗑️ Delete Selected Treatments</button>
+        </div>
+
         <div class="table-wrap" style="margin-top:12px;">
           <table>
             <thead>
               <tr>
+                <th style="width:34px;"><input type="checkbox" class="row-chk" id="chkSelectAllTrt" onchange="toggleSelectAllTrt(this.checked)" title="Select All Treatments" /></th>
                 <th>Applied At / DAT</th>
                 <th>Scope / Planters</th>
                 <th>Type</th>
@@ -1466,6 +1507,10 @@
             <input type="date" id="fltEnd" onchange="loadDashboardData()" />
           </div>
           <div class="multi-item">
+            <label>Search Planter / Note / Param</label>
+            <input type="text" id="fltSearch" placeholder="e.g. R1, Porometer, T4..." oninput="onFilterSearchInput()" />
+          </div>
+          <div class="multi-item">
             <label>A4 Report Language</label>
             <select id="selPrintLang" onchange="renderA4Report()">
               <option value="en">🇬🇧 English (EN)</option>
@@ -1499,15 +1544,32 @@
         <div id="chartBarsContainer"></div>
       </section>
 
-      <!-- Inline Editable Records Table (Hidden on A4 Print) -->
+      <!-- Inline Editable & Bulk Selectable Records Table (Hidden on A4 Print) -->
       <section class="card no-print">
         <div class="card-title">
-          <span>✏️ Collected Data Table (Click Edit to Modify Any Value)</span>
+          <span>✏️ Collected Data Table (Select Rows for Bulk Edit / Delete or Click ✏️)</span>
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:800;">Tip: Hold Shift + Click to select a range</span>
         </div>
+
+        <div class="bulk-bar" id="bulkActionBar">
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <span id="lblDashSelSummary" class="status-pill ok">0 selected</span>
+            <button type="button" class="btn-action" style="min-height:34px; padding:5px 10px; font-size:0.74rem;" onclick="selectVisibleDashRows()">☑️ Select Visible</button>
+            <button type="button" class="btn-action" id="btnSelectAllFiltered" style="min-height:34px; padding:5px 10px; font-size:0.74rem;" onclick="selectAllFilteredDashRows()">☑️ All Filtered (<span id="lblAllFilteredCnt">0</span>)</button>
+            <button type="button" class="btn-action amber hidden" id="btnSelectFlaggedDash" style="min-height:34px; padding:5px 10px; font-size:0.74rem;" onclick="selectFlaggedDashRows()">⚠️ Flagged AI (<span id="lblFlaggedCnt">0</span>)</button>
+            <button type="button" class="btn-action hidden" id="btnClearDashSel" style="min-height:34px; padding:5px 10px; font-size:0.74rem;" onclick="clearDashSelection()">✕ Clear</button>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn-action primary" id="btnOpenBulkEdit" disabled style="min-height:36px; padding:6px 12px; font-size:0.78rem;" onclick="openBulkEditModal('dash')">✏️ Bulk Edit (<span id="lblBulkEditCnt">0</span>)</button>
+            <button type="button" class="btn-action danger" id="btnRunBulkDelete" disabled style="min-height:36px; padding:6px 12px; font-size:0.78rem;" onclick="bulkDeleteSelected('dash')">🗑️ Bulk Delete (<span id="lblBulkDelCnt">0</span>)</button>
+          </div>
+        </div>
+
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
+                <th style="width:36px;"><input type="checkbox" class="row-chk" id="chkSelectAllDash" onchange="toggleSelectVisibleDash(this.checked)" title="Select / Deselect Visible Rows" /></th>
                 <th>Date / DAT</th>
                 <th>Arm &amp; Planter</th>
                 <th>Plant</th>
@@ -1630,6 +1692,151 @@
       <div style="display:flex; gap:8px; margin-top:14px;">
         <button type="button" class="btn-save" style="flex:1;" onclick="submitRecordEdit()">💾 Save Changes</button>
         <button type="button" class="btn-action" style="background:#fee2e2; color:#991b1b; border-color:#fca5a5;" onclick="deleteCurrentModalRecord()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 1B: BULK EDIT SELECTED MEASUREMENT RECORDS
+       ==================================================================== -->
+  <div class="modal-backdrop" id="bulkEditModal">
+    <div class="modal-card" style="max-width:600px;">
+      <div class="card-title">
+        <span>✏️ Bulk Edit Selected Records (<span id="lblBulkModalCount">0</span>)</span>
+        <button type="button" class="btn-action" onclick="closeModal('bulkEditModal')">✕</button>
+      </div>
+      <div id="bulkEditSummaryBanner" style="font-size:0.76rem; font-weight:800; color:var(--primary); background:var(--surface-alt); border:1px solid var(--border); border-radius:9px; padding:8px 10px; margin-bottom:10px;"></div>
+      <p style="font-size:0.75rem; color:var(--text-sub); margin-bottom:10px; font-weight:700;">
+        Only fields you change below will be updated across all selected rows. Every modified row keeps its previous value &amp; planter in audit history.
+      </p>
+
+      <div class="multi-grid">
+        <div class="multi-item">
+          <label>Experiment</label>
+          <select id="bulkExp">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="EXP2">EXP2 (64 Plots)</option>
+            <option value="EXP1">EXP1 (T1–T27)</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Fertigation Arm</label>
+          <select id="bulkArm">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="IoT">IoT</option>
+            <option value="Manual">Manual</option>
+            <option value="EXP1">EXP1</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Treatment</label>
+          <select id="bulkTrt"></select>
+        </div>
+        <div class="multi-item">
+          <label>Replicate / Block</label>
+          <select id="bulkRep">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="R1">R1</option>
+            <option value="R2">R2</option>
+            <option value="R3">R3</option>
+            <option value="R4">R4</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Plant Position</label>
+          <select id="bulkPlant">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+            <option value="Planter">Planter</option>
+            <option value="Pooled">Pooled</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Truss #</label>
+          <select id="bulkTruss">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="__CLEAR__">Clear Truss (None)</option>
+            <option value="1">Truss 1</option>
+            <option value="2">Truss 2</option>
+            <option value="3">Truss 3</option>
+            <option value="4">Truss 4</option>
+            <option value="5">Truss 5</option>
+            <option value="6">Truss 6</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Measurement Date &amp; Time</label>
+          <input type="datetime-local" id="bulkMeasuredAt" title="Leave blank to keep each row's timestamp" />
+        </div>
+        <div class="multi-item">
+          <label>Verification Status</label>
+          <select id="bulkVerStatus">
+            <option value="__KEEP__">— Keep Current —</option>
+            <option value="human_confirmed">✅ Human Confirmed</option>
+            <option value="human_edited">✏️ Human Edited</option>
+            <option value="dual_ai_consensus">🤖 Dual-AI Consensus</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Parameter</label>
+          <select id="bulkParamKey"></select>
+        </div>
+        <div class="multi-item">
+          <label>Unit Override</label>
+          <input type="text" id="bulkUnit" placeholder="Keep current unit" />
+        </div>
+      </div>
+
+      <div class="multi-grid" style="margin-top:10px;">
+        <div class="multi-item">
+          <label>Numeric Value Action</label>
+          <select id="bulkValueMode" onchange="onBulkValueModeChange()">
+            <option value="keep">— Keep Each Row's Value —</option>
+            <option value="set">Set Exact Value on Selected Rows</option>
+            <option value="adjust">Calibration Scale / Offset (× Scale + Offset)</option>
+          </select>
+        </div>
+        <div class="multi-item">
+          <label>Notes Action</label>
+          <select id="bulkNotesMode" onchange="onBulkNotesModeChange()">
+            <option value="keep">— Keep Existing Notes —</option>
+            <option value="append">Append Text to Notes</option>
+            <option value="replace">Replace / Clear Notes</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="bulkSetValWrap" class="multi-grid hidden" style="margin-top:8px;">
+        <div class="multi-item">
+          <label>New Final Verified Value *</label>
+          <input type="number" step="any" inputmode="decimal" id="bulkSetFinalVal" placeholder="0.00" />
+        </div>
+        <div class="multi-item">
+          <label>Optional Manual Col Value</label>
+          <input type="number" step="any" inputmode="decimal" id="bulkSetManualVal" placeholder="Leave blank to keep" />
+        </div>
+      </div>
+
+      <div id="bulkAdjustValWrap" class="multi-grid hidden" style="margin-top:8px;">
+        <div class="multi-item">
+          <label>Multiply By (Scale Factor)</label>
+          <input type="number" step="any" inputmode="decimal" id="bulkScaleFactor" value="1" />
+        </div>
+        <div class="multi-item">
+          <label>Plus / Minus Offset</label>
+          <input type="number" step="any" inputmode="decimal" id="bulkAddOffset" value="0" />
+        </div>
+      </div>
+
+      <div id="bulkNotesWrap" class="hidden" style="margin-top:8px;">
+        <label class="sec-lbl">Note Text (Leave blank in Replace mode to clear notes)</label>
+        <input type="text" id="bulkNotesText" placeholder="Enter note..." />
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+        <button type="button" class="btn-save" style="flex:1;" onclick="submitBulkEdit()">💾 Apply Bulk Edit</button>
+        <button type="button" class="btn-action danger" onclick="deleteFromBulkModal()">🗑️ Delete Selected</button>
       </div>
     </div>
   </div>
@@ -1766,7 +1973,7 @@
         <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #d97706;">
           <strong>ধাপ ৪: ডেটা এডিট, এক্সেল ও প্রফেসরের জন্য A4 প্রিন্ট (📊 View/A4)</strong>
           <ul style="margin:6px 0 0 18px;">
-            <li>যেকোনো ভুল মান <strong>✏️ Edit</strong> বাটনে ক্লিক করে পরিবর্তন করতে পারবেন (পুরোনো মানের হিস্ট্রিও সংরক্ষিত থাকে)।</li>
+            <li>একাধিক সারি চেকবক্সে সিলেক্ট করে (বা <strong>☑️ Select Visible / All Filtered</strong> চেপে) এক ক্লিকে <strong>✏️ Bulk Edit</strong> (টব, ট্রিটমেন্ট, গাছ, নোট বা মান একসাথে পরিবর্তন) অথবা <strong>🗑️ Bulk Delete</strong> করতে পারবেন; একক সারির জন্য <strong>✏️ Edit</strong> বাটনও আছে।</li>
             <li>উপরের ডানদিক থেকে <strong>🇬🇧 English (EN)</strong> বা <strong>🇹🇷 Türkçe (TR)</strong> বেছে <strong>🖨️ Print A4 Report</strong> চাপলেই প্রফেসরের কাছে দেওয়ার উপযোগী পরিষ্কার A4 রিপোর্ট তৈরি হয়ে যাবে।</li>
             <li>আর <strong>📥 Excel (.xlsx)</strong> চাপলে ৫ শীটের (Tidy, ANOVA Wide, Mean ± SE, Treatments, HOBO Climate) রেডি ফাইল ডাউনলোড হবে।</li>
           </ul>
@@ -1814,7 +2021,7 @@
         <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #d97706;">
           <strong>Step 4: Inline Edit, 5-Sheet Excel &amp; EN/TR A4 Professor Report (📊 View/A4)</strong>
           <ul style="margin:6px 0 0 18px;">
-            <li>Filter by experiment, arm, treatment, parameter, or date; click <strong>✏️ Edit</strong> on any row to correct values with full edit audit trail.</li>
+            <li>Select multiple rows via checkboxes (or <strong>☑️ Select Visible / All Filtered</strong>, plus Shift+Click range select) to run <strong>✏️ Bulk Edit</strong> (move plot/treatment/plant, adjust calibration, or update notes) or <strong>🗑️ Bulk Delete</strong> in one click, with full audit history.</li>
             <li>Choose <strong>🇬🇧 English (EN)</strong> or <strong>🇹🇷 Türkçe (TR)</strong> and tap <strong>🖨️ Print A4 Report</strong> for Prof. Dr. Ertan Yıldırım / committee review, or export <strong>📥 Excel (.xlsx)</strong> with Mean ± SE and ANOVA-ready sheets.</li>
           </ul>
         </div>
@@ -1878,6 +2085,12 @@
       dashSummary: { summary_rows: [], unique_planters_measured: [] },
       dashTreatments: [],
       dashClimate: { location_stats: [] },
+      recentRecords: [],
+      selectedDashIds: [],
+      selectedRecentIds: [],
+      selectedTrtIds: [],
+      bulkModalSource: "dash",
+      _lastDashClickIdx: null,
     };
 
     function showToast(msg, bg = "#0f172a") {
@@ -3134,21 +3347,29 @@
       if (r) openEditModal(r);
     }
 
-    // Recent Mini Table
+    // Recent Mini Table (with Multi-Select Bulk Edit / Delete)
     async function refreshRecentMiniTable() {
       try {
-        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=${STATE.experiment}&limit=6`);
+        const resp = await fetch(`/api/v1/field-data/measurements?experiment_code=${STATE.experiment}&limit=10`);
         const data = await resp.json();
         const rows = data.records || [];
+        STATE.recentRecords = rows;
+        const validSet = new Set(rows.map(r => r.record_id));
+        STATE.selectedRecentIds = (STATE.selectedRecentIds || []).filter(id => validSet.has(id));
         window._recMap = window._recMap || {};
         rows.forEach(r => { window._recMap[r.record_id] = r; });
         const tbody = document.getElementById("recentMiniTbody");
         if (!rows.length) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No records yet.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No records yet.</td></tr>`;
+          updateRecentBulkUI();
           return;
         }
-        tbody.innerHTML = rows.map(r => `
-          <tr>
+        const selSet = new Set(STATE.selectedRecentIds);
+        tbody.innerHTML = rows.map(r => {
+          const isSel = selSet.has(r.record_id);
+          return `
+          <tr class="${isSel ? 'row-selected' : ''}">
+            <td><input type="checkbox" class="row-chk" ${isSel ? "checked" : ""} onchange="toggleRecentRow('${r.record_id}', this.checked)" /></td>
             <td>${fmtLocalTime(r.measured_at, false)} <span style="color:var(--teal); font-weight:800;">(D${r.dat ?? 0})</span></td>
             <td><strong>${r.planter_code}</strong> (${r.plant_no})</td>
             <td>${r.parameter_label}</td>
@@ -3156,9 +3377,55 @@
             <td>${r.ai_value ?? "—"} ${r.photo_url ? `<a href="#" onclick="event.preventDefault();openLightbox('${r.photo_url}')">📷</a>` : ""}</td>
             <td><strong>${r.final_value} ${r.unit}</strong></td>
             <td><button type="button" class="btn-action" style="min-height:30px; padding:3px 8px;" onclick="openEditModalById('${r.record_id}')">✏️</button></td>
-          </tr>
-        `).join("");
+          </tr>`;
+        }).join("");
+        updateRecentBulkUI();
       } catch (e) {}
+    }
+
+    function toggleRecentRow(recId, checked) {
+      const s = new Set(STATE.selectedRecentIds || []);
+      if (checked) s.add(recId); else s.delete(recId);
+      STATE.selectedRecentIds = [...s];
+      refreshRecentRowHighlights();
+    }
+
+    function toggleSelectAllRecent(checked) {
+      STATE.selectedRecentIds = checked ? (STATE.recentRecords || []).map(r => r.record_id) : [];
+      refreshRecentRowHighlights();
+    }
+
+    function refreshRecentRowHighlights() {
+      const selSet = new Set(STATE.selectedRecentIds || []);
+      const rows = STATE.recentRecords || [];
+      const tbody = document.getElementById("recentMiniTbody");
+      if (tbody && rows.length) {
+        [...tbody.querySelectorAll("tr")].forEach((tr, idx) => {
+          const r = rows[idx];
+          if (!r) return;
+          const on = selSet.has(r.record_id);
+          tr.classList.toggle("row-selected", on);
+          const chk = tr.querySelector("input.row-chk");
+          if (chk) chk.checked = on;
+        });
+      }
+      updateRecentBulkUI();
+    }
+
+    function updateRecentBulkUI() {
+      const cnt = (STATE.selectedRecentIds || []).length;
+      const total = (STATE.recentRecords || []).length;
+      const wrap = document.getElementById("recentBulkBtns");
+      if (wrap) wrap.classList.toggle("hidden", cnt === 0);
+      const eLbl = document.getElementById("lblRecentSelCnt");
+      const dLbl = document.getElementById("lblRecentDelCnt");
+      if (eLbl) eLbl.textContent = cnt;
+      if (dLbl) dLbl.textContent = cnt;
+      const allChk = document.getElementById("chkSelectAllRecent");
+      if (allChk) {
+        allChk.checked = total > 0 && cnt === total;
+        allChk.indeterminate = cnt > 0 && cnt < total;
+      }
     }
 
     // ======================================================================
@@ -3285,13 +3552,20 @@
       const resp = await fetch(`/api/v1/field-data/treatments?experiment_code=${STATE.experiment}&limit=50`);
       const data = await resp.json();
       STATE.dashTreatments = data.treatments || [];
+      const validIds = new Set(STATE.dashTreatments.map(t => t.batch_app_id));
+      STATE.selectedTrtIds = (STATE.selectedTrtIds || []).filter(id => validIds.has(id));
       const tbody = document.getElementById("trtHistoryTbody");
       if (!STATE.dashTreatments.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No treatment applications logged yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No treatment applications logged yet.</td></tr>`;
+        updateTrtBulkUI();
         return;
       }
-      tbody.innerHTML = STATE.dashTreatments.map(t => `
-        <tr>
+      const selSet = new Set(STATE.selectedTrtIds);
+      tbody.innerHTML = STATE.dashTreatments.map(t => {
+        const isSel = selSet.has(t.batch_app_id);
+        return `
+        <tr class="${isSel ? 'row-selected' : ''}">
+          <td><input type="checkbox" class="row-chk" ${isSel ? "checked" : ""} onchange="toggleTrtHistoryRow('${t.batch_app_id}', this.checked)" /></td>
           <td>${fmtLocalTime(t.applied_at, true)} <strong>(D${t.dat ?? 0})</strong></td>
           <td>${t.group_label}</td>
           <td>${t.application_type}</td>
@@ -3299,8 +3573,78 @@
           <td>EC: ${t.solution_ec_uscm ?? "—"} | pH: ${t.solution_ph ?? "—"} | ${t.volume_per_planter_l ?? "—"} L/pot</td>
           <td>${t.notes || "—"}</td>
           <td><button type="button" class="btn-action" style="padding:3px 7px; min-height:28px;" onclick="deleteTreatmentItem('${t.batch_app_id}')">🗑️</button></td>
-        </tr>
-      `).join("");
+        </tr>`;
+      }).join("");
+      updateTrtBulkUI();
+    }
+
+    function toggleTrtHistoryRow(batchId, checked) {
+      const s = new Set(STATE.selectedTrtIds || []);
+      if (checked) s.add(batchId); else s.delete(batchId);
+      STATE.selectedTrtIds = [...s];
+      const selSet = new Set(STATE.selectedTrtIds);
+      const tbody = document.getElementById("trtHistoryTbody");
+      if (tbody && STATE.dashTreatments.length) {
+        [...tbody.querySelectorAll("tr")].forEach((tr, idx) => {
+          const t = STATE.dashTreatments[idx];
+          if (!t) return;
+          const on = selSet.has(t.batch_app_id);
+          tr.classList.toggle("row-selected", on);
+          const chk = tr.querySelector("input.row-chk");
+          if (chk) chk.checked = on;
+        });
+      }
+      updateTrtBulkUI();
+    }
+
+    function toggleSelectAllTrt(checked) {
+      STATE.selectedTrtIds = checked ? (STATE.dashTreatments || []).map(t => t.batch_app_id) : [];
+      toggleTrtHistoryRow("__refresh__", false);
+      if (checked) {
+        STATE.selectedTrtIds = (STATE.dashTreatments || []).map(t => t.batch_app_id);
+        const tbody = document.getElementById("trtHistoryTbody");
+        if (tbody) {
+          [...tbody.querySelectorAll("tr")].forEach(tr => {
+            tr.classList.add("row-selected");
+            const chk = tr.querySelector("input.row-chk");
+            if (chk) chk.checked = true;
+          });
+        }
+      }
+      updateTrtBulkUI();
+    }
+
+    function updateTrtBulkUI() {
+      const cnt = (STATE.selectedTrtIds || []).length;
+      const total = (STATE.dashTreatments || []).length;
+      const bar = document.getElementById("trtBulkBar");
+      if (bar) bar.classList.toggle("hidden", cnt === 0);
+      const lbl = document.getElementById("lblTrtSelCnt");
+      if (lbl) lbl.textContent = cnt;
+      const allChk = document.getElementById("chkSelectAllTrt");
+      if (allChk) {
+        allChk.checked = total > 0 && cnt === total;
+        allChk.indeterminate = cnt > 0 && cnt < total;
+      }
+    }
+
+    async function bulkDeleteSelectedTreatments() {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const ids = STATE.selectedTrtIds || [];
+      if (!ids.length) return;
+      if (!confirm(`Permanently delete ${ids.length} selected treatment log(s)?`)) return;
+      const resp = await fetch("/api/v1/field-data/treatments/bulk-delete", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({ batch_ids: ids }),
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      if (resp.ok) {
+        const d = await resp.json();
+        STATE.selectedTrtIds = [];
+        showToast(`🗑️ Deleted ${d.deleted_count} treatment log(s)`, "#dc2626");
+        loadTreatmentsHistory();
+      }
     }
 
     async function deleteTreatmentItem(id) {
@@ -3422,6 +3766,11 @@
       loadDashboardData();
     }
 
+    function onFilterSearchInput() {
+      clearTimeout(window._fltSearchTimer);
+      window._fltSearchTimer = setTimeout(() => loadDashboardData(), 240);
+    }
+
     function buildFilterQuery() {
       const qs = new URLSearchParams();
       qs.set("experiment_code", document.getElementById("fltExp").value);
@@ -3437,6 +3786,8 @@
       if (s) qs.set("start_date", s);
       const e = document.getElementById("fltEnd").value;
       if (e) qs.set("end_date", e);
+      const q = document.getElementById("fltSearch")?.value?.trim();
+      if (q) qs.set("search", q);
       return qs;
     }
 
@@ -3455,6 +3806,9 @@
       STATE.dashSummary = mData.summary || { summary_rows: [], unique_planters_measured: [] };
       STATE.dashTreatments = tData.treatments || [];
       STATE.dashClimate = cData || { location_stats: [] };
+      STATE._lastDashClickIdx = null;
+      const validIds = new Set(STATE.dashRecords.map(r => r.record_id));
+      STATE.selectedDashIds = (STATE.selectedDashIds || []).filter(id => validIds.has(id));
 
       document.getElementById("kpiTotalRecs").textContent = STATE.dashRecords.length;
       const denom = document.getElementById("fltExp").value === "EXP1" ? 81 : 64;
@@ -3502,17 +3856,22 @@
     function renderEditableTable() {
       const tbody = document.getElementById("fullDataTbody");
       if (!STATE.dashRecords.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:18px;">No records match current filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:18px;">No records match current filters.</td></tr>`;
+        updateDashBulkUI();
         return;
       }
       window._recMap = window._recMap || {};
       STATE.dashRecords.forEach(r => { window._recMap[r.record_id] = r; });
-      tbody.innerHTML = STATE.dashRecords.slice(0, 300).map(r => {
+      const selSet = new Set(STATE.selectedDashIds || []);
+      const visibleRows = STATE.dashRecords.slice(0, 300);
+      tbody.innerHTML = visibleRows.map((r, idx) => {
+        const isSel = selSet.has(r.record_id);
         const badge = r.verification_status === "dual_ai_consensus"
           ? `<span style="color:#16a34a; font-size:0.68rem; font-weight:900;">✅ Dual-AI</span>`
           : (r.verification_status === "flagged_mismatch" ? `<span style="color:#dc2626; font-size:0.68rem; font-weight:900;">⚠️ Check</span>` : "");
         return `
-          <tr>
+          <tr class="${isSel ? 'row-selected' : ''}" data-recid="${r.record_id}">
+            <td><input type="checkbox" class="row-chk" ${isSel ? "checked" : ""} onclick="onDashRowChkClick(event, '${r.record_id}', ${idx})" /></td>
             <td>${fmtLocalTime(r.measured_at, true)}<br/><span style="color:var(--teal); font-weight:800;">DAT ${r.dat ?? 0}</span></td>
             <td><strong>${r.planter_code}</strong><br/><span style="font-size:0.68rem; color:var(--text-muted);">${r.treatment_code}</span></td>
             <td>${r.plant_no}${r.truss_no ? ` (Tr${r.truss_no})` : ""}</td>
@@ -3528,6 +3887,315 @@
           </tr>
         `;
       }).join("");
+      updateDashBulkUI();
+    }
+
+    function onDashRowChkClick(ev, recId, idx) {
+      const checked = ev.target.checked;
+      const visibleRows = STATE.dashRecords.slice(0, 300);
+      const selSet = new Set(STATE.selectedDashIds || []);
+      if (ev.shiftKey && STATE._lastDashClickIdx !== null && STATE._lastDashClickIdx !== idx) {
+        const lo = Math.min(STATE._lastDashClickIdx, idx);
+        const hi = Math.max(STATE._lastDashClickIdx, idx);
+        for (let i = lo; i <= hi; i++) {
+          const row = visibleRows[i];
+          if (!row) continue;
+          if (checked) selSet.add(row.record_id); else selSet.delete(row.record_id);
+        }
+      } else {
+        if (checked) selSet.add(recId); else selSet.delete(recId);
+      }
+      STATE._lastDashClickIdx = idx;
+      STATE.selectedDashIds = [...selSet];
+      syncDashTableSelectionDOM();
+    }
+
+    function toggleSelectVisibleDash(checked) {
+      const visibleRows = STATE.dashRecords.slice(0, 300);
+      const selSet = new Set(STATE.selectedDashIds || []);
+      visibleRows.forEach(r => {
+        if (checked) selSet.add(r.record_id); else selSet.delete(r.record_id);
+      });
+      STATE.selectedDashIds = [...selSet];
+      syncDashTableSelectionDOM();
+    }
+
+    function selectVisibleDashRows() {
+      toggleSelectVisibleDash(true);
+    }
+
+    function selectAllFilteredDashRows() {
+      STATE.selectedDashIds = (STATE.dashRecords || []).map(r => r.record_id);
+      syncDashTableSelectionDOM();
+    }
+
+    function selectFlaggedDashRows() {
+      STATE.selectedDashIds = (STATE.dashRecords || [])
+        .filter(r => r.verification_status === "flagged_mismatch")
+        .map(r => r.record_id);
+      syncDashTableSelectionDOM();
+    }
+
+    function clearDashSelection() {
+      STATE.selectedDashIds = [];
+      STATE._lastDashClickIdx = null;
+      syncDashTableSelectionDOM();
+    }
+
+    function syncDashTableSelectionDOM() {
+      const selSet = new Set(STATE.selectedDashIds || []);
+      const tbody = document.getElementById("fullDataTbody");
+      if (tbody) {
+        tbody.querySelectorAll("tr[data-recid]").forEach(tr => {
+          const on = selSet.has(tr.dataset.recid);
+          tr.classList.toggle("row-selected", on);
+          const chk = tr.querySelector("input.row-chk");
+          if (chk) chk.checked = on;
+        });
+      }
+      updateDashBulkUI();
+    }
+
+    function updateDashBulkUI() {
+      const selIds = STATE.selectedDashIds || [];
+      const cnt = selIds.length;
+      const totalFiltered = (STATE.dashRecords || []).length;
+      const visibleRows = (STATE.dashRecords || []).slice(0, 300);
+      const selSet = new Set(selIds);
+      const visSelectedCnt = visibleRows.filter(r => selSet.has(r.record_id)).length;
+      const flaggedCnt = (STATE.dashRecords || []).filter(r => r.verification_status === "flagged_mismatch").length;
+
+      const bar = document.getElementById("bulkActionBar");
+      if (bar) bar.classList.toggle("has-sel", cnt > 0);
+      const sumEl = document.getElementById("lblDashSelSummary");
+      if (sumEl) {
+        sumEl.textContent = cnt > 0 ? `${cnt} selected` : "0 selected";
+        sumEl.className = `status-pill ${cnt > 0 ? 'warn' : 'ok'}`;
+      }
+      const allCntEl = document.getElementById("lblAllFilteredCnt");
+      if (allCntEl) allCntEl.textContent = totalFiltered;
+      const flgBtn = document.getElementById("btnSelectFlaggedDash");
+      const flgCntEl = document.getElementById("lblFlaggedCnt");
+      if (flgBtn) flgBtn.classList.toggle("hidden", flaggedCnt === 0);
+      if (flgCntEl) flgCntEl.textContent = flaggedCnt;
+
+      const clrBtn = document.getElementById("btnClearDashSel");
+      if (clrBtn) clrBtn.classList.toggle("hidden", cnt === 0);
+
+      const editBtn = document.getElementById("btnOpenBulkEdit");
+      const delBtn = document.getElementById("btnRunBulkDelete");
+      if (editBtn) editBtn.disabled = cnt === 0;
+      if (delBtn) delBtn.disabled = cnt === 0;
+      const eCnt = document.getElementById("lblBulkEditCnt");
+      const dCnt = document.getElementById("lblBulkDelCnt");
+      if (eCnt) eCnt.textContent = cnt;
+      if (dCnt) dCnt.textContent = cnt;
+
+      const hdrChk = document.getElementById("chkSelectAllDash");
+      if (hdrChk) {
+        hdrChk.checked = visibleRows.length > 0 && visSelectedCnt === visibleRows.length;
+        hdrChk.indeterminate = visSelectedCnt > 0 && visSelectedCnt < visibleRows.length;
+      }
+    }
+
+    function getActiveBulkIds(source) {
+      return source === "recent" ? [...(STATE.selectedRecentIds || [])] : [...(STATE.selectedDashIds || [])];
+    }
+
+    function populateBulkModalDropdowns() {
+      const trtSel = document.getElementById("bulkTrt");
+      if (trtSel) {
+        const opts = [`<option value="__KEEP__">— Keep Current —</option>`];
+        for (let i = 1; i <= 27; i++) {
+          const tk = `T${i}`;
+          const e2 = (CATALOG.exp2_treatments || {})[tk];
+          const lbl = e2 ? `${tk} (${e2.short_en})` : tk;
+          opts.push(`<option value="${tk}">${lbl}</option>`);
+        }
+        trtSel.innerHTML = opts.join("");
+      }
+      const pSel = document.getElementById("bulkParamKey");
+      if (pSel) {
+        pSel.innerHTML = `<option value="__KEEP__">— Keep Current —</option>` +
+          (CATALOG.parameters || []).map(p => `<option value="${p.key}">${p.label_en} (${p.unit})</option>`).join("");
+      }
+    }
+
+    function onBulkValueModeChange() {
+      const m = document.getElementById("bulkValueMode").value;
+      document.getElementById("bulkSetValWrap").classList.toggle("hidden", m !== "set");
+      document.getElementById("bulkAdjustValWrap").classList.toggle("hidden", m !== "adjust");
+    }
+
+    function onBulkNotesModeChange() {
+      const m = document.getElementById("bulkNotesMode").value;
+      document.getElementById("bulkNotesWrap").classList.toggle("hidden", m === "keep");
+    }
+
+    function openBulkEditModal(source = "dash") {
+      if (!getStoredPin()) { openPinModal(); return; }
+      STATE.bulkModalSource = source;
+      const ids = getActiveBulkIds(source);
+      if (!ids.length) {
+        showToast("Select at least 1 row first!", "#d97706");
+        return;
+      }
+      populateBulkModalDropdowns();
+      document.getElementById("lblBulkModalCount").textContent = ids.length;
+
+      const sampleRows = ids.slice(0, 5).map(id => (window._recMap || {})[id]).filter(Boolean);
+      const previewTxt = sampleRows.map(r => `${r.planter_code} ${r.plant_no}: ${r.parameter_label}`).join(" • ");
+      document.getElementById("bulkEditSummaryBanner").textContent =
+        `Selected ${ids.length} record(s)` + (previewTxt ? ` — ${previewTxt}${ids.length > 5 ? " ..." : ""}` : "");
+
+      document.getElementById("bulkExp").value = "__KEEP__";
+      document.getElementById("bulkArm").value = "__KEEP__";
+      document.getElementById("bulkTrt").value = "__KEEP__";
+      document.getElementById("bulkRep").value = "__KEEP__";
+      document.getElementById("bulkPlant").value = "__KEEP__";
+      document.getElementById("bulkTruss").value = "__KEEP__";
+      document.getElementById("bulkMeasuredAt").value = "";
+      document.getElementById("bulkVerStatus").value = "__KEEP__";
+      document.getElementById("bulkParamKey").value = "__KEEP__";
+      document.getElementById("bulkUnit").value = "";
+      document.getElementById("bulkValueMode").value = "keep";
+      document.getElementById("bulkSetFinalVal").value = "";
+      document.getElementById("bulkSetManualVal").value = "";
+      document.getElementById("bulkScaleFactor").value = "1";
+      document.getElementById("bulkAddOffset").value = "0";
+      document.getElementById("bulkNotesMode").value = "keep";
+      document.getElementById("bulkNotesText").value = "";
+      onBulkValueModeChange();
+      onBulkNotesModeChange();
+      document.getElementById("bulkEditModal").classList.add("open");
+    }
+
+    async function submitBulkEdit() {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const ids = getActiveBulkIds(STATE.bulkModalSource);
+      if (!ids.length) return;
+
+      const updates = {};
+      const exp = document.getElementById("bulkExp").value;
+      if (exp !== "__KEEP__") updates.experiment_code = exp;
+      const arm = document.getElementById("bulkArm").value;
+      if (arm !== "__KEEP__") updates.fertigation_arm = arm;
+      const trt = document.getElementById("bulkTrt").value;
+      if (trt !== "__KEEP__") updates.treatment_no = trt;
+      const rep = document.getElementById("bulkRep").value;
+      if (rep !== "__KEEP__") updates.replicate_no = rep;
+      const plant = document.getElementById("bulkPlant").value;
+      if (plant !== "__KEEP__") updates.plant_no = plant;
+      const truss = document.getElementById("bulkTruss").value;
+      if (truss === "__CLEAR__") updates.truss_no = null;
+      else if (truss !== "__KEEP__") updates.truss_no = parseInt(truss, 10);
+
+      const mAt = document.getElementById("bulkMeasuredAt").value;
+      if (mAt) updates.measured_at = toLocalOffsetIso(mAt);
+      const ver = document.getElementById("bulkVerStatus").value;
+      if (ver !== "__KEEP__") updates.verification_status = ver;
+      const pkey = document.getElementById("bulkParamKey").value;
+      if (pkey !== "__KEEP__") updates.parameter_key = pkey;
+      const unitTxt = document.getElementById("bulkUnit").value.trim();
+      if (unitTxt) updates.unit = unitTxt;
+
+      const valueMode = document.getElementById("bulkValueMode").value;
+      let scaleFactor = null;
+      let addOffset = null;
+      if (valueMode === "set") {
+        const fRaw = document.getElementById("bulkSetFinalVal").value;
+        if (fRaw === "" || Number.isNaN(parseFloat(fRaw))) {
+          showToast("Enter the New Final Verified Value!", "#d97706");
+          return;
+        }
+        updates.final_value = parseFloat(fRaw);
+        const mRaw = document.getElementById("bulkSetManualVal").value;
+        if (mRaw !== "" && !Number.isNaN(parseFloat(mRaw))) {
+          updates.manual_value = parseFloat(mRaw);
+        }
+      } else if (valueMode === "adjust") {
+        scaleFactor = parseFloat(document.getElementById("bulkScaleFactor").value || "1");
+        addOffset = parseFloat(document.getElementById("bulkAddOffset").value || "0");
+        if (Number.isNaN(scaleFactor) || Number.isNaN(addOffset)) {
+          showToast("Enter valid numeric Scale and Offset", "#d97706");
+          return;
+        }
+      }
+
+      const notesMode = document.getElementById("bulkNotesMode").value;
+      if (notesMode !== "keep") {
+        updates.notes = document.getElementById("bulkNotesText").value.trim();
+        if (notesMode === "append" && !updates.notes) {
+          showToast("Enter text to append to notes!", "#d97706");
+          return;
+        }
+      }
+
+      const hasChanges = Object.keys(updates).length > 0 || valueMode !== "keep" || notesMode !== "keep";
+      if (!hasChanges) {
+        showToast("Choose at least one field to update!", "#d97706");
+        return;
+      }
+
+      const resp = await fetch("/api/v1/field-data/measurements/bulk-update", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          record_ids: ids,
+          updates,
+          notes_mode: notesMode,
+          value_mode: valueMode,
+          scale_factor: scaleFactor,
+          add_offset: addOffset,
+        }),
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      if (!resp.ok) {
+        const err = await resp.json();
+        showToast(err.detail || "Bulk update failed", "#dc2626");
+        return;
+      }
+      const resData = await resp.json();
+      closeModal("bulkEditModal");
+      if (STATE.bulkModalSource === "recent") STATE.selectedRecentIds = [];
+      else STATE.selectedDashIds = [];
+      showToast(`✓ Bulk updated ${resData.updated_count} record(s)!`, "#16a34a");
+      refreshRecentMiniTable();
+      refreshTodayFieldProgress();
+      if (STATE.tab === "ViewPrint") loadDashboardData();
+    }
+
+    async function bulkDeleteSelected(source = "dash") {
+      if (!getStoredPin()) { openPinModal(); return; }
+      const ids = getActiveBulkIds(source);
+      if (!ids.length) {
+        showToast("Select at least 1 row to delete!", "#d97706");
+        return;
+      }
+      if (!confirm(`Permanently delete ${ids.length} selected measurement record(s)? This cannot be undone.`)) return;
+      const resp = await fetch("/api/v1/field-data/measurements/bulk-delete", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({ record_ids: ids }),
+      });
+      if (resp.status === 403) { openPinModal(); return; }
+      if (!resp.ok) {
+        const err = await resp.json();
+        showToast(err.detail || "Bulk delete failed", "#dc2626");
+        return;
+      }
+      const resData = await resp.json();
+      closeModal("bulkEditModal");
+      STATE.selectedRecentIds = (STATE.selectedRecentIds || []).filter(id => !ids.includes(id));
+      STATE.selectedDashIds = (STATE.selectedDashIds || []).filter(id => !ids.includes(id));
+      showToast(`🗑️ Deleted ${resData.deleted_count} record(s)`, "#dc2626");
+      refreshRecentMiniTable();
+      refreshTodayFieldProgress();
+      if (STATE.tab === "ViewPrint") loadDashboardData();
+    }
+
+    function deleteFromBulkModal() {
+      bulkDeleteSelected(STATE.bulkModalSource);
     }
 
     function openEditModal(r) {

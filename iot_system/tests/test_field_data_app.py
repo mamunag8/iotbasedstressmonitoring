@@ -530,3 +530,137 @@ def test_bugfix_regressions_protocol_colors_pseudorep_hobo_and_edits():
     assert "fmtLocalTime" in html
     assert "populateFilterTreatments" in html
     assert "_drainageAutoPlanter" in html
+
+
+def test_bulk_selection_bulk_edit_and_bulk_delete():
+    client = TestClient(app)
+
+    # 1. PIN security on bulk endpoints
+    assert client.post("/api/v1/field-data/measurements/bulk-delete", json={"record_ids": ["x"]}).status_code == 403
+    assert client.post(
+        "/api/v1/field-data/measurements/bulk-update",
+        json={"record_ids": ["x"], "updates": {"treatment_no": "T4"}},
+    ).status_code == 403
+    assert client.post("/api/v1/field-data/treatments/bulk-delete", json={"batch_ids": ["x"]}).status_code == 403
+
+    # 2. Insert 4 measurement rows on IoT-T2-R1 (P1, Truss 2)
+    created = client.post(
+        "/api/v1/field-data/measurements/bulk",
+        headers=PIN_HEADERS,
+        json={
+            "items": [
+                {
+                    "experiment_code": "EXP2",
+                    "measured_at": "2026-11-16T15:00:00+03:00",
+                    "fertigation_arm": "IoT",
+                    "treatment_no": "T2",
+                    "replicate_no": "R1",
+                    "plant_no": "P1",
+                    "truss_no": 2,
+                    "parameter_key": pkey,
+                    "manual_value": val,
+                    "notes": "Initial",
+                }
+                for pkey, val in [
+                    ("plant_height_cm", 40.0),
+                    ("stem_diameter_mm", 8.0),
+                    ("leaf_count", 12.0),
+                    ("spad_chlorophyll", 45.0),
+                ]
+            ]
+        },
+    ).json()["records"]
+    assert len(created) == 4
+    all_ids = [r["record_id"] for r in created]
+
+    # 3. Bulk Edit all 4 rows: move to Manual-T4-R2 P2, clear truss_no, append note, and +0.5 calibration offset
+    r_upd = client.post(
+        "/api/v1/field-data/measurements/bulk-update",
+        headers=PIN_HEADERS,
+        json={
+            "record_ids": all_ids,
+            "updates": {
+                "fertigation_arm": "Manual",
+                "treatment_no": "T4",
+                "replicate_no": "R2",
+                "plant_no": "P2",
+                "truss_no": None,
+                "verification_status": "human_confirmed",
+                "notes": "Moved from T2",
+            },
+            "notes_mode": "append",
+            "value_mode": "adjust",
+            "scale_factor": 1.0,
+            "add_offset": 0.5,
+        },
+    )
+    assert r_upd.status_code == 200
+    upd_data = r_upd.json()
+    assert upd_data["updated_count"] == 4
+    for orig, u in zip(created, upd_data["records"]):
+        assert u["planter_code"] == "Manual-T4-R2"
+        assert u["treatment_code"] == "M-C-H2S+HS"
+        assert u["nahs_um"] == 25.0 and u["humic_mll"] == 4.0
+        assert u["plant_no"] == "P2"
+        assert u["truss_no"] is None
+        assert u["final_value"] == orig["final_value"] + 0.5
+        assert u["notes"] == "Initial | Moved from T2"
+        assert len(u["edit_history"]) == 1
+        assert u["edit_history"][0]["prev_planter_code"] == "IoT-T2-R1"
+
+    # 4. Bulk Edit subset (2 rows) with value_mode="set" and notes_mode="replace"
+    r_set = client.post(
+        "/api/v1/field-data/measurements/bulk-update",
+        headers=PIN_HEADERS,
+        json={
+            "record_ids": all_ids[:2],
+            "updates": {"final_value": 99.0, "manual_value": 99.0, "notes": "Standardized"},
+            "value_mode": "set",
+            "notes_mode": "replace",
+        },
+    )
+    assert r_set.status_code == 200
+    assert all(r["final_value"] == 99.0 and r["notes"] == "Standardized" for r in r_set.json()["records"])
+
+    # 5. Bulk Delete 3 selected rows -> 1 remaining
+    r_del = client.post(
+        "/api/v1/field-data/measurements/bulk-delete",
+        headers=PIN_HEADERS,
+        json={"record_ids": all_ids[:3]},
+    )
+    assert r_del.status_code == 200
+    assert r_del.json()["deleted_count"] == 3
+    rem = client.get("/api/v1/field-data/measurements?experiment_code=EXP2").json()["records"]
+    assert len(rem) == 1 and rem[0]["record_id"] == all_ids[3]
+
+    # 6. Bulk Delete treatment logs
+    t_ids = []
+    for t_code in ("T2", "T3"):
+        tr = client.post(
+            "/api/v1/field-data/treatments",
+            headers=PIN_HEADERS,
+            json={
+                "experiment_code": "EXP2",
+                "applied_at": "2026-11-16T10:00:00+03:00",
+                "target_arms": ["Manual"],
+                "target_treatments": [t_code],
+                "target_replicates": ["R1"],
+                "application_type": "nahs_humic_pulse",
+                "sync_to_stress_studio": False,
+            },
+        ).json()["treatment"]
+        t_ids.append(tr["batch_app_id"])
+
+    r_tdel = client.post(
+        "/api/v1/field-data/treatments/bulk-delete",
+        headers=PIN_HEADERS,
+        json={"batch_ids": t_ids},
+    )
+    assert r_tdel.status_code == 200
+    assert r_tdel.json()["deleted_count"] == 2
+    assert len(client.get("/api/v1/field-data/treatments?experiment_code=EXP2").json()["treatments"]) == 0
+
+    # 7. UI Bulk Controls Check
+    html = client.get("/data-app").text
+    for marker in ("bulkActionBar", "bulkEditModal", "submitBulkEdit", "bulkDeleteSelected", "onDashRowChkClick", "toggleSelectAllRecent", "bulkDeleteSelectedTreatments"):
+        assert marker in html
