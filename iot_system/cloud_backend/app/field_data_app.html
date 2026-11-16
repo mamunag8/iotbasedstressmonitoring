@@ -924,6 +924,7 @@
       <div class="header-actions">
         <a href="/" class="h-btn" title="Back to PLC Irrigation SCADA">🌿 SCADA</a>
         <button type="button" class="h-btn" id="btnOfflineQueue" style="display:none; background:#b45309;" onclick="syncOfflineQueue()">⚡ Sync (0)</button>
+        <button type="button" class="h-btn" style="background:#0f766e; border-color:#14b8a6;" onclick="openGuideModal()" title="Step-by-Step Beginner Field Tutorial">📖 Guide</button>
         <button type="button" class="h-btn" onclick="openAISettingsModal()" title="Configure OpenRouter / Gemini Vision API">⚙️ AI Key</button>
         <button type="button" class="h-btn" onclick="toggleDarkMode()" title="Sunlight / Dark Theme">🌓</button>
         <button type="button" class="h-btn locked" id="btnPinState" onclick="openPinModal()">🔒 Unlock PIN</button>
@@ -1685,6 +1686,118 @@
     </div>
   </div>
 
+  <!-- ====================================================================
+       MODAL 4: STEP-BY-STEP BEGINNER TUTORIAL GUIDE (BANGLA / ENGLISH)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="guideModal">
+    <div class="modal-card" style="max-width:640px;">
+      <div class="card-title">
+        <span>📖 Step-by-Step Tutorial (Zero to Pro Field Guide)</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" class="submode-btn active" id="btnGuideBn" style="min-height:32px; padding:4px 10px; font-size:0.74rem;" onclick="switchGuideLang('bn')">🇧🇩 বাংলা</button>
+          <button type="button" class="submode-btn" id="btnGuideEn" style="min-height:32px; padding:4px 10px; font-size:0.74rem;" onclick="switchGuideLang('en')">🇬🇧 English</button>
+          <button type="button" class="btn-action" style="min-height:32px; padding:4px 10px;" onclick="closeModal('guideModal')">✕</button>
+        </div>
+      </div>
+
+      <!-- BANGLA GUIDE -->
+      <div id="guideContentBn" style="font-size:0.84rem; line-height:1.55; display:flex; flex-direction:column; gap:10px;">
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #0284c7;">
+          <strong>ধাপ ০: প্রথমবার ১ মিনিটের সেটআপ (ফোন বা পিসিতে)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>ব্রাউজারে খুলুন: <code>https://iotserver.mmreza.com/data-app</code> (ফোনে Chrome Menu ➔ <em>Add to Home screen</em> করলে অ্যাপের মতো আইকন হয়ে যাবে)।</li>
+            <li>উপরে ডানদিকে <strong>🔒 Unlock PIN</strong> চেপে পিন দিন: <code>atauniiot</code> (তাহলেই সেভ, এডিট ও ডিলিট চালু হবে)।</li>
+            <li><strong>⚙️ AI Key</strong>-এ গিয়ে আপনার <strong>OpenRouter API Key</strong> (<code>sk-or-v1-...</code>) অথবা <strong>Gemini Key</strong> সেভ করুন — আর <em>Dual-AI Cross-Check</em> অন রাখুন, এতে ২টি AI মডেল মিলিয়ে ১০০% নির্ভুল রিডিং নেবে।</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #16a34a;">
+          <strong>ধাপ ১: গ্রিনহাউসে সারি ধরে ডেটা এন্ট্রি (🌱 Growth / 📟 Meters / ⚖️ Lab)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>উপরের <strong>64-Plot Field Map</strong> আপনার Sera 5 গ্রিনহাউসের হুবহু নকশা (নিচে <strong>IoT Cols 1–8</strong>, মাঝে হাঁটার পথ, উপরে <strong>Manual Cols 9–16</strong>)।</li>
+            <li><strong>Walk Route</strong> থেকে সাধারণত <strong>🐍 Snake Row (1→8, 8→1)</strong> রাখুন (যেদিক দিয়ে হাঁটবেন, উল্টো দিকে না ঘুরে সোজা পরবর্তী টবে যাবে)। যেকোনো টবে ট্যাপ করে শুরু করতে পারেন।</li>
+            <li>নিচে ২ নম্বর কার্ড থেকে একটি প্যারামিটার (যেমন <em>Plant Height</em>) বা <strong>⚡ Multi-Parameter Sheet</strong> (একসাথে Height + Stem + Leaves + SPAD) সিলেক্ট করুন।</li>
+            <li>মান টাইপ করে সবুজ <strong>💾 Save &amp; Next ➔</strong> বাটনে চাপুন: প্রথম চাপে একই টবের <strong>P1 ➔ P2</strong> হবে; পরের চাপে ম্যাপ অনুযায়ী <strong>অটোমেটিক পরবর্তী টবে</strong> চলে যাবে!</li>
+            <li>আজ যেসব টবের ১টি গাছ হয়েছে সেগুলোতে <span style="background:#f59e0b; color:#0f172a; padding:1px 6px; border-radius:99px; font-weight:900;">½</span> এবং ২টি গাছই হলে <span style="background:#16a34a; color:#fff; padding:1px 6px; border-radius:99px; font-weight:900;">✓</span> চিহ্ন দেখাবে।</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #0d9488;">
+          <strong>ধাপ ২: মিটার বা স্কেলের স্ক্রিন ফটো থেকে AI রিডিং (📟 Meters / ⚖️ Lab)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>পোরোমিটার, IR থার্মোমিটার, হ্যান্ডহেল্ড ৪-ইন-১ বা ওজন মেশিনের স্ক্রিনের সামনে ফোন ধরে <strong>📷 Live Camera (AI Read)</strong> চাপুন।</li>
+            <li>ছবি সার্ভারে সেভ হবে এবং ২টি AI মডেল সংখ্যা পড়ে আলাদা <strong>AI Photo Col</strong>-এ দেখাবে। দুটো মডেল ভিন্ন সংখ্যা পেলে হলুদ সতর্কতা দেখাবে — তখন ডিসপ্লে মিলিয়ে নিশ্চিত হয়ে সেভ করুন।</li>
+            <li>ইন্টারনেট না থাকলেও চিন্তা নেই — ডেটা ফোনের <strong>⚡ Sync</strong> কিউতে জমা থাকবে, নেট আসলেই ১ ক্লিকে সার্ভারে চলে যাবে।</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #7c3aed;">
+          <strong>ধাপ ৩: H2S / Humic ট্রিটমেন্ট ও HOBO ডাটা লগার আপলোড (🧪 Treat/Env)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li><strong>ট্রিটমেন্ট লগ:</strong> <em>All H2S Plots (32 Planters)</em> বা <em>Single Planter</em> ১ ট্যাপে সিলেক্ট করে ডোজ, EC/pH ও তারিখ-সময় সেভ করুন (IoT ট্রিটমেন্ট হলে মূল Stress Studio-তেও অটো যুক্ত হবে)।</li>
+            <li><strong>HOBO আপলোড:</strong> Temp/Lux ও Temp/RH লগারের <code>.csv</code> বা <code>.xlsx</code> ফাইল আপলোড করলে ডুপ্লিকেট বাদ দিয়ে অটো <strong>VPD (kPa)</strong> হিসাব করে সেভ করবে।</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #d97706;">
+          <strong>ধাপ ৪: ডেটা এডিট, এক্সেল ও প্রফেসরের জন্য A4 প্রিন্ট (📊 View/A4)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>যেকোনো ভুল মান <strong>✏️ Edit</strong> বাটনে ক্লিক করে পরিবর্তন করতে পারবেন (পুরোনো মানের হিস্ট্রিও সংরক্ষিত থাকে)।</li>
+            <li>উপরের ডানদিক থেকে <strong>🇬🇧 English (EN)</strong> বা <strong>🇹🇷 Türkçe (TR)</strong> বেছে <strong>🖨️ Print A4 Report</strong> চাপলেই প্রফেসরের কাছে দেওয়ার উপযোগী পরিষ্কার A4 রিপোর্ট তৈরি হয়ে যাবে।</li>
+            <li>আর <strong>📥 Excel (.xlsx)</strong> চাপলে ৫ শীটের (Tidy, ANOVA Wide, Mean ± SE, Treatments, HOBO Climate) রেডি ফাইল ডাউনলোড হবে।</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ENGLISH GUIDE -->
+      <div id="guideContentEn" class="hidden" style="font-size:0.84rem; line-height:1.55; display:flex; flex-direction:column; gap:10px;">
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #0284c7;">
+          <strong>Step 0: One-Time 1-Minute Setup</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>Open <code>https://iotserver.mmreza.com/data-app</code> on mobile or PC (use Chrome <em>Add to Home screen</em> for app mode).</li>
+            <li>Tap <strong>🔒 Unlock PIN</strong> (top-right) and enter <code>atauniiot</code> to enable saving and editing.</li>
+            <li>Open <strong>⚙️ AI Key</strong> and save your OpenRouter (<code>sk-or-v1-...</code>) or Gemini API key with <em>Dual-AI Cross-Check</em> enabled.</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #16a34a;">
+          <strong>Step 1: Walk the 64-Plot Field Layout Systematically (🌱 Growth / 📟 Meters / ⚖️ Lab)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>The <strong>64-Plot Field Map</strong> matches your physical Sera 5 greenhouse layout (<strong>IoT Cols 1–8</strong> bottom, <strong>Central Pathway</strong> middle, <strong>Manual Cols 9–16</strong> top).</li>
+            <li>Keep Walk Route on <strong>🐍 Snake Row (1→8, 8→1)</strong> for zero backtracking, or tap any plot cell to jump there directly.</li>
+            <li>Pick one parameter or switch to <strong>⚡ Multi-Parameter Sheet</strong>, enter the value, and tap <strong>💾 Save &amp; Next ➔</strong>: it moves <strong>P1 ➔ P2</strong> inside the pot, then advances straight to the next bench plot automatically!</li>
+            <li>Badges track your progress live today: <span style="background:#f59e0b; color:#0f172a; padding:1px 6px; border-radius:99px; font-weight:900;">½</span> = 1 plant done, <span style="background:#16a34a; color:#fff; padding:1px 6px; border-radius:99px; font-weight:900;">✓</span> = whole plot complete.</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #0d9488;">
+          <strong>Step 2: Capture Meter LCDs with Dual-AI Photo Verification</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>Tap <strong>📷 Live Camera (AI Read)</strong> to photograph Porometer, IR Thermometer, Soil Sensor, Balance, or Leaf Area screens.</li>
+            <li>Manual typed values and AI-extracted values are stored in <strong>separate database columns</strong>; any Model 1 vs Model 2 disagreement triggers an alert before saving.</li>
+            <li>If greenhouse cellular drops out, entries queue safely in <strong>⚡ Sync</strong> and upload automatically when back online.</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #7c3aed;">
+          <strong>Step 3: Group/Individual Treatments &amp; HOBO Climate Uploads (🧪 Treat/Env)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>Use 1-tap presets (<em>All 32 H2S</em>, <em>All 32 Humic</em>, <em>All 64</em>, or <em>Single Planter</em>) to log exact dosing date/time and solution EC/pH.</li>
+            <li>Upload HOBO Temp/Lux and Temp/RH <code>.csv</code> / <code>.xlsx</code> files periodically — duplicates are skipped and VPD (kPa) is auto-calculated.</li>
+          </ul>
+        </div>
+
+        <div style="padding:10px; border-radius:10px; background:var(--surface-alt); border-left:4px solid #d97706;">
+          <strong>Step 4: Inline Edit, 5-Sheet Excel &amp; EN/TR A4 Professor Report (📊 View/A4)</strong>
+          <ul style="margin:6px 0 0 18px;">
+            <li>Filter by experiment, arm, treatment, parameter, or date; click <strong>✏️ Edit</strong> on any row to correct values with full edit audit trail.</li>
+            <li>Choose <strong>🇬🇧 English (EN)</strong> or <strong>🇹🇷 Türkçe (TR)</strong> and tap <strong>🖨️ Print A4 Report</strong> for Prof. Dr. Ertan Yıldırım / committee review, or export <strong>📥 Excel (.xlsx)</strong> with Mean ± SE and ANOVA-ready sheets.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Photo Zoom Lightbox -->
   <div class="modal-backdrop" id="photoLightbox" onclick="closeModal('photoLightbox')">
     <img id="imgLightboxFull" src="" alt="Full Photo" style="max-width:96vw; max-height:92vh; border-radius:10px; border:2px solid #fff;" />
@@ -1808,6 +1921,19 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.remove("open");
+    }
+
+    function openGuideModal() {
+      switchGuideLang(localStorage.getItem("phd_guide_lang") || "bn");
+      document.getElementById("guideModal").classList.add("open");
+    }
+
+    function switchGuideLang(lang) {
+      localStorage.setItem("phd_guide_lang", lang);
+      document.getElementById("guideContentBn").classList.toggle("hidden", lang !== "bn");
+      document.getElementById("guideContentEn").classList.toggle("hidden", lang !== "en");
+      document.getElementById("btnGuideBn").classList.toggle("active", lang === "bn");
+      document.getElementById("btnGuideEn").classList.toggle("active", lang === "en");
     }
 
     function openLightbox(src) {

@@ -330,3 +330,4 @@ def test_exp2_64_plot_field_layout_and_walk_controls():
     assert "fieldMapSection" in html
     assert "buildWalkSequence" in html
     assert "computeNextTargetObj" in html
+    assert "guideModal" in html
