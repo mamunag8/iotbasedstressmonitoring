@@ -389,9 +389,15 @@ async def analyze_field_photo(
             else:
                 ver_status = "flagged_mismatch"
                 consensus = False
+                mismatches = [
+                    f"{k}: M1={extra.get(k)} vs M2={extra_sec.get(k)}"
+                    for k, ok_flag in extra_consensus.items()
+                    if not ok_flag
+                ]
+                mismatch_txt = "; ".join(mismatches) if mismatches else f"Primary M1={val_a} vs M2={val_b}"
                 msg = (
-                    f"VERIFY DIGITS CAREFULLY: Model 1 ({res_a.get('_model_used')}) read {val_a}, "
-                    f"Model 2 ({model_b_lbl}) read {val_b}. Compare all group values against the zoomed photo!"
+                    f"VERIFY DIGITS CAREFULLY ({res_a.get('_model_used')} vs {model_b_lbl}): "
+                    f"{mismatch_txt}. Compare against the zoomed photo!"
                 )
         else:
             ver_status = "single_ai_read"
