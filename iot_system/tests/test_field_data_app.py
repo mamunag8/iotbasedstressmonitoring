@@ -333,6 +333,7 @@ def test_exp2_64_plot_field_layout_and_walk_controls():
     assert "guideModal" in html
     assert "multiAiStatusStrip" in html
     assert "chkSaveAllGroupChannels" in html
+    assert "selPlantsPerPlanter" in html
 
 
 def test_group_multi_value_screen_photo_records_together_with_time(monkeypatch):

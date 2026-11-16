@@ -975,10 +975,14 @@
 
         <div class="walk-toolbar">
           <select id="selWalkRoute" onchange="onWalkSettingsChanged()" title="Systematic Greenhouse Walking Route">
+            <option value="row_lr">➡️ Row by Row (R1T1→R1T2→R1T4→...→R2T2)</option>
             <option value="snake_row">🐍 Snake Row (1→8, 8→1)</option>
-            <option value="row_lr">➡️ Row L→R (1→8 each row)</option>
             <option value="col_snake">↕️ Col Snake (Col 1 R1→R4, Col 2 R4→R1)</option>
             <option value="treatment">🎨 Treatment Order (T1→T8)</option>
+          </select>
+          <select id="selPlantsPerPlanter" onchange="onWalkSettingsChanged()" title="Measure 1 Plant or Both Plants per Planter">
+            <option value="1">🌱 1 Plant / Planter (Next Plot After Save)</option>
+            <option value="2">🌿 2 Plants / Planter (P1 ➔ P2 ➔ Next Plot)</option>
           </select>
           <select id="selWalkScope" onchange="onWalkSettingsChanged()" title="Walk Both Blocks or Single Block">
             <option value="ALL">🌿 All 64 Plots (IoT + Manual)</option>
@@ -1841,8 +1845,9 @@
       tab: "Growth",
       entryMode: "single",
       selectorView: localStorage.getItem("phd_selector_view") || "map",
-      walkRoute: localStorage.getItem("phd_walk_route") || "snake_row",
+      walkRoute: localStorage.getItem("phd_walk_route") || "row_lr",
       walkScope: localStorage.getItem("phd_walk_scope") || "ALL",
+      plantsPerPlanter: localStorage.getItem("phd_plants_per_planter") || "1",
       experiment: "EXP2",
       arm: "IoT",
       treatment: "T1",
@@ -1972,6 +1977,7 @@
       document.getElementById("inpMeasureTime").value = localIsoNow();
       document.getElementById("trtAppliedAt").value = localIsoNow();
       document.getElementById("selWalkRoute").value = STATE.walkRoute;
+      document.getElementById("selPlantsPerPlanter").value = STATE.plantsPerPlanter;
       document.getElementById("selWalkScope").value = STATE.walkScope;
       updatePinUI();
       updateOfflineBadge();
@@ -2079,8 +2085,10 @@
 
     function onWalkSettingsChanged() {
       STATE.walkRoute = document.getElementById("selWalkRoute").value;
+      STATE.plantsPerPlanter = document.getElementById("selPlantsPerPlanter")?.value || "1";
       STATE.walkScope = document.getElementById("selWalkScope").value;
       localStorage.setItem("phd_walk_route", STATE.walkRoute);
+      localStorage.setItem("phd_plants_per_planter", STATE.plantsPerPlanter);
       localStorage.setItem("phd_walk_scope", STATE.walkScope);
       if (STATE.walkScope === "IoT" && STATE.arm !== "IoT") selectPlotFromMap("IoT", STATE.treatment, STATE.rep, true);
       if (STATE.walkScope === "Manual" && STATE.arm !== "Manual") selectPlotFromMap("Manual", STATE.treatment, STATE.rep, true);
@@ -2135,7 +2143,12 @@
       let doneCount = 0;
       seq.forEach(p => {
         const s = compMap[`${p.arm}|${p.rep}|${p.treatment}`];
-        if (s && (s.has("Planter") || (s.has("P1") && s.has("P2")))) doneCount += 1;
+        if (!s) return;
+        if (STATE.plantsPerPlanter === "1") {
+          if (s.size > 0) doneCount += 1;
+        } else if (s.has("Planter") || (s.has("P1") && s.has("P2"))) {
+          doneCount += 1;
+        }
       });
       const progEl = document.getElementById("lblWalkProgress");
       if (progEl) {
@@ -2161,7 +2174,7 @@
             const pSet = compMap[`${p.arm}|${p.rep}|${p.treatment}`];
             let badgeHtml = "";
             if (pSet) {
-              if (pSet.has("Planter") || (pSet.has("P1") && pSet.has("P2"))) {
+              if ((STATE.plantsPerPlanter === "1" && pSet.size > 0) || pSet.has("Planter") || (pSet.has("P1") && pSet.has("P2"))) {
                 badgeHtml = `<span class="cell-badge full">✓</span>`;
               } else if (pSet.size > 0) {
                 badgeHtml = `<span class="cell-badge half">½</span>`;
@@ -2298,9 +2311,12 @@
     }
 
     function computeNextTargetObj() {
-      const nextPlantWithinPlot = STATE.plant === "P1" ? "P2" : (STATE.plant === "Planter" ? "Planter" : "P1");
+      const twoPlantMode = STATE.plantsPerPlanter === "2";
+      const nextPlantWithinPlot = twoPlantMode
+        ? (STATE.plant === "P1" ? "P2" : (STATE.plant === "Planter" ? "Planter" : "P1"))
+        : (STATE.plant === "Planter" ? "Planter" : STATE.plant);
       if (STATE.experiment === "EXP2") {
-        if (STATE.plant === "P1") {
+        if (twoPlantMode && STATE.plant === "P1") {
           const curPlot = lookupExp2Plot(STATE.arm, STATE.rep, STATE.treatment);
           return {
             arm: STATE.arm,
@@ -2326,7 +2342,7 @@
         }
       }
       // EXP1 fallback order
-      if (STATE.plant === "P1") {
+      if (twoPlantMode && STATE.plant === "P1") {
         return { arm: STATE.arm, rep: STATE.rep, treatment: STATE.treatment, plant: "P2", col: null, label: `${STATE.treatment}-${STATE.rep} P2` };
       }
       const maxRep = 3;
