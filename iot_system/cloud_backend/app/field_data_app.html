@@ -680,6 +680,122 @@
       background: rgba(2, 132, 199, 0.09);
     }
 
+    /* Custom Multi-Parameter + Multi-Photo Instrument Slot Cards */
+    .inst-slot-card {
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 10px 11px;
+      background: var(--surface);
+      margin-bottom: 10px;
+    }
+    .inst-slot-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .inst-slot-title {
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .slot-cam-mini {
+      min-height: 34px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1.5px solid var(--primary);
+      background: rgba(2, 132, 199, 0.1);
+      color: var(--primary);
+      font-size: 0.74rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .slot-cam-mini.solid {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      border: none;
+    }
+    .slot-photo-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .slot-photo-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 8px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface-alt);
+      font-size: 0.72rem;
+      font-weight: 800;
+      max-width: 100%;
+    }
+    .slot-photo-pill img {
+      width: 44px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 1px solid var(--border-strong);
+      cursor: zoom-in;
+      flex-shrink: 0;
+    }
+    .param-picker-drawer {
+      margin-top: 8px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 11px;
+      border: 2px solid var(--primary);
+      background: var(--surface-alt);
+    }
+    .param-chk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+      gap: 5px;
+      max-height: 270px;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .param-chk-lbl {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 7px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.73rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .param-chk-lbl.checked {
+      border-color: var(--primary);
+      background: rgba(2, 132, 199, 0.11);
+    }
+    .field-ai-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 5px;
+      margin-left: 4px;
+    }
+    .field-ai-tag.ok { background: #dcfce7; color: #166534; }
+    .field-ai-tag.warn { background: #fee2e2; color: #991b1b; }
+
     /* Multi-Trait Grid */
     .multi-grid {
       display: grid;
@@ -933,6 +1049,7 @@
       }
     }
   </style>
+  <style id="dynPrintOrientationStyle"></style>
 </head>
 <body>
 
@@ -1209,27 +1326,91 @@
         </div>
       </div>
 
-      <!-- MULTI-PARAMETER FAST SHEET MODE -->
+      <!-- CUSTOMIZABLE MULTI-PARAMETER + MULTI-PHOTO FAST FORM -->
       <div id="multiEntryPanel" class="hidden">
-        <p style="font-size:0.78rem; color:var(--text-sub); margin-bottom:8px; font-weight:700;">
-          Type multiple traits or snap <strong>1 screen photo</strong> for <strong id="lblMultiPlantTag">IoT-T1-R1 (P1)</strong> — all detected values record together with time:
-        </p>
-        <div class="cam-grid" style="margin-bottom:10px;">
-          <button type="button" class="cam-btn primary-cam" onclick="document.getElementById('fileCameraCapture').click()">
-            📷 Live Camera (Auto-Fill All Screen Data)
-          </button>
-          <button type="button" class="cam-btn" onclick="document.getElementById('fileGalleryUpload').click()">
-            🖼️ Upload Screen Photo (Group AI Read)
+        <!-- Hidden Dedicated Inputs for Per-Slot Camera/Gallery & Batch Multi-Photo Gallery -->
+        <input type="file" id="fileSlotCamera" accept="image/*" capture="environment" class="hidden" onchange="handleSlotFilesSelected(this)" />
+        <input type="file" id="fileSlotGallery" accept="image/*" multiple class="hidden" onchange="handleSlotFilesSelected(this)" />
+        <input type="file" id="fileBatchMultiPhotos" accept="image/*" multiple class="hidden" onchange="handleBatchMultiPhotosSelected(this)" />
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <div style="font-size:0.79rem; color:var(--text-sub); font-weight:800;">
+            One-Stop Plant &amp; Planter Form for <strong id="lblMultiPlantTag" style="color:var(--primary);">IoT-T1-R1 (P1)</strong>:
+          </div>
+          <button type="button" class="btn-action primary" style="min-height:34px; padding:5px 10px; font-size:0.74rem;" onclick="toggleMultiParamCustomizer()">
+            🛠️ Customize Parameters (<span id="lblSelectedMultiParamCnt">0</span>)
           </button>
         </div>
+
+        <!-- 1-Tap Field Walk Form Presets -->
+        <div class="pill-row" id="multiPresetBar" style="margin-bottom:8px;">
+          <button type="button" class="param-chip" data-mpreset="full_walk" onclick="applyMultiParamPreset('full_walk')">🌟 Full Walk (Growth + SPAD + Porometer + IR + FarmHub 7-in-1)</button>
+          <button type="button" class="param-chip" data-mpreset="all_meters" onclick="applyMultiParamPreset('all_meters')">📟 All Meters Only (SPAD + Porometer + IR + 7-in-1)</button>
+          <button type="button" class="param-chip" data-mpreset="growth_spad" onclick="applyMultiParamPreset('growth_spad')">🌱 Growth + SPAD</button>
+          <button type="button" class="param-chip" data-mpreset="farmhub_ir" onclick="applyMultiParamPreset('farmhub_ir')">📡 DIBL FarmHub 7-in-1 + IR</button>
+          <button type="button" class="param-chip" data-mpreset="active_cat" onclick="applyMultiParamPreset('active_cat')">📂 Active Tab Category Only</button>
+          <select id="selSavedMultiTemplate" onchange="loadSavedMultiTemplate(this.value)" style="width:auto; min-height:36px; padding:4px 8px; font-size:0.74rem;" title="Load Saved Custom Form"></select>
+        </div>
+
+        <!-- Expandable Custom Parameter Selector Drawer -->
+        <div id="multiParamCustomizer" class="param-picker-drawer hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+            <strong style="font-size:0.8rem;">☑️ Choose Exact Parameters for Your Plant/Planter Form</strong>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <button type="button" class="btn-action teal" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="saveCurrentMultiTemplatePrompt()">💾 Save as Preset</button>
+              <button type="button" class="btn-action" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="selectAllMultiCatalogParams(true)">Select All</button>
+              <button type="button" class="btn-action" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="selectAllMultiCatalogParams(false)">Clear</button>
+              <button type="button" class="btn-action" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="toggleMultiParamCustomizer()">✓ Done</button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr auto; gap:6px; margin-bottom:8px;">
+            <input type="text" id="inpMultiParamFilter" placeholder="Search parameter (e.g. SPAD, Porometer, Nitrogen, IR, Brix)..." oninput="renderMultiParamCustomizerList()" style="min-height:38px; font-size:0.8rem;" />
+            <select id="selMultiParamCatFilter" onchange="renderMultiParamCustomizerList()" style="width:auto; min-height:38px; font-size:0.76rem;">
+              <option value="ALL">All Categories</option>
+              <option value="morphology">Morphology &amp; SPAD</option>
+              <option value="porometer">Porometer / Gas Exchange</option>
+              <option value="ir_thermometer">IR &amp; Probe Temp</option>
+              <option value="handheld_sensor">DIBL FarmHub Soil 7-in-1</option>
+              <option value="drainage">Drainage &amp; EC/pH</option>
+              <option value="fruit_harvest">Fruit &amp; Ripening</option>
+              <option value="biomass_leaf_area">Leaf Area &amp; Biomass</option>
+              <option value="biochemical_lab">Biochemical Lab</option>
+            </select>
+          </div>
+          <div class="param-chk-grid" id="multiParamChkGrid"></div>
+          <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); display:grid; grid-template-columns:1.5fr 0.8fr auto; gap:6px; align-items:center;">
+            <input type="text" id="inpNewCustomMultiName" placeholder="+ Custom parameter name (e.g. Leaf Curl Score)" style="min-height:38px; font-size:0.78rem;" />
+            <input type="text" id="inpNewCustomMultiUnit" placeholder="Unit (e.g. 1-5)" style="min-height:38px; font-size:0.78rem;" />
+            <button type="button" class="btn-action primary" style="min-height:38px; padding:5px 10px; font-size:0.74rem;" onclick="addCustomMultiParamDef()">+ Add</button>
+          </div>
+        </div>
+
+        <!-- Batch Multi-Photo Gallery Picker + Whole-Planter Soil Scope Toggle -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; padding:8px 10px; border-radius:10px; background:var(--surface-alt); border:1.5px dashed #0284c7;">
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="slot-cam-mini solid" onclick="document.getElementById('fileBatchMultiPhotos').click()">
+              📸 Upload Multiple Screen Photos Together (SPAD + Porometer + IR + 7-in-1)
+            </button>
+            <span style="font-size:0.72rem; color:var(--text-sub); font-weight:700;">or snap each meter card below!</span>
+          </div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:0.74rem; font-weight:800; cursor:pointer;">
+            <input type="checkbox" class="row-chk" id="chkTagSoilAsPlanter" checked onchange="onToggleTagSoilAsPlanter(this.checked)" />
+            🪴 Tag Soil 7-in-1, Root Probe &amp; Drainage as Whole Planter
+          </label>
+        </div>
+
         <div id="multiAiStatusStrip" class="hidden" style="margin-bottom:10px; padding:9px 12px; border-radius:10px; border:1.5px solid #0284c7; background:var(--surface-alt); font-size:0.78rem; font-weight:800;"></div>
-        <div class="multi-grid" id="multiInputsContainer"></div>
+        <div id="multiBatchPhotosTray" class="slot-photo-strip hidden"></div>
+
+        <!-- Instrument-Grouped Multi-Parameter & Per-Slot Multi-Photo Container -->
+        <div id="multiInputsContainer"></div>
+
         <div style="margin-top:8px;">
-          <input type="text" id="inpMultiNote" placeholder="Optional note for this batch..." style="min-height:42px;" />
+          <input type="text" id="inpMultiNote" placeholder="Optional note for this plant/planter batch..." style="min-height:42px;" />
         </div>
         <div class="save-row">
-          <button type="button" class="btn-save" onclick="saveMultiSheet(true)">💾 Save All &amp; Next (<span id="lblMultiNextTarget">P2</span>) ➔</button>
-          <button type="button" class="btn-save secondary" onclick="saveMultiSheet(false)">✓ Save All Filled</button>
+          <button type="button" class="btn-save" onclick="saveMultiSheet(true)">💾 Save All Filled &amp; Next (<span id="lblMultiNextTarget">P2</span>) ➔</button>
+          <button type="button" class="btn-save secondary" onclick="saveMultiSheet(false)">✓ Save All &amp; Stay</button>
         </div>
       </div>
     </section>
@@ -1482,10 +1663,10 @@
             <label>Category</label>
             <select id="fltCategory" onchange="onFilterCategoryChange()">
               <option value="ALL">All Categories</option>
-              <option value="morphology">Morphology &amp; Growth</option>
+              <option value="morphology">Morphology &amp; SPAD</option>
               <option value="porometer">Porometer / Gas Exchange</option>
               <option value="ir_thermometer">IR &amp; Probe Thermometer</option>
-              <option value="handheld_sensor">Handheld 4-in-1 Sensor</option>
+              <option value="handheld_sensor">DIBL FarmHub Soil 7-in-1</option>
               <option value="drainage">Daily Drainage &amp; EC/pH</option>
               <option value="fruit_harvest">Fruit Yield &amp; Ripening</option>
               <option value="biomass_leaf_area">Leaf Area &amp; Biomass</option>
@@ -1493,10 +1674,12 @@
             </select>
           </div>
           <div class="multi-item">
-            <label>Parameter</label>
-            <select id="fltParam" onchange="loadDashboardData()">
-              <option value="ALL">All Parameters</option>
-            </select>
+            <label>Parameters (Single or Multi-Select)</label>
+            <input type="hidden" id="fltParam" value="ALL" />
+            <button type="button" class="btn-action" id="btnFltParamPicker" style="width:100%; min-height:48px; justify-content:space-between; font-size:0.82rem;" onclick="toggleFltParamDrawer()">
+              <span id="lblFltParamBtn">All Parameters</span>
+              <span>▾</span>
+            </button>
           </div>
           <div class="multi-item">
             <label>From Date</label>
@@ -1517,7 +1700,48 @@
               <option value="tr">🇹🇷 Türkçe (TR)</option>
             </select>
           </div>
+          <div class="multi-item">
+            <label>A4 Multi-Param Table Style</label>
+            <select id="selPrintTableLayout" onchange="renderA4Report()">
+              <option value="stacked">📋 Detailed Rows (Param × Trt)</option>
+              <option value="matrix">📊 Side-by-Side Matrix (Trt × Params)</option>
+            </select>
+          </div>
+          <div class="multi-item">
+            <label>A4 Page Orientation</label>
+            <select id="selPrintOrientation" onchange="applyPrintOrientation()">
+              <option value="portrait">📄 A4 Portrait</option>
+              <option value="landscape">📐 A4 Landscape (Wide Matrix)</option>
+            </select>
+          </div>
         </div>
+
+        <!-- Multi-Parameter Filter Drawer for Dashboard, Export & A4 Print -->
+        <div id="fltParamDrawer" class="param-picker-drawer hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+            <strong style="font-size:0.8rem;">🎯 Select Multiple Parameters for View, Excel &amp; A4 Print</strong>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <button type="button" class="btn-action" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="setFilterParamPreset('ALL')">All</button>
+              <button type="button" class="btn-action" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="setFilterParamPreset('NONE')">Clear</button>
+              <button type="button" class="btn-action teal" style="min-height:30px; padding:3px 9px; font-size:0.72rem;" onclick="setFilterParamPreset('MY_FORM')">⚡ Same as Multi-Form</button>
+              <button type="button" class="btn-action primary" style="min-height:30px; padding:3px 10px; font-size:0.72rem;" onclick="applyFltParamDrawer()">✓ Apply &amp; Refresh</button>
+            </div>
+          </div>
+          <div class="pill-row" style="margin-bottom:8px;">
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('growth_spad')">🌱 Growth + SPAD</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('porometer')">🍃 Porometer (5)</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('ir_thermometer')">🌡️ IR Leaf &amp; Root</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('handheld_sensor')">📡 DIBL FarmHub 7-in-1</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('drainage')">💧 Drainage</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('fruit_harvest')">🍅 Fruit &amp; Yield</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('biomass_leaf_area')">🌿 Leaf Area &amp; Biomass</button>
+            <button type="button" class="param-chip" onclick="setFilterParamPreset('biochemical_lab')">🧪 Biochemical</button>
+          </div>
+          <input type="text" id="inpFltParamSearch" placeholder="Search parameter name or unit..." oninput="renderFltParamCheckboxList()" style="min-height:38px; font-size:0.8rem; margin-bottom:8px;" />
+          <div class="param-chk-grid" id="fltParamChkGrid"></div>
+        </div>
+
+        <div id="activeFltParamChips" class="pill-row hidden" style="margin-top:8px; margin-bottom:2px;"></div>
 
         <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:0.78rem; font-weight:800;">
           <label><input type="checkbox" id="chkPrintSummary" checked onchange="renderA4Report()" /> Include Mean +/- SE Summary Table</label>
@@ -2091,7 +2315,71 @@
       selectedTrtIds: [],
       bulkModalSource: "dash",
       _lastDashClickIdx: null,
+      // Custom Multi-Parameter + Multi-Photo Form State
+      multiPresetMode: localStorage.getItem("phd_multi_preset_mode") || "full_walk",
+      selectedMultiParams: (() => {
+        try { return JSON.parse(localStorage.getItem("phd_custom_multi_params") || "null"); }
+        catch { return null; }
+      })(),
+      customMultiDefs: (() => {
+        try { return JSON.parse(localStorage.getItem("phd_custom_multi_defs") || "[]"); }
+        catch { return []; }
+      })(),
+      tagSoilAsPlanter: localStorage.getItem("phd_tag_soil_planter") !== "0",
+      pendingSlotCapture: null,
+      multiFieldMeta: {},
+      multiSlotPhotos: {},
+      batchMultiPhotos: [],
+      // Multi-Parameter Filter & Print State
+      fltSelectedParams: [],
     };
+
+    const MULTI_PRESET_DEFS = {
+      full_walk: [
+        "plant_height_cm", "stem_diameter_mm", "leaf_count", "spad_value",
+        "stomatal_conductance_gs", "porometer_leaf_temp_c", "porometer_leaf_rh_pct", "porometer_sensor_temp_c", "porometer_sensor_rh_pct",
+        "ir_leaf_temp_c", "probe_root_temp_c",
+        "hh_soil_vwc_pct", "hh_soil_temp_c", "hh_soil_ec_uscm", "hh_soil_ph", "hh_soil_n_mgkg", "hh_soil_p_mgkg", "hh_soil_k_mgkg"
+      ],
+      all_meters: [
+        "spad_value",
+        "stomatal_conductance_gs", "porometer_leaf_temp_c", "porometer_leaf_rh_pct", "porometer_sensor_temp_c", "porometer_sensor_rh_pct",
+        "ir_leaf_temp_c", "probe_root_temp_c",
+        "hh_soil_vwc_pct", "hh_soil_temp_c", "hh_soil_ec_uscm", "hh_soil_ph", "hh_soil_n_mgkg", "hh_soil_p_mgkg", "hh_soil_k_mgkg"
+      ],
+      growth_spad: ["plant_height_cm", "stem_diameter_mm", "leaf_count", "spad_value"],
+      farmhub_ir: [
+        "ir_leaf_temp_c", "probe_root_temp_c",
+        "hh_soil_vwc_pct", "hh_soil_temp_c", "hh_soil_ec_uscm", "hh_soil_ph",
+        "hh_soil_n_mgkg", "hh_soil_p_mgkg", "hh_soil_k_mgkg", "hh_soil_tds_ppm"
+      ],
+    };
+
+    const MULTI_SLOT_GROUPS = [
+      { id: "slot_growth", title: "🌱 Vegetative Growth & Phenology", camLabel: null, defaultParam: "plant_height_cm", match: p => p.category === "morphology" && p.key !== "spad_value" },
+      { id: "slot_spad", title: "🌿 SPAD-502 Chlorophyll Screen", camLabel: "SPAD Screen", defaultParam: "spad_value", match: p => p.key === "spad_value" },
+      { id: "slot_porometer", title: "🍃 Leaf Porometer Screen (SC-1 / LI-6400)", camLabel: "Porometer Screen", defaultParam: "stomatal_conductance_gs", match: p => p.category === "porometer" },
+      { id: "slot_ir_leaf", title: "🌡️ IR Thermometer — Leaf Surface", camLabel: "Leaf IR Screen", defaultParam: "ir_leaf_temp_c", match: p => p.key === "ir_leaf_temp_c" || p.key === "canopy_delta_t_c" },
+      { id: "slot_ir_root", title: "🌡️ Probe / IR Thermometer — Root-Zone & Solution", camLabel: "Root Temp Screen", defaultParam: "probe_root_temp_c", match: p => p.category === "ir_thermometer" && p.key !== "ir_leaf_temp_c" && p.key !== "canopy_delta_t_c" },
+      { id: "slot_farmhub", title: "📡 DIBL FarmHub Soil 7-in-1 Screen (VWC / T / EC / pH / N-P-K)", camLabel: "FarmHub 7-in-1", defaultParam: "hh_soil_vwc_pct", match: p => p.category === "handheld_sensor" },
+      { id: "slot_drainage", title: "💧 Supplied & Tray Drainage EC / pH", camLabel: "EC/pH Screen", defaultParam: "drainage_ec_uscm", match: p => p.category === "drainage" },
+      { id: "slot_fruit", title: "🍅 Fruit Yield, Ripening & Quality", camLabel: "Scale / Brix", defaultParam: "marketable_fruit_fw_g", match: p => p.category === "fruit_harvest" },
+      { id: "slot_biomass", title: "🌿 CI-202 Leaf Area & Biomass (0.0001 g)", camLabel: "CI-202 / Balance", defaultParam: "single_leaf_area_cm2", match: p => p.category === "biomass_leaf_area" },
+      { id: "slot_biochem", title: "🧪 Lab Biochemical & Custom Traits", camLabel: "Meter / Lab", defaultParam: "generic", match: () => true },
+    ];
+
+    function isPlanterLevelParameter(pkey, cat) {
+      if (["hh_leaf_temp_c", "hh_leaf_rh_pct", "hh_leaf_wetness_pct"].includes(pkey)) return false;
+      if (["probe_root_temp_c", "probe_solution_temp_c"].includes(pkey)) return true;
+      return cat === "handheld_sensor" || cat === "drainage";
+    }
+
+    function getAllKnownParameters() {
+      const base = CATALOG.parameters || [];
+      const seen = new Set(base.map(p => p.key));
+      const extras = (STATE.customMultiDefs || []).filter(c => c && c.key && !seen.has(c.key));
+      return [...base, ...extras];
+    }
 
     function showToast(msg, bg = "#0f172a") {
       const box = document.getElementById("toastBox");
@@ -2241,6 +2529,8 @@
       document.getElementById("selWalkRoute").value = STATE.walkRoute;
       document.getElementById("selPlantsPerPlanter").value = STATE.plantsPerPlanter;
       document.getElementById("selWalkScope").value = STATE.walkScope;
+      const soilChk = document.getElementById("chkTagSoilAsPlanter");
+      if (soilChk) soilChk.checked = STATE.tagSoilAsPlanter;
       updatePinUI();
       updateOfflineBadge();
 
@@ -2251,6 +2541,10 @@
         showToast("Offline mode active — entries will queue locally", "#d97706");
       }
 
+      if (!Array.isArray(STATE.selectedMultiParams) || !STATE.selectedMultiParams.length) {
+        STATE.selectedMultiParams = [...MULTI_PRESET_DEFS.full_walk];
+      }
+      refreshSavedMultiTemplatesDropdown();
       renderTreatmentTiles();
       renderTrtBatchButtons();
       populateFilterTreatments();
@@ -2366,13 +2660,13 @@
     }
 
     function getPlotCompletionMap() {
-      // Computes today's completion status per planter_code ("full" / "half") for the active parameter or multi-sheet group
+      // Computes today's completion status per planter_code ("full" / "half") for the active parameter or custom multi-parameter set
       const map = {};
-      const activeCat = getActiveProgressCategory();
       const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
+      const multiSet = STATE.entryMode === "multi" ? new Set(getEffectiveMultiParamKeys()) : null;
       const relevant = (STATE.todayRecords || []).filter(r => {
         if (selDate && toLocalDateStr(r.measured_at) !== selDate) return false;
-        if (STATE.entryMode === "multi") return r.category === activeCat;
+        if (STATE.entryMode === "multi") return multiSet.has(r.parameter_key);
         return r.parameter_key === STATE.activeParamKey;
       });
       relevant.forEach(r => {
@@ -2662,6 +2956,7 @@
       document.getElementById("lblNextTarget").textContent = nxt.label;
       const multiNextEl = document.getElementById("lblMultiNextTarget");
       if (multiNextEl) multiNextEl.textContent = nxt.label;
+      if (STATE.entryMode === "multi") updateMultiSoilLoggedBadges();
     }
 
     // Tab Navigation
@@ -2704,6 +2999,7 @@
       document.getElementById("btnModeMulti").classList.toggle("active", mode === "multi");
       document.getElementById("singleEntryPanel").classList.toggle("hidden", mode !== "single");
       document.getElementById("multiEntryPanel").classList.toggle("hidden", mode !== "multi");
+      if (mode === "multi") renderMultiParamForm();
       renderFieldMap();
       updateActiveUnitBanner();
     }
@@ -2742,16 +3038,599 @@
         </button>
       `).join("");
 
-      const multiBox = document.getElementById("multiInputsContainer");
-      multiBox.innerHTML = params.map(p => `
-        <div class="multi-item">
-          <label>${p.label_en} (${p.unit})</label>
-          <input type="number" step="any" inputmode="decimal" data-multikey="${p.key}" placeholder="—" />
-        </div>
-      `).join("");
-
+      renderMultiParamForm();
       renderQuickHelperBox(category);
       selectParameter(STATE.activeParamKey);
+    }
+
+    // ======================================================================
+    // CUSTOM CROSS-CATEGORY MULTI-PARAMETER + MULTI-PHOTO ENGINE
+    // ======================================================================
+    function getEffectiveMultiParamKeys() {
+      if (STATE.multiPresetMode === "active_cat") {
+        const cat = getActiveProgressCategory();
+        return getAllKnownParameters().filter(p => p.category === cat).map(p => p.key);
+      }
+      const allKeys = new Set(getAllKnownParameters().map(p => p.key));
+      const valid = (STATE.selectedMultiParams || []).filter(k => allKeys.has(k));
+      return valid.length ? valid : MULTI_PRESET_DEFS.full_walk.filter(k => allKeys.has(k));
+    }
+
+    function persistMultiParamState() {
+      localStorage.setItem("phd_multi_preset_mode", STATE.multiPresetMode);
+      localStorage.setItem("phd_custom_multi_params", JSON.stringify(STATE.selectedMultiParams || []));
+    }
+
+    function applyMultiParamPreset(presetKey) {
+      const preservedVals = captureCurrentMultiInputValues();
+      STATE.multiPresetMode = presetKey;
+      if (MULTI_PRESET_DEFS[presetKey]) {
+        STATE.selectedMultiParams = [...MULTI_PRESET_DEFS[presetKey]];
+      }
+      const tmplSel = document.getElementById("selSavedMultiTemplate");
+      if (tmplSel) tmplSel.value = "";
+      persistMultiParamState();
+      renderMultiParamForm(preservedVals);
+      renderMultiParamCustomizerList();
+      renderFieldMap();
+    }
+
+    function toggleMultiParamCustomizer() {
+      const el = document.getElementById("multiParamCustomizer");
+      const openNow = el.classList.contains("hidden");
+      el.classList.toggle("hidden", !openNow);
+      if (openNow) renderMultiParamCustomizerList();
+    }
+
+    function renderMultiParamCustomizerList() {
+      const grid = document.getElementById("multiParamChkGrid");
+      if (!grid) return;
+      const q = (document.getElementById("inpMultiParamFilter")?.value || "").trim().toLowerCase();
+      const cat = document.getElementById("selMultiParamCatFilter")?.value || "ALL";
+      const activeSet = new Set(getEffectiveMultiParamKeys());
+      const list = getAllKnownParameters().filter(p => {
+        if (cat !== "ALL" && p.category !== cat) return false;
+        if (!q) return true;
+        return p.label_en.toLowerCase().includes(q) || p.key.toLowerCase().includes(q) || String(p.unit || "").toLowerCase().includes(q);
+      });
+      grid.innerHTML = list.map(p => {
+        const on = activeSet.has(p.key);
+        return `
+          <label class="param-chk-lbl ${on ? 'checked' : ''}">
+            <input type="checkbox" class="row-chk" ${on ? "checked" : ""} onchange="toggleMultiParamItem('${p.key}', this.checked)" />
+            <span>${p.label_en} <span style="opacity:0.7;">(${p.unit})</span></span>
+          </label>
+        `;
+      }).join("");
+    }
+
+    function toggleMultiParamItem(pkey, checked) {
+      const preservedVals = captureCurrentMultiInputValues();
+      const s = new Set(getEffectiveMultiParamKeys());
+      if (checked) s.add(pkey); else s.delete(pkey);
+      STATE.multiPresetMode = "custom";
+      STATE.selectedMultiParams = [...s];
+      persistMultiParamState();
+      renderMultiParamForm(preservedVals);
+      renderMultiParamCustomizerList();
+      renderFieldMap();
+    }
+
+    function selectAllMultiCatalogParams(selectAll) {
+      const preservedVals = captureCurrentMultiInputValues();
+      const cat = document.getElementById("selMultiParamCatFilter")?.value || "ALL";
+      const curSet = new Set(getEffectiveMultiParamKeys());
+      const targets = getAllKnownParameters().filter(p => cat === "ALL" || p.category === cat).map(p => p.key);
+      if (selectAll) {
+        targets.forEach(k => curSet.add(k));
+      } else {
+        targets.forEach(k => curSet.delete(k));
+      }
+      STATE.multiPresetMode = "custom";
+      STATE.selectedMultiParams = [...curSet];
+      persistMultiParamState();
+      renderMultiParamForm(preservedVals);
+      renderMultiParamCustomizerList();
+      renderFieldMap();
+    }
+
+    function addCustomMultiParamDef() {
+      const nameInp = document.getElementById("inpNewCustomMultiName");
+      const unitInp = document.getElementById("inpNewCustomMultiUnit");
+      const cname = (nameInp?.value || "").trim();
+      if (!cname) {
+        showToast("Enter custom parameter name first", "#d97706");
+        return;
+      }
+      const cunit = (unitInp?.value || "").trim() || "unit";
+      const ckey = "custom_" + cname.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      if (!getAllKnownParameters().some(p => p.key === ckey)) {
+        STATE.customMultiDefs.push({
+          key: ckey,
+          category: "biochemical_lab",
+          label_en: cname,
+          label_tr: cname,
+          unit: cunit,
+          min: -999999,
+          max: 999999,
+          decimals: 2,
+          ai_profile: "generic_lcd",
+          is_custom: true,
+        });
+        localStorage.setItem("phd_custom_multi_defs", JSON.stringify(STATE.customMultiDefs));
+      }
+      nameInp.value = "";
+      unitInp.value = "";
+      toggleMultiParamItem(ckey, true);
+      showToast(`✓ Added custom parameter "${cname}" (${cunit})`, "#16a34a");
+    }
+
+    function getSavedMultiTemplates() {
+      try { return JSON.parse(localStorage.getItem("phd_saved_multi_templates") || "{}"); }
+      catch { return {}; }
+    }
+
+    function refreshSavedMultiTemplatesDropdown() {
+      const sel = document.getElementById("selSavedMultiTemplate");
+      if (!sel) return;
+      const map = getSavedMultiTemplates();
+      const names = Object.keys(map);
+      sel.innerHTML = `<option value="">📂 Saved Custom Presets (${names.length})</option>` +
+        names.map(n => `<option value="${n}">${n} (${(map[n] || []).length})</option>`).join("");
+    }
+
+    function saveCurrentMultiTemplatePrompt() {
+      const keys = getEffectiveMultiParamKeys();
+      if (!keys.length) return;
+      const name = prompt("Enter a name for this Multi-Parameter Form Preset (e.g. Tuesday Midday Walk):");
+      if (!name || !name.trim()) return;
+      const map = getSavedMultiTemplates();
+      map[name.trim()] = keys;
+      localStorage.setItem("phd_saved_multi_templates", JSON.stringify(map));
+      refreshSavedMultiTemplatesDropdown();
+      document.getElementById("selSavedMultiTemplate").value = name.trim();
+      showToast(`💾 Saved form preset "${name.trim()}" (${keys.length} params)!`, "#16a34a");
+    }
+
+    function loadSavedMultiTemplate(name) {
+      if (!name) return;
+      const map = getSavedMultiTemplates();
+      if (Array.isArray(map[name]) && map[name].length) {
+        const preservedVals = captureCurrentMultiInputValues();
+        STATE.multiPresetMode = "custom";
+        STATE.selectedMultiParams = [...map[name]];
+        persistMultiParamState();
+        renderMultiParamForm(preservedVals);
+        renderMultiParamCustomizerList();
+        renderFieldMap();
+      }
+    }
+
+    function onToggleTagSoilAsPlanter(checked) {
+      STATE.tagSoilAsPlanter = Boolean(checked);
+      localStorage.setItem("phd_tag_soil_planter", STATE.tagSoilAsPlanter ? "1" : "0");
+      updateMultiSoilLoggedBadges();
+    }
+
+    function captureCurrentMultiInputValues() {
+      const vals = {};
+      document.querySelectorAll("#multiInputsContainer input[data-multikey]").forEach(inp => {
+        if (inp.value !== "") vals[inp.dataset.multikey] = inp.value;
+      });
+      return vals;
+    }
+
+    function hasPlanterSoilLoggedToday(slotParams) {
+      if (!STATE.tagSoilAsPlanter || STATE.experiment !== "EXP2") return false;
+      const selDate = (document.getElementById("inpMeasureTime")?.value || localIsoNow()).slice(0, 10);
+      const pKeys = new Set(slotParams.map(p => p.key));
+      return (STATE.todayRecords || []).some(r =>
+        r.fertigation_arm === STATE.arm &&
+        r.replicate_no === STATE.rep &&
+        r.treatment_no === STATE.treatment &&
+        r.plant_no === "Planter" &&
+        pKeys.has(r.parameter_key) &&
+        toLocalDateStr(r.measured_at) === selDate
+      );
+    }
+
+    function updateMultiSoilLoggedBadges() {
+      document.querySelectorAll("[data-soil-slot-badge]").forEach(badge => {
+        const slotId = badge.getAttribute("data-soil-slot-badge");
+        const grp = MULTI_SLOT_GROUPS.find(g => g.id === slotId);
+        if (!grp) return;
+        const activeParams = getEffectiveMultiParamKeys().map(k => getAllKnownParameters().find(x => x.key === k)).filter(Boolean);
+        const sParams = activeParams.filter(p => grp.match(p) && isPlanterLevelParameter(p.key, p.category));
+        if (!sParams.length) { badge.innerHTML = ""; return; }
+        if (hasPlanterSoilLoggedToday(sParams)) {
+          badge.innerHTML = `<span class="status-pill ok" style="font-size:0.66rem; padding:2px 7px;">✓ Planter Soil Logged Today</span>`;
+        } else if (STATE.tagSoilAsPlanter) {
+          badge.innerHTML = `<span style="font-size:0.66rem; color:var(--teal); font-weight:800;">(Saves as Planter)</span>`;
+        } else {
+          badge.innerHTML = "";
+        }
+      });
+    }
+
+    function renderMultiParamForm(preservedVals = null) {
+      const multiBox = document.getElementById("multiInputsContainer");
+      if (!multiBox) return;
+      const savedVals = preservedVals || captureCurrentMultiInputValues();
+      const effKeys = getEffectiveMultiParamKeys();
+      const cntEl = document.getElementById("lblSelectedMultiParamCnt");
+      if (cntEl) cntEl.textContent = effKeys.length;
+
+      document.querySelectorAll("#multiPresetBar button[data-mpreset]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mpreset === STATE.multiPresetMode);
+      });
+
+      const allKnown = getAllKnownParameters();
+      const selectedDefs = effKeys.map(k => allKnown.find(p => p.key === k)).filter(Boolean);
+      const assigned = new Set();
+      const cardHtmlList = [];
+
+      for (const grp of MULTI_SLOT_GROUPS) {
+        const grpParams = selectedDefs.filter(p => !assigned.has(p.key) && grp.match(p));
+        if (!grpParams.length) continue;
+        grpParams.forEach(p => assigned.add(p.key));
+
+        const targetKey = grpParams.some(p => p.key === grp.defaultParam) ? grp.defaultParam : grpParams[0].key;
+        const slotPhotos = STATE.multiSlotPhotos[grp.id] || [];
+        const photosStripHtml = slotPhotos.length ? `
+          <div class="slot-photo-strip">
+            ${slotPhotos.map((ph, pIdx) => `
+              <div class="slot-photo-pill">
+                <img src="${ph.thumb || ph.photo_url}" alt="Screen" onclick="openLightbox('${ph.photo_url || ph.thumb}')" />
+                <div>
+                  <div style="color:${ph.verification_status === 'flagged_mismatch' ? '#dc2626' : '#0f766e'};">${ph.badgeText}</div>
+                  <div style="font-size:0.66rem; color:var(--text-muted);">${ph.summaryText || ""}</div>
+                </div>
+                <button type="button" class="btn-action" style="min-height:24px; padding:2px 6px; font-size:0.68rem;" onclick="removeSlotPhoto('${grp.id}', ${pIdx})" title="Remove photo">✕</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : "";
+
+        const camBtnsHtml = grp.camLabel ? `
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <button type="button" class="slot-cam-mini solid" onclick="triggerSlotPhotoCapture('${grp.id}', '${targetKey}', 'camera')">📷 Snap ${grp.camLabel}</button>
+            <button type="button" class="slot-cam-mini" onclick="triggerSlotPhotoCapture('${grp.id}', '${targetKey}', 'gallery')">🖼️ Upload</button>
+          </div>
+        ` : "";
+
+        const inputsHtml = grpParams.map(p => {
+          const meta = STATE.multiFieldMeta[p.key];
+          const curVal = savedVals[p.key] !== undefined ? savedVals[p.key] : (meta && meta.ai_value !== null && meta.ai_value !== undefined ? meta.ai_value : "");
+          let aiTag = "";
+          if (meta && meta.photo_rel_path) {
+            const isWarn = meta.verification_status === "flagged_mismatch";
+            const m2Txt = (meta.ai_secondary_value !== null && meta.ai_secondary_value !== undefined) ? ` M2:${meta.ai_secondary_value}` : "";
+            aiTag = `<span class="field-ai-tag ${isWarn ? 'warn' : 'ok'}" title="AI Read: ${meta.ai_value ?? '—'}${m2Txt}">${isWarn ? '⚠️ Check' : '✓ AI'}${m2Txt}</span>`;
+          }
+          const planterTag = (STATE.tagSoilAsPlanter && isPlanterLevelParameter(p.key, p.category)) ? ` <span style="color:var(--teal); font-size:0.65rem;">[Pot]</span>` : "";
+          return `
+            <div class="multi-item" style="${meta && meta.photo_rel_path ? 'border-color:#0284c7;' : ''}">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:4px;">
+                <label style="margin-bottom:0;">${p.label_en} (${p.unit})${planterTag}${aiTag}</label>
+                <button type="button" onclick="triggerSlotPhotoCapture('${grp.id}', '${p.key}', 'camera')" title="Snap screen photo for ${p.label_en}" style="background:none; border:none; cursor:pointer; font-size:0.9rem; padding:2px 4px;">📷</button>
+              </div>
+              <input type="number" step="any" inputmode="decimal" data-multikey="${p.key}" value="${curVal}" placeholder="—" />
+            </div>
+          `;
+        }).join("");
+
+        cardHtmlList.push(`
+          <div class="inst-slot-card" id="card_${grp.id}">
+            <div class="inst-slot-hdr">
+              <div class="inst-slot-title">
+                <span>${grp.title}</span>
+                <span data-soil-slot-badge="${grp.id}"></span>
+              </div>
+              ${camBtnsHtml}
+            </div>
+            ${photosStripHtml}
+            <div class="multi-grid">${inputsHtml}</div>
+          </div>
+        `);
+      }
+
+      multiBox.innerHTML = cardHtmlList.join("");
+      renderBatchMultiPhotosTray();
+      updateMultiSoilLoggedBadges();
+    }
+
+    function triggerSlotPhotoCapture(slotId, targetParamKey, mode = "camera") {
+      if (!getStoredPin()) {
+        openPinModal();
+        showToast("Unlock PIN first to upload & run Dual-AI Vision", "#d97706");
+        return;
+      }
+      STATE.pendingSlotCapture = { slotId, targetParamKey };
+      if (mode === "camera") {
+        document.getElementById("fileSlotCamera").click();
+      } else {
+        document.getElementById("fileSlotGallery").click();
+      }
+    }
+
+    function findSlotIdForParam(pkey) {
+      const p = getAllKnownParameters().find(x => x.key === pkey);
+      if (!p) return "slot_biochem";
+      const g = MULTI_SLOT_GROUPS.find(grp => grp.match(p));
+      return g ? g.id : "slot_biochem";
+    }
+
+    function applyAiResultToMultiField(pkey, aiVal, aiSecVal, data, thumbB64) {
+      if (aiVal === null || aiVal === undefined || Number.isNaN(Number(aiVal))) return;
+      STATE.multiFieldMeta[pkey] = {
+        photo_rel_path: data.photo_rel_path || null,
+        photo_url: data.photo_url || null,
+        thumb: thumbB64,
+        ai_value: Number(aiVal),
+        ai_secondary_value: (aiSecVal !== null && aiSecVal !== undefined && !Number.isNaN(Number(aiSecVal))) ? Number(aiSecVal) : null,
+        verification_status: data.verification_status || "ai_photo",
+        ai_confidence: data.ai_confidence ?? null,
+        ai_model: data.ai_model ?? null,
+        screen_time: data.screen_time || null,
+        instrument_detected: data.instrument_detected || null,
+      };
+      const inp = document.querySelector(`#multiInputsContainer input[data-multikey="${pkey}"]`);
+      if (inp) inp.value = Number(aiVal);
+    }
+
+    async function runSingleAiPhotoCall(file, targetParamKey) {
+      const b64 = await compressImageToBase64(file);
+      const resp = await fetch("/api/v1/field-data/ai-read", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify({
+          image_base64: b64,
+          parameter_key: targetParamKey || "auto_detect",
+        }),
+      });
+      if (resp.status === 403) {
+        openPinModal();
+        throw new Error("PIN required");
+      }
+      const data = await resp.json();
+      return { b64, data };
+    }
+
+    async function handleSlotFilesSelected(inputEl) {
+      const files = inputEl.files ? [...inputEl.files] : [];
+      inputEl.value = "";
+      if (!files.length || !STATE.pendingSlotCapture) return;
+
+      const { slotId, targetParamKey } = STATE.pendingSlotCapture;
+      const multiStrip = document.getElementById("multiAiStatusStrip");
+      if (multiStrip) {
+        multiStrip.classList.remove("hidden");
+        multiStrip.textContent = `⏳ Reading ${files.length} photo(s) with Dual-AI for ${targetParamKey}...`;
+      }
+
+      try {
+        document.getElementById("inpMeasureTime").value = localIsoNow();
+        const preservedVals = captureCurrentMultiInputValues();
+        let totalExtracted = 0;
+
+        for (const file of files) {
+          const { b64, data } = await runSingleAiPhotoCall(file, targetParamKey);
+          const extras = data.extra_fields || {};
+          const extrasSec = data.extra_fields_secondary || {};
+          const validExtras = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && getAllKnownParameters().some(p => p.key === k));
+
+          const filledLabels = [];
+          if (validExtras.length > 0 && (slotId === "slot_porometer" || slotId === "slot_farmhub" || slotId === "slot_drainage" || slotId === "slot_biomass" || validExtras.length > 1)) {
+            // Ensure any detected multi-screen keys in this instrument family are visible on the form
+            validExtras.forEach(k => {
+              if (!getEffectiveMultiParamKeys().includes(k) && STATE.multiPresetMode !== "active_cat") {
+                STATE.selectedMultiParams = [...new Set([...(STATE.selectedMultiParams || []), k])];
+              }
+              applyAiResultToMultiField(k, extras[k], extrasSec[k], data, b64);
+              preservedVals[k] = extras[k];
+              const pDef = getAllKnownParameters().find(x => x.key === k);
+              filledLabels.push(`${pDef ? pDef.label_en : k}: ${extras[k]}`);
+              totalExtracted += 1;
+            });
+          } else if (data.ai_value !== null && data.ai_value !== undefined) {
+            applyAiResultToMultiField(targetParamKey, data.ai_value, data.ai_secondary_value, data, b64);
+            preservedVals[targetParamKey] = data.ai_value;
+            const pDef = getAllKnownParameters().find(x => x.key === targetParamKey);
+            filledLabels.push(`${pDef ? pDef.label_en : targetParamKey}: ${data.ai_value}`);
+            totalExtracted += 1;
+          } else if (data.photo_rel_path) {
+            // Unreadable glare — still attach photo to target parameter so photo evidence is saved!
+            STATE.multiFieldMeta[targetParamKey] = {
+              photo_rel_path: data.photo_rel_path,
+              photo_url: data.photo_url,
+              thumb: b64,
+              ai_value: null,
+              ai_secondary_value: null,
+              verification_status: data.verification_status || "manual_only",
+              ai_confidence: null,
+              ai_model: null,
+              screen_time: null,
+              instrument_detected: data.instrument_detected || null,
+            };
+          }
+
+          const badgeText = data.verification_status === "dual_ai_consensus"
+            ? "✅ Dual-AI Verified"
+            : (data.verification_status === "flagged_mismatch" ? "⚠️ Verify Digit" : "📷 Photo Linked");
+          const clkTxt = data.screen_time ? ` [${data.screen_time}]` : "";
+          STATE.multiSlotPhotos[slotId] = STATE.multiSlotPhotos[slotId] || [];
+          // For single-parameter slots (e.g. SPAD, Leaf IR, Root IR), replace slot thumbnail; for multi-screen FarmHub/Porometer, append!
+          const isMultiScreenSlot = ["slot_farmhub", "slot_porometer", "slot_drainage", "slot_biomass"].includes(slotId);
+          const photoEntry = {
+            photo_rel_path: data.photo_rel_path,
+            photo_url: data.photo_url,
+            thumb: b64,
+            badgeText: `${badgeText}${clkTxt}`,
+            summaryText: filledLabels.slice(0, 4).join(", ") + (filledLabels.length > 4 ? ` +${filledLabels.length - 4} more` : ""),
+            affectedKeys: validExtras.length > 1 ? validExtras : [targetParamKey],
+          };
+          if (isMultiScreenSlot) STATE.multiSlotPhotos[slotId].push(photoEntry);
+          else STATE.multiSlotPhotos[slotId] = [photoEntry];
+        }
+
+        renderMultiParamForm(preservedVals);
+        if (multiStrip) {
+          multiStrip.textContent = `✅ Extracted ${totalExtracted} reading(s) without overwriting your other instrument photos!`;
+        }
+      } catch (err) {
+        if (multiStrip) multiStrip.textContent = `⚠️ Photo upload issue: ${err.message || err}`;
+      }
+    }
+
+    async function handleBatchMultiPhotosSelected(inputEl) {
+      const files = inputEl.files ? [...inputEl.files] : [];
+      inputEl.value = "";
+      if (!files.length) return;
+      if (!getStoredPin()) {
+        openPinModal();
+        showToast("Unlock PIN first to upload & run Dual-AI Vision", "#d97706");
+        return;
+      }
+
+      const multiStrip = document.getElementById("multiAiStatusStrip");
+      if (multiStrip) {
+        multiStrip.classList.remove("hidden");
+        multiStrip.textContent = `⏳ Analyzing ${files.length} plant/meter screen photos in parallel with Dual-AI...`;
+      }
+
+      try {
+        document.getElementById("inpMeasureTime").value = localIsoNow();
+        const preservedVals = captureCurrentMultiInputValues();
+        const results = await Promise.all(files.map(f => runSingleAiPhotoCall(f, "auto_detect")));
+        let usedIrLeaf = Boolean(preservedVals["ir_leaf_temp_c"]);
+
+        results.forEach(({ b64, data }) => {
+          const extras = data.extra_fields || {};
+          const extrasSec = data.extra_fields_secondary || {};
+          const validExtras = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && getAllKnownParameters().some(p => p.key === k));
+          const instType = (data.instrument_type || "").toLowerCase();
+
+          let assignedKey = null;
+          let summary = "";
+
+          if (validExtras.length > 1 || ["porometer", "dibl_farmhub_7in1", "leaf_area", "ec_ph"].includes(instType)) {
+            validExtras.forEach(k => {
+              if (!getEffectiveMultiParamKeys().includes(k) && STATE.multiPresetMode !== "active_cat") {
+                STATE.selectedMultiParams = [...new Set([...(STATE.selectedMultiParams || []), k])];
+              }
+              applyAiResultToMultiField(k, extras[k], extrasSec[k], data, b64);
+              preservedVals[k] = extras[k];
+            });
+            assignedKey = "__GROUP__";
+            summary = `${data.instrument_detected || instType || "Multi-Screen"} (${validExtras.length} values)`;
+          } else {
+            if (instType === "spad" || validExtras.includes("spad_value")) {
+              assignedKey = "spad_value";
+            } else if (instType === "ir_thermometer") {
+              assignedKey = !usedIrLeaf ? "ir_leaf_temp_c" : "probe_root_temp_c";
+              if (assignedKey === "ir_leaf_temp_c") usedIrLeaf = true;
+            } else if (instType === "caliper") {
+              assignedKey = "stem_diameter_mm";
+            } else if (instType === "balance") {
+              assignedKey = getEffectiveMultiParamKeys().find(k => k.includes("_fw_") || k.includes("_dw_")) || "marketable_fruit_fw_g";
+            } else {
+              assignedKey = getEffectiveMultiParamKeys()[0] || "plant_height_cm";
+            }
+            if (!getEffectiveMultiParamKeys().includes(assignedKey) && STATE.multiPresetMode !== "active_cat") {
+              STATE.selectedMultiParams = [...new Set([...(STATE.selectedMultiParams || []), assignedKey])];
+            }
+            if (data.ai_value !== null && data.ai_value !== undefined) {
+              applyAiResultToMultiField(assignedKey, data.ai_value, data.ai_secondary_value, data, b64);
+              preservedVals[assignedKey] = data.ai_value;
+            }
+            summary = `${data.instrument_detected || "Meter"}: ${data.ai_value ?? "—"}`;
+          }
+
+          STATE.batchMultiPhotos.push({
+            thumb: b64,
+            data,
+            assignedKey,
+            summary,
+          });
+        });
+
+        renderMultiParamForm(preservedVals);
+        if (multiStrip) {
+          multiStrip.textContent = `✅ Processed ${results.length} photos simultaneously! Verify values (or adjust single-meter target dropdown if needed) & tap Save All.`;
+        }
+      } catch (err) {
+        if (multiStrip) multiStrip.textContent = `⚠️ Batch photo error: ${err.message || err}`;
+      }
+    }
+
+    function renderBatchMultiPhotosTray() {
+      const tray = document.getElementById("multiBatchPhotosTray");
+      if (!tray) return;
+      const list = STATE.batchMultiPhotos || [];
+      tray.classList.toggle("hidden", list.length === 0);
+      if (!list.length) { tray.innerHTML = ""; return; }
+      const effParams = getEffectiveMultiParamKeys().map(k => getAllKnownParameters().find(x => x.key === k)).filter(Boolean);
+
+      tray.innerHTML = list.map((item, idx) => {
+        const assignHtml = item.assignedKey === "__GROUP__"
+          ? `<span style="color:var(--teal); font-size:0.68rem;">Auto-mapped group screen</span>`
+          : `<select onchange="reassignBatchPhotoTarget(${idx}, this.value)" style="min-height:28px; padding:2px 6px; font-size:0.7rem; width:auto;">
+              ${effParams.map(p => `<option value="${p.key}" ${p.key === item.assignedKey ? 'selected' : ''}>➔ ${p.label_en}</option>`).join("")}
+            </select>`;
+        return `
+          <div class="slot-photo-pill">
+            <img src="${item.thumb || item.data.photo_url}" alt="Batch" onclick="openLightbox('${item.data.photo_url || item.thumb}')" />
+            <div>
+              <div>${item.summary}</div>
+              <div style="margin-top:3px;">${assignHtml}</div>
+            </div>
+            <button type="button" class="btn-action" style="min-height:24px; padding:2px 6px; font-size:0.68rem;" onclick="removeBatchPhotoItem(${idx})">✕</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function reassignBatchPhotoTarget(idx, newKey) {
+      const item = STATE.batchMultiPhotos[idx];
+      if (!item || !newKey) return;
+      const preservedVals = captureCurrentMultiInputValues();
+      const oldKey = item.assignedKey;
+      if (oldKey && oldKey !== "__GROUP__" && oldKey !== newKey) {
+        delete STATE.multiFieldMeta[oldKey];
+        delete preservedVals[oldKey];
+      }
+      item.assignedKey = newKey;
+      if (item.data.ai_value !== null && item.data.ai_value !== undefined) {
+        applyAiResultToMultiField(newKey, item.data.ai_value, item.data.ai_secondary_value, item.data, item.thumb);
+        preservedVals[newKey] = item.data.ai_value;
+      }
+      renderMultiParamForm(preservedVals);
+    }
+
+    function removeBatchPhotoItem(idx) {
+      const item = STATE.batchMultiPhotos[idx];
+      if (!item) return;
+      const preservedVals = captureCurrentMultiInputValues();
+      if (item.assignedKey && item.assignedKey !== "__GROUP__") {
+        delete STATE.multiFieldMeta[item.assignedKey];
+        delete preservedVals[item.assignedKey];
+      }
+      STATE.batchMultiPhotos.splice(idx, 1);
+      renderMultiParamForm(preservedVals);
+    }
+
+    function removeSlotPhoto(slotId, pIdx) {
+      const arr = STATE.multiSlotPhotos[slotId] || [];
+      const target = arr[pIdx];
+      const preservedVals = captureCurrentMultiInputValues();
+      if (target && Array.isArray(target.affectedKeys)) {
+        target.affectedKeys.forEach(k => {
+          delete STATE.multiFieldMeta[k];
+          delete preservedVals[k];
+        });
+      }
+      arr.splice(pIdx, 1);
+      renderMultiParamForm(preservedVals);
     }
 
     function renderQuickHelperBox(category) {
@@ -2986,18 +3865,9 @@
         const extrasSec = data.extra_fields_secondary || {};
         const extraKeys = Object.keys(extras).filter(k => extras[k] !== null && extras[k] !== undefined && CATALOG.parameters.some(p => p.key === k));
 
-        // Reset multi-sheet AI markers before applying new scan
-        document.querySelectorAll("#multiInputsContainer input[data-multikey]").forEach(inp => {
-          delete inp.dataset.aiVal;
-          delete inp.dataset.aiSecVal;
-          if (extraKeys.includes(inp.dataset.multikey)) {
-            const v = extras[inp.dataset.multikey];
-            inp.value = v;
-            inp.dataset.aiVal = String(v);
-            if (extrasSec[inp.dataset.multikey] !== null && extrasSec[inp.dataset.multikey] !== undefined) {
-              inp.dataset.aiSecVal = String(extrasSec[inp.dataset.multikey]);
-            }
-          }
+        // If user snapped via 1-by-1 camera while also populating matching multi-form fields, preserve other fields' AI metadata!
+        extraKeys.forEach(k => {
+          applyAiResultToMultiField(k, extras[k], extrasSec[k], data, b64);
         });
 
         const prefixEl = document.getElementById("lblSingleSavePrefix");
@@ -3122,12 +3992,12 @@
       if (prefixEl) prefixEl.textContent = "💾 Save";
       const multiStrip = document.getElementById("multiAiStatusStrip");
       if (multiStrip) { multiStrip.classList.add("hidden"); multiStrip.textContent = ""; }
-      document.querySelectorAll("#multiInputsContainer input[data-multikey]").forEach(inp => {
-        delete inp.dataset.aiVal;
-        delete inp.dataset.aiSecVal;
-      });
+      STATE.multiFieldMeta = {};
+      STATE.multiSlotPhotos = {};
+      STATE.batchMultiPhotos = [];
       STATE.currentPhotoRelPath = null;
       STATE.currentAiResult = null;
+      if (STATE.entryMode === "multi") renderMultiParamForm({});
     }
 
     async function saveSingleMeasurement(advanceNext) {
@@ -3228,39 +4098,54 @@
       }
       const base = buildBaseMeasurementPayload();
       const userNote = document.getElementById("inpMultiNote").value.trim();
-      const clkTag = STATE.currentAiResult?.screen_time ? `[Meter Clock: ${STATE.currentAiResult.screen_time}]` : "";
-      const note = [clkTag, userNote].filter(Boolean).join(" ");
+      const allKnown = getAllKnownParameters();
       const inputs = document.querySelectorAll("#multiInputsContainer input[data-multikey]");
       const items = [];
       inputs.forEach(inp => {
-        if (inp.value !== "") {
+        if (inp.value !== "" && !Number.isNaN(parseFloat(inp.value))) {
+          const pkey = inp.dataset.multikey;
+          const pDef = allKnown.find(x => x.key === pkey);
           const numVal = parseFloat(inp.value);
-          const aiValRaw = inp.dataset.aiVal;
-          const aiSecRaw = inp.dataset.aiSecVal;
-          const hasAi = aiValRaw !== undefined && aiValRaw !== "";
-          const aiValNum = hasAi ? parseFloat(aiValRaw) : null;
-          const matchesAi = hasAi && Math.abs(numVal - aiValNum) < 1e-6;
+          const meta = STATE.multiFieldMeta[pkey] || null;
+          const hasAiVal = meta && meta.ai_value !== null && meta.ai_value !== undefined;
+          const aiValNum = hasAiVal ? Number(meta.ai_value) : null;
+          const matchesAi = hasAiVal && Math.abs(numVal - aiValNum) < 1e-6;
+
+          const instTag = meta?.instrument_detected ? `[${meta.instrument_detected}]` : "";
+          const clkTag = meta?.screen_time ? `[Meter Clock: ${meta.screen_time}]` : "";
+          const rowNote = [instTag, clkTag, userNote].filter(Boolean).join(" ");
+
+          const rowPlantNo = (STATE.tagSoilAsPlanter && pDef && isPlanterLevelParameter(pDef.key, pDef.category))
+            ? "Planter"
+            : base.plant_no;
+
           items.push({
             ...base,
-            parameter_key: inp.dataset.multikey,
+            plant_no: rowPlantNo,
+            category: pDef ? pDef.category : "biochemical_lab",
+            parameter_key: pkey,
+            parameter_label: pDef ? pDef.label_en : pkey,
+            unit: pDef ? pDef.unit : "unit",
             manual_value: matchesAi ? null : numVal,
-            ai_value: hasAi ? aiValNum : null,
-            ai_secondary_value: (aiSecRaw !== undefined && aiSecRaw !== "") ? parseFloat(aiSecRaw) : null,
-            verification_status: hasAi ? (STATE.currentAiResult?.verification_status || "ai_photo") : "human_confirmed",
-            ai_confidence: hasAi ? (STATE.currentAiResult?.ai_confidence ?? null) : null,
-            ai_model: hasAi ? (STATE.currentAiResult?.ai_model ?? null) : null,
-            photo_rel_path: hasAi ? STATE.currentPhotoRelPath : null,
-            notes: note,
+            ai_value: hasAiVal ? aiValNum : null,
+            final_value: numVal,
+            ai_secondary_value: meta?.ai_secondary_value ?? null,
+            verification_status: hasAiVal
+              ? (matchesAi ? (meta.verification_status || "ai_photo") : "human_confirmed")
+              : "human_confirmed",
+            ai_confidence: meta?.ai_confidence ?? null,
+            ai_model: meta?.ai_model ?? null,
+            photo_rel_path: meta?.photo_rel_path || null,
+            notes: rowNote,
           });
         }
       });
       if (!items.length) {
-        showToast("Fill at least one parameter box!", "#d97706");
+        showToast("Fill at least one parameter box or snap a meter screen photo!", "#d97706");
         return;
       }
       const ok = await submitBulkItems(items, advanceNext);
       if (ok) {
-        inputs.forEach(i => { i.value = ""; });
         document.getElementById("inpMultiNote").value = "";
         document.getElementById("inpMeasureTime").value = localIsoNow();
       }
@@ -3754,14 +4639,117 @@
     }
 
     function populateFilterParameters() {
-      const cat = document.getElementById("fltCategory").value;
-      const params = (CATALOG.parameters || []).filter(p => cat === "ALL" || p.category === cat);
-      const sel = document.getElementById("fltParam");
-      sel.innerHTML = `<option value="ALL">All Parameters (${params.length})</option>` +
-        params.map(p => `<option value="${p.key}">${p.label_en} (${p.unit})</option>`).join("");
+      syncFltParamHiddenAndUI();
+      renderFltParamCheckboxList();
+    }
+
+    function toggleFltParamDrawer() {
+      const drw = document.getElementById("fltParamDrawer");
+      if (!drw) return;
+      const openNow = drw.classList.contains("hidden");
+      drw.classList.toggle("hidden", !openNow);
+      if (openNow) renderFltParamCheckboxList();
+    }
+
+    function renderFltParamCheckboxList() {
+      const grid = document.getElementById("fltParamChkGrid");
+      if (!grid) return;
+      const cat = document.getElementById("fltCategory")?.value || "ALL";
+      const q = (document.getElementById("inpFltParamSearch")?.value || "").trim().toLowerCase();
+      const selSet = new Set(STATE.fltSelectedParams || []);
+      const list = getAllKnownParameters().filter(p => {
+        if (cat !== "ALL" && p.category !== cat) return false;
+        if (!q) return true;
+        return p.label_en.toLowerCase().includes(q) || p.key.toLowerCase().includes(q) || String(p.unit || "").toLowerCase().includes(q);
+      });
+      grid.innerHTML = list.map(p => {
+        const on = selSet.has(p.key);
+        return `
+          <label class="param-chk-lbl ${on ? 'checked' : ''}">
+            <input type="checkbox" class="row-chk" ${on ? "checked" : ""} onchange="toggleFltParamItem('${p.key}', this.checked)" />
+            <span>${p.label_en} <span style="opacity:0.7;">(${p.unit})</span></span>
+          </label>
+        `;
+      }).join("");
+    }
+
+    function toggleFltParamItem(pkey, checked) {
+      const s = new Set(STATE.fltSelectedParams || []);
+      if (checked) s.add(pkey); else s.delete(pkey);
+      STATE.fltSelectedParams = [...s];
+      syncFltParamHiddenAndUI();
+      renderFltParamCheckboxList();
+      loadDashboardData();
+    }
+
+    function setFilterParamPreset(preset) {
+      const allParams = getAllKnownParameters();
+      if (preset === "ALL" || preset === "NONE") {
+        STATE.fltSelectedParams = [];
+      } else if (preset === "MY_FORM") {
+        STATE.fltSelectedParams = [...getEffectiveMultiParamKeys()];
+      } else if (preset === "growth_spad") {
+        STATE.fltSelectedParams = ["plant_height_cm", "stem_diameter_mm", "leaf_count", "spad_value"];
+      } else {
+        STATE.fltSelectedParams = allParams.filter(p => p.category === preset).map(p => p.key);
+      }
+      if (preset !== "ALL" && preset !== "NONE") {
+        document.getElementById("fltCategory").value = "ALL";
+      }
+      syncFltParamHiddenAndUI();
+      renderFltParamCheckboxList();
+      loadDashboardData();
+    }
+
+    function applyFltParamDrawer() {
+      document.getElementById("fltParamDrawer")?.classList.add("hidden");
+      syncFltParamHiddenAndUI();
+      loadDashboardData();
+    }
+
+    function removeFltParamChip(pkey) {
+      STATE.fltSelectedParams = (STATE.fltSelectedParams || []).filter(k => k !== pkey);
+      syncFltParamHiddenAndUI();
+      renderFltParamCheckboxList();
+      loadDashboardData();
+    }
+
+    function syncFltParamHiddenAndUI() {
+      const sel = STATE.fltSelectedParams || [];
+      const hid = document.getElementById("fltParam");
+      if (hid) hid.value = sel.length ? sel.join(",") : "ALL";
+
+      const cat = document.getElementById("fltCategory")?.value || "ALL";
+      const total = getAllKnownParameters().filter(p => cat === "ALL" || p.category === cat).length;
+      const lbl = document.getElementById("lblFltParamBtn");
+      if (lbl) {
+        lbl.textContent = sel.length ? `Selected (${sel.length} Param${sel.length > 1 ? 's' : ''})` : `All Parameters (${total})`;
+      }
+
+      const chipsBox = document.getElementById("activeFltParamChips");
+      if (chipsBox) {
+        chipsBox.classList.toggle("hidden", sel.length === 0);
+        if (sel.length) {
+          const allKnown = getAllKnownParameters();
+          chipsBox.innerHTML = sel.map(k => {
+            const p = allKnown.find(x => x.key === k);
+            return `<button type="button" class="param-chip active" style="padding:4px 9px; font-size:0.72rem;" onclick="removeFltParamChip('${k}')">${p ? p.label_en : k} ✕</button>`;
+          }).join("") + `<button type="button" class="param-chip" style="padding:4px 9px; font-size:0.72rem;" onclick="setFilterParamPreset('ALL')">Clear All</button>`;
+        } else {
+          chipsBox.innerHTML = "";
+        }
+      }
     }
 
     function onFilterCategoryChange() {
+      const cat = document.getElementById("fltCategory").value;
+      if (cat !== "ALL" && (STATE.fltSelectedParams || []).length) {
+        const allKnown = getAllKnownParameters();
+        STATE.fltSelectedParams = STATE.fltSelectedParams.filter(k => {
+          const p = allKnown.find(x => x.key === k);
+          return p && p.category === cat;
+        });
+      }
       populateFilterParameters();
       loadDashboardData();
     }
@@ -4252,10 +5240,22 @@
       }
     }
 
-    // Bilingual (EN / TR) Professor A4 Print Report Renderer
+    function applyPrintOrientation() {
+      const orient = document.getElementById("selPrintOrientation")?.value || "portrait";
+      const dynStyle = document.getElementById("dynPrintOrientationStyle");
+      if (dynStyle) {
+        dynStyle.textContent = orient === "landscape"
+          ? "@media print { @page { size: A4 landscape; margin: 9mm; } }"
+          : "@media print { @page { size: A4 portrait; margin: 10mm; } }";
+      }
+    }
+
+    // Bilingual (EN / TR) Professor A4 Print Report Renderer (Stacked & Side-by-Side Multi-Param Matrix)
     function renderA4Report() {
+      applyPrintOrientation();
       const lang = document.getElementById("selPrintLang").value || "en";
       const isTr = lang === "tr";
+      const layoutStyle = document.getElementById("selPrintTableLayout")?.value || "stacked";
       const showSum = document.getElementById("chkPrintSummary").checked;
       const showReps = document.getElementById("chkPrintReps").checked;
       const showRaw = document.getElementById("chkPrintRaw").checked;
@@ -4288,17 +5288,77 @@
 
       const dats = STATE.dashRecords.map(r => r.dat).filter(d => d !== null && d !== undefined);
       const datTxt = dats.length ? `DAT ${Math.min(...dats)} – ${Math.max(...dats)}` : "—";
+      const sRows = STATE.dashSummary.summary_rows || [];
+      const uniqueParamsOrdered = [];
+      sRows.forEach(sr => {
+        if (!uniqueParamsOrdered.some(x => x.key === sr.parameter_key)) {
+          uniqueParamsOrdered.push({
+            key: sr.parameter_key,
+            label: isTr ? (sr.label_tr || sr.parameter_label) : sr.parameter_label,
+            unit: sr.unit,
+          });
+        }
+      });
+
       document.getElementById("a4MetaGrid").innerHTML = `
         <div><strong>${isTr ? "Bitki / Çeşit:" : "Crop / Cultivar:"}</strong> Domates cv. 'Optimum' (3:1 Torf:Perlit)</div>
         <div><strong>${isTr ? "Kapsanan Saksı:" : "Planters Covered:"}</strong> ${(STATE.dashSummary.unique_planters_measured || []).length} (${STATE.dashRecords.length} ${isTr ? "ölçüm" : "readings"})</div>
-        <div><strong>${isTr ? "Dikim Sonrası Gün:" : "DAT Window:"}</strong> ${datTxt}</div>
+        <div><strong>${isTr ? "Parametre / DAT:" : "Parameters / DAT:"}</strong> ${uniqueParamsOrdered.length} • ${datTxt}</div>
       `;
 
-      // Section 1: Summary Table
+      // Section 1: Summary Table (Stacked Rows vs Side-by-Side Multi-Parameter Matrix)
       document.getElementById("a4SummarySection").classList.toggle("hidden", !showSum);
-      const sRows = STATE.dashSummary.summary_rows || [];
       if (!sRows.length) {
         document.getElementById("a4SummaryTableWrap").innerHTML = `<p style="font-size:9pt;">${isTr ? "Seçilen filtrede veri bulunamadı." : "No summary rows in current filter."}</p>`;
+      } else if (layoutStyle === "matrix") {
+        const unitRowsMap = new Map();
+        sRows.forEach(sr => {
+          const uk = `${sr.fertigation_arm}|${sr.treatment_no}`;
+          if (!unitRowsMap.has(uk)) {
+            unitRowsMap.set(uk, {
+              arm: sr.fertigation_arm,
+              trt: sr.treatment_no,
+              code: sr.treatment_code,
+              doses: `${sr.nacl_mm}mM | ${sr.nahs_um}uM | ${sr.humic_mll}mL`,
+              cells: {},
+            });
+          }
+          unitRowsMap.get(uk).cells[sr.parameter_key] = sr;
+        });
+
+        const armOrder = { IoT: 1, Manual: 2, EXP1: 3 };
+        const sortedUnits = [...unitRowsMap.values()].sort((a, b) => {
+          const da = (armOrder[a.arm] || 9) - (armOrder[b.arm] || 9);
+          if (da !== 0) return da;
+          return (parseInt(a.trt.replace("T", ""), 10) || 0) - (parseInt(b.trt.replace("T", ""), 10) || 0);
+        });
+
+        document.getElementById("a4SummaryTableWrap").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>${isTr ? "Sistem" : "Arm"}</th>
+                <th>${isTr ? "Uygulama" : "Treatment"}</th>
+                <th>NaCl / H2S / HS</th>
+                ${uniqueParamsOrdered.map(p => `<th>${p.label}<br/><span style="font-weight:700; font-size:7.5pt;">(${p.unit})</span></th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedUnits.map(u => `
+                <tr>
+                  <td>${u.arm}</td>
+                  <td><strong>${u.trt}</strong> (${u.code})</td>
+                  <td>${u.doses}</td>
+                  ${uniqueParamsOrdered.map(p => {
+                    const c = u.cells[p.key];
+                    if (!c) return `<td>—</td>`;
+                    return `<td><strong>${c.mean} ± ${c.se}</strong><br/><span style="font-size:7pt; color:#334155;">n=${c.n}</span></td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
       } else {
         const repHdr = showReps ? `<th>R1</th><th>R2</th><th>R3</th><th>R4</th>` : "";
         document.getElementById("a4SummaryTableWrap").innerHTML = `
@@ -4343,37 +5403,79 @@
         `;
       }
 
-      // Section 2: Raw Observations
+      // Section 2: Raw Observations (Stacked Chronological vs Wide Planter × Multi-Param Matrix)
       document.getElementById("a4RawSection").classList.toggle("hidden", !showRaw);
       if (showRaw) {
-        document.getElementById("a4RawTableWrap").innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>${isTr ? "Tarih / DAT" : "Date / DAT"}</th>
-                <th>${isTr ? "Saksı / Bitki" : "Planter / Plant"}</th>
-                <th>${isTr ? "Parametre" : "Parameter"}</th>
-                <th>${isTr ? "Manuel" : "Manual"}</th>
-                <th>AI</th>
-                <th>${isTr ? "Kesin Değer" : "Final Value"}</th>
-                <th>${isTr ? "Not" : "Notes"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${STATE.dashRecords.slice(0, 120).map(r => `
+        if (layoutStyle === "matrix" && uniqueParamsOrdered.length > 0) {
+          const plantBuckets = new Map();
+          STATE.dashRecords.forEach(r => {
+            const pk = `${r.planter_code}|${r.plant_no}`;
+            if (!plantBuckets.has(pk)) {
+              plantBuckets.set(pk, {
+                planter_code: r.planter_code,
+                plant_no: r.plant_no,
+                dat: r.dat ?? 0,
+                vals: {},
+              });
+            }
+            const b = plantBuckets.get(pk);
+            if (b.vals[r.parameter_key] === undefined) {
+              b.vals[r.parameter_key] = r.final_value;
+            }
+          });
+          const wideRows = [...plantBuckets.values()].sort((a, b) => a.planter_code.localeCompare(b.planter_code) || a.plant_no.localeCompare(b.plant_no));
+          document.getElementById("a4RawTableWrap").innerHTML = `
+            <table>
+              <thead>
                 <tr>
-                  <td>${fmtLocalTime(r.measured_at, true)} (D${r.dat ?? 0})</td>
-                  <td>${r.planter_code} (${r.plant_no})</td>
-                  <td>${r.parameter_label}</td>
-                  <td>${r.manual_value ?? "—"}</td>
-                  <td>${r.ai_value ?? "—"}</td>
-                  <td><strong>${r.final_value} ${r.unit}</strong></td>
-                  <td>${r.notes || ""}</td>
+                  <th>${isTr ? "Saksı" : "Planter"}</th>
+                  <th>${isTr ? "Bitki" : "Plant"}</th>
+                  <th>DAT</th>
+                  ${uniqueParamsOrdered.map(p => `<th>${p.label} (${p.unit})</th>`).join("")}
                 </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        `;
+              </thead>
+              <tbody>
+                ${wideRows.slice(0, 140).map(wr => `
+                  <tr>
+                    <td><strong>${wr.planter_code}</strong></td>
+                    <td>${wr.plant_no}</td>
+                    <td>D${wr.dat}</td>
+                    ${uniqueParamsOrdered.map(p => `<td>${wr.vals[p.key] ?? "—"}</td>`).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        } else {
+          document.getElementById("a4RawTableWrap").innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>${isTr ? "Tarih / DAT" : "Date / DAT"}</th>
+                  <th>${isTr ? "Saksı / Bitki" : "Planter / Plant"}</th>
+                  <th>${isTr ? "Parametre" : "Parameter"}</th>
+                  <th>${isTr ? "Manuel" : "Manual"}</th>
+                  <th>AI</th>
+                  <th>${isTr ? "Kesin Değer" : "Final Value"}</th>
+                  <th>${isTr ? "Not" : "Notes"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${STATE.dashRecords.slice(0, 120).map(r => `
+                  <tr>
+                    <td>${fmtLocalTime(r.measured_at, true)} (D${r.dat ?? 0})</td>
+                    <td>${r.planter_code} (${r.plant_no})</td>
+                    <td>${r.parameter_label}</td>
+                    <td>${r.manual_value ?? "—"}</td>
+                    <td>${r.ai_value ?? "—"}</td>
+                    <td><strong>${r.final_value} ${r.unit}</strong></td>
+                    <td>${r.notes || ""}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
       }
 
       // Section 3: Treatments & Climate

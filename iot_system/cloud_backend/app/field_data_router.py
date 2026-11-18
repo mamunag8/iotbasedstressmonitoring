@@ -327,7 +327,12 @@ async def list_measurements_endpoint(
         search=search,
         limit=limit,
     )
-    summary = fdb.compute_summary_statistics(rows, experiment_code=experiment_code or "EXP2")
+    param_order = (
+        [x.strip() for x in parameter_key.split(",") if x.strip()]
+        if (parameter_key and parameter_key != "ALL")
+        else None
+    )
+    summary = fdb.compute_summary_statistics(rows, experiment_code=experiment_code or "EXP2", parameter_order=param_order)
     return {
         "records": rows,
         "summary": summary,
@@ -739,7 +744,12 @@ async def export_field_excel(
         end_date=end_date,
         limit=20000,
     )
-    summary = fdb.compute_summary_statistics(rows, experiment_code=experiment_code or "EXP2")
+    param_order = (
+        [x.strip() for x in parameter_key.split(",") if x.strip()]
+        if (parameter_key and parameter_key != "ALL")
+        else None
+    )
+    summary = fdb.compute_summary_statistics(rows, experiment_code=experiment_code or "EXP2", parameter_order=param_order)
     treatments = fdb.list_treatment_batches(experiment_code=experiment_code, start_date=start_date, end_date=end_date, limit=2000)
     climate = fdb.get_env_climate_summary(start_date=start_date, end_date=end_date, limit=5000)
 
@@ -783,7 +793,12 @@ async def export_field_excel(
 
     # Sheet 2: ANOVA-Ready Wide Table by Experimental Unit (Planter Mean across P1/P2)
     ws2 = wb.create_sheet(title="ANOVA_Wide_By_Planter")
-    param_cols = sorted({(r["parameter_key"], f"{r['parameter_label']} ({r['unit']})") for r in rows})
+    cat_rank = {p["key"]: idx for idx, p in enumerate(fdb.PARAMETER_CATALOG)}
+    exp_rank = {k: idx for idx, k in enumerate(param_order or [])}
+    param_cols = sorted(
+        {(r["parameter_key"], f"{r['parameter_label']} ({r['unit']})") for r in rows},
+        key=lambda item: (0, exp_rank[item[0]], item[0]) if item[0] in exp_rank else (1, cat_rank.get(item[0], 9999), item[0]),
+    )
     ws2.append([
         "Planter Code", "Arm", "Treatment No", "Treatment Code",
         "NaCl (mM)", "NaHS (uM)", "Humic (mL/L)", "Block / Replicate",

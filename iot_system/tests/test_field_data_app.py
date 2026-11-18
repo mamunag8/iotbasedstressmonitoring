@@ -664,3 +664,164 @@ def test_bulk_selection_bulk_edit_and_bulk_delete():
     html = client.get("/data-app").text
     for marker in ("bulkActionBar", "bulkEditModal", "submitBulkEdit", "bulkDeleteSelected", "onDashRowChkClick", "toggleSelectAllRecent", "bulkDeleteSelectedTreatments"):
         assert marker in html
+
+
+def test_custom_multiparam_multiphoto_dibl_7in1_and_multiparam_print(monkeypatch):
+    client = TestClient(app)
+
+    # 1. Verify DIBL FarmHub Soil 7-in-1 channels in catalog
+    cat = client.get("/api/v1/field-data/catalog").json()
+    pmap = {p["key"]: p for p in cat["parameters"]}
+    for fh_key in (
+        "hh_soil_vwc_pct",
+        "hh_soil_temp_c",
+        "hh_soil_ec_uscm",
+        "hh_soil_ph",
+        "hh_soil_n_mgkg",
+        "hh_soil_p_mgkg",
+        "hh_soil_k_mgkg",
+        "hh_soil_tds_ppm",
+        "hh_leaf_wetness_pct",
+    ):
+        assert fh_key in pmap
+        assert pmap[fh_key]["ai_profile"] == "dibl_farmhub_7in1_lcd"
+
+    # 2. Configure AI key & test DIBL FarmHub 7-in-1 Dual-AI extraction (including alias normalization)
+    client.post(
+        "/api/v1/field-data/ai-settings",
+        headers=PIN_HEADERS,
+        json={
+            "provider": "openrouter",
+            "openrouter_api_key": "sk-or-v1-testkey1234567890",
+            "primary_model": "google/gemini-2.5-flash",
+            "secondary_model": "openai/gpt-4o",
+            "dual_verify_enabled": True,
+        },
+    )
+    tiny_png = base64.b64encode(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00\x18\xdd\x8d\xb0\x00\x00\x00\x00IEND\xaeB`\x82"
+    ).decode("ascii")
+
+    async def mock_farmhub(api_key, model, b64_str, mime_type, prompt):
+        return {
+            "primary_value": 54.2,
+            "detected_unit": "%",
+            "instrument_detected": "DIBL FarmHub Soil 7-in-1",
+            "instrument_type": "dibl_farmhub_7in1",
+            "confidence": 0.99,
+            "unreadable": False,
+            "extra_fields": {
+                "moisture": 54.2,
+                "temp": 21.8,
+                "ec": 2450,
+                "ph": 6.12,
+                "n": 142,
+                "p": 58,
+                "k": 215,
+            },
+            "_model_used": model,
+        }
+
+    monkeypatch.setattr(fai, "_call_openrouter_vision", mock_farmhub)
+    r_fh = client.post(
+        "/api/v1/field-data/ai-read",
+        headers=PIN_HEADERS,
+        json={"image_base64": tiny_png, "parameter_key": "auto_detect"},
+    )
+    assert r_fh.status_code == 200
+    d_fh = r_fh.json()
+    assert d_fh["verification_status"] == "dual_ai_consensus"
+    assert d_fh["instrument_type"] == "dibl_farmhub_7in1"
+    assert d_fh["extra_fields"] == {
+        "hh_soil_vwc_pct": 54.2,
+        "hh_soil_temp_c": 21.8,
+        "hh_soil_ec_uscm": 2450.0,
+        "hh_soil_ph": 6.12,
+        "hh_soil_n_mgkg": 142.0,
+        "hh_soil_p_mgkg": 58.0,
+        "hh_soil_k_mgkg": 215.0,
+    }
+
+    # 3. Upload 4 more separate photos for SPAD, Porometer, IR Leaf, and IR Root-Zone on the same planter
+    photos = {"farmhub": d_fh["photo_rel_path"]}
+    for tag in ("spad", "poro", "ir_leaf", "ir_root"):
+        r_save = client.post(
+            "/api/v1/field-data/ai-read",
+            headers=PIN_HEADERS,
+            json={"image_base64": tiny_png, "parameter_key": "generic", "save_only": True},
+        ).json()
+        photos[tag] = r_save["photo_rel_path"]
+    assert len(set(photos.values())) == 5  # 5 distinct saved photo files!
+
+    # 4. Submit all 17 single-planter parameters together (P1 for leaf/plant + Planter for Soil 7-in-1 & Root Probe)
+    shared_ts = "2026-11-18T12:15:00+03:00"
+    base_unit = {
+        "experiment_code": "EXP2",
+        "measured_at": shared_ts,
+        "fertigation_arm": "IoT",
+        "treatment_no": "T4",
+        "replicate_no": "R1",
+    }
+    items = [
+        {**base_unit, "plant_no": "P1", "parameter_key": "plant_height_cm", "manual_value": 48.5},
+        {**base_unit, "plant_no": "P1", "parameter_key": "stem_diameter_mm", "manual_value": 8.42},
+        {**base_unit, "plant_no": "P1", "parameter_key": "spad_value", "ai_value": 47.6, "photo_rel_path": photos["spad"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "stomatal_conductance_gs", "ai_value": 182.4, "photo_rel_path": photos["poro"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "porometer_leaf_temp_c", "ai_value": 23.1, "photo_rel_path": photos["poro"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "porometer_leaf_rh_pct", "ai_value": 58.9, "photo_rel_path": photos["poro"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "porometer_sensor_temp_c", "ai_value": 22.9, "photo_rel_path": photos["poro"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "porometer_sensor_rh_pct", "ai_value": 48.3, "photo_rel_path": photos["poro"]},
+        {**base_unit, "plant_no": "P1", "parameter_key": "ir_leaf_temp_c", "ai_value": 22.4, "photo_rel_path": photos["ir_leaf"]},
+        {**base_unit, "plant_no": "Planter", "parameter_key": "probe_root_temp_c", "ai_value": 20.6, "photo_rel_path": photos["ir_root"]},
+        *[
+            {**base_unit, "plant_no": "Planter", "parameter_key": k, "ai_value": v, "photo_rel_path": photos["farmhub"]}
+            for k, v in d_fh["extra_fields"].items()
+        ],
+    ]
+    r_bulk = client.post("/api/v1/field-data/measurements/bulk", headers=PIN_HEADERS, json={"items": items})
+    assert r_bulk.status_code == 200
+    saved_recs = {r["parameter_key"]: r for r in r_bulk.json()["records"]}
+    assert len(saved_recs) == 17
+
+    # Each instrument kept its exact independent photo_rel_path!
+    assert saved_recs["spad_value"]["photo_rel_path"] == photos["spad"]
+    assert saved_recs["stomatal_conductance_gs"]["photo_rel_path"] == photos["poro"]
+    assert saved_recs["ir_leaf_temp_c"]["photo_rel_path"] == photos["ir_leaf"]
+    assert saved_recs["probe_root_temp_c"]["photo_rel_path"] == photos["ir_root"]
+    assert saved_recs["hh_soil_n_mgkg"]["photo_rel_path"] == photos["farmhub"]
+    assert saved_recs["ir_leaf_temp_c"]["plant_no"] == "P1"
+    assert saved_recs["hh_soil_n_mgkg"]["plant_no"] == "Planter"
+
+    # 5. Multi-Parameter Selection & Exact Parameter Order in Query + Excel Export
+    selected_order = ["hh_soil_n_mgkg", "ir_leaf_temp_c", "stomatal_conductance_gs", "spad_value"]
+    param_qs = ",".join(selected_order)
+    r_flt = client.get(f"/api/v1/field-data/measurements?experiment_code=EXP2&parameter_key={param_qs}").json()
+    assert len(r_flt["records"]) == 4
+    summary_keys = [sr["parameter_key"] for sr in r_flt["summary"]["summary_rows"]]
+    assert summary_keys == selected_order
+
+    r_xlsx = client.get(f"/api/v1/field-data/export/excel?experiment_code=EXP2&parameter_key={param_qs}")
+    assert r_xlsx.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(r_xlsx.content))
+    ws_wide = wb["ANOVA_Wide_By_Planter"]
+    wide_headers = [cell.value for cell in ws_wide[1]][8:]
+    assert wide_headers == [
+        "FarmHub Soil Nitrogen (N) (mg/kg)",
+        "IR Leaf Surface Temp (°C)",
+        "Stomatal Conductance (gs) (mmol/m2/s)",
+        "SPAD Chlorophyll (SPAD)",
+    ]
+
+    # 6. Verify new Multi-Parameter + Multi-Photo + Print Matrix UI markers
+    html = client.get("/data-app").text
+    for marker in (
+        "multiParamCustomizer",
+        "fileBatchMultiPhotos",
+        "handleSlotFilesSelected",
+        "handleBatchMultiPhotosSelected",
+        "fltParamDrawer",
+        "selPrintTableLayout",
+        "selPrintOrientation",
+        "chkTagSoilAsPlanter",
+    ):
+        assert marker in html

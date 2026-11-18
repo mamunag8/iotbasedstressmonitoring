@@ -87,15 +87,29 @@ def _build_vision_prompt(parameter_key: str, ai_profile: str, expected_unit: str
             "If shown in Fahrenheit ('F'), convert to Celsius: (F - 32) * 5 / 9, put Celsius in 'primary_value', and mention original F in 'notes'. "
             "If multiple temperatures (e.g. surface/min/max/probe) are visible on screen, include them in 'extra_fields'."
         ),
+        "dibl_farmhub_7in1_lcd": (
+            "INSTRUMENT: Handheld DIBL / SensPanel FarmHub Soil 7-in-1 NPK & Substrate Sensor Screen.\n"
+            "Extract ALL visible soil/substrate readings simultaneously into 'extra_fields' using these exact keys:\n"
+            "1. Soil Moisture / Humidity in % -> 'hh_soil_vwc_pct'\n"
+            "2. Soil Temperature in °C (if shown in °F, convert to °C) -> 'hh_soil_temp_c'\n"
+            "3. Soil Electrical Conductivity (EC) in uS/cm (IMPORTANT: if screen displays mS/cm, e.g. 2.45 mS/cm, multiply by 1000 -> 2450) -> 'hh_soil_ec_uscm'\n"
+            "4. Soil pH -> 'hh_soil_ph'\n"
+            "5. Soil Nitrogen (N) in mg/kg (or ppm) -> 'hh_soil_n_mgkg'\n"
+            "6. Soil Phosphorus (P) in mg/kg (or ppm) -> 'hh_soil_p_mgkg'\n"
+            "7. Soil Potassium (K) in mg/kg (or ppm) -> 'hh_soil_k_mgkg'\n"
+            "8. If Soil Salinity / TDS (mg/L or ppm) is also displayed -> 'hh_soil_tds_ppm'\n"
+            "9. If Leaf Surface Wetness (%) is displayed -> 'hh_leaf_wetness_pct'\n"
+            "Put the requested target parameter's value (or first visible reading) in 'primary_value' and set 'instrument_type' to 'dibl_farmhub_7in1'."
+        ),
         "ec_ph_lcd": (
-            "INSTRUMENT: Handheld Digital ATC EC/TDS/pH/Temp Combo Meter or 4-in-1 Soil/Leaf Meter LCD.\n"
+            "INSTRUMENT: Handheld Digital ATC EC/TDS/pH/Temp Combo Meter or Soil/Leaf Meter LCD.\n"
             "Check unit indicator carefully: 'uS/cm', 'mS/cm', 'ppm', or 'pH'.\n"
             f"IMPORTANT UNIT CHECK: Expected target unit is '{expected_unit}'. "
             "If the meter screen displays 'mS/cm' (e.g. 2.35 mS/cm) and expected unit is 'uS/cm', multiply by 1000 (2350).\n"
-            "If multiple values are displayed simultaneously on the screen (e.g., EC + TDS + pH + Temp, or Soil VWC + EC + pH + Temp), "
+            "If multiple values are displayed simultaneously on the screen (e.g., EC + TDS + pH + Temp, or Soil 7-in-1 VWC + Temp + EC + pH + N + P + K), "
             "extract ALL of them into 'extra_fields' using matching keys: "
             "for Drainage/Feed meters use 'drainage_ec_uscm', 'drainage_tds_ppm', 'drainage_ph', 'probe_solution_temp_c'; "
-            "for Handheld 4-in-1 Soil/Leaf meters use 'hh_soil_vwc_pct', 'hh_soil_ec_uscm', 'hh_soil_ph', 'hh_soil_temp_c', 'hh_leaf_temp_c', 'hh_leaf_rh_pct'."
+            "for Handheld DIBL FarmHub / Soil meters use 'hh_soil_vwc_pct', 'hh_soil_temp_c', 'hh_soil_ec_uscm', 'hh_soil_ph', 'hh_soil_n_mgkg', 'hh_soil_p_mgkg', 'hh_soil_k_mgkg', 'hh_soil_tds_ppm'."
         ),
         "balance_lcd": (
             "INSTRUMENT: Analytical / Precision Laboratory Balance (e.g., OHAUS Pioneer 0.0001 g).\n"
@@ -130,12 +144,15 @@ Target parameter key: "{parameter_key}" (Expected unit: "{expected_unit}").
 {specific}
 
 UNIVERSAL MULTI-VALUE SCREEN AUTO-DETECTION:
-- Even if a different target parameter key was selected, if the photo shows a multi-value instrument screen, ALWAYS extract ALL visible readings into "extra_fields":
-  * Decagon SC-1 Leaf Porometer: "stomatal_conductance_gs" (mmol/m2s), "porometer_leaf_temp_c" (left °C), "porometer_sensor_temp_c" (right °C), "porometer_leaf_rh_pct" (left %), "porometer_sensor_rh_pct" (right %).
-  * LI-6400XT: "photosynthesis_pn", "transpiration_tr", "stomatal_conductance_gs", "intercellular_ci".
-  * Handheld 4-in-1 Soil/Leaf sensor: "hh_soil_vwc_pct", "hh_soil_ec_uscm", "hh_soil_ph", "hh_soil_temp_c", "hh_leaf_temp_c", "hh_leaf_rh_pct".
-  * CI-202 Leaf Area Meter: "single_leaf_area_cm2", "leaf_length_cm", "leaf_width_cm", "leaf_perimeter_cm".
-  * Combo EC/TDS/pH/Temp meter: "drainage_ec_uscm", "drainage_tds_ppm", "drainage_ph", "probe_solution_temp_c".
+- Even if target parameter is "auto_detect" or a different parameter key, identify the instrument type and ALWAYS extract ALL visible readings into "extra_fields":
+  * SPAD-502 Chlorophyll Meter: "spad_value" (instrument_type = "spad").
+  * Decagon SC-1 Leaf Porometer: "stomatal_conductance_gs" (mmol/m2s), "porometer_leaf_temp_c" (left °C), "porometer_sensor_temp_c" (right °C), "porometer_leaf_rh_pct" (left %), "porometer_sensor_rh_pct" (right %) (instrument_type = "porometer").
+  * LI-6400XT Gas Exchange: "photosynthesis_pn", "transpiration_tr", "stomatal_conductance_gs", "intercellular_ci" (instrument_type = "porometer").
+  * DIBL / SensPanel FarmHub Soil 7-in-1 Sensor: "hh_soil_vwc_pct", "hh_soil_temp_c", "hh_soil_ec_uscm" (convert mS/cm * 1000 to uS/cm), "hh_soil_ph", "hh_soil_n_mgkg", "hh_soil_p_mgkg", "hh_soil_k_mgkg", "hh_soil_tds_ppm" (instrument_type = "dibl_farmhub_7in1").
+  * Spectrum #2958 IR / Penetration Probe Thermometer: put °C value in "primary_value" and set instrument_type = "ir_thermometer".
+  * CI-202 Leaf Area Meter: "single_leaf_area_cm2", "leaf_length_cm", "leaf_width_cm", "leaf_perimeter_cm" (instrument_type = "leaf_area").
+  * Combo EC/TDS/pH/Temp meter: "drainage_ec_uscm", "drainage_tds_ppm", "drainage_ph", "probe_solution_temp_c" (instrument_type = "ec_ph").
+- Set "instrument_type" to one of: "spad", "porometer", "ir_thermometer", "dibl_farmhub_7in1", "ec_ph", "leaf_area", "balance", "caliper", "generic".
 - If a clock or timer (e.g., "00:11" or "14:32") is visible on the instrument screen header, return it in "screen_time".
 
 CRITICAL ZERO-ERROR RULES FOR 7-SEGMENT & DOT-MATRIX LCD SCREENS:
@@ -154,6 +171,7 @@ Return ONLY valid JSON matching this exact structure (no markdown fences):
   "raw_screen_text": "<exact characters seen on screen>",
   "screen_time": "<HH:MM shown on meter screen or null>",
   "instrument_detected": "<short instrument name>",
+  "instrument_type": "<spad|porometer|ir_thermometer|dibl_farmhub_7in1|ec_ph|leaf_area|balance|caliper|generic>",
   "confidence": <number from 0.0 to 1.0>,
   "unreadable": <true or false>,
   "extra_fields": {{}},
@@ -248,6 +266,51 @@ async def _call_gemini_direct_vision(
         return parsed
 
 
+def _normalize_extra_key(raw_key: str, instrument_type: Optional[str]) -> str:
+    k = str(raw_key or "").strip().lower()
+    if k in fdb.PARAM_MAP:
+        return k
+    common_aliases = {
+        "spad": "spad_value",
+        "spad_chlorophyll": "spad_value",
+        "gs": "stomatal_conductance_gs",
+        "stomatal_conductance": "stomatal_conductance_gs",
+        "nitrogen": "hh_soil_n_mgkg",
+        "soil_n": "hh_soil_n_mgkg",
+        "n_mgkg": "hh_soil_n_mgkg",
+        "phosphorus": "hh_soil_p_mgkg",
+        "soil_p": "hh_soil_p_mgkg",
+        "p_mgkg": "hh_soil_p_mgkg",
+        "potassium": "hh_soil_k_mgkg",
+        "soil_k": "hh_soil_k_mgkg",
+        "k_mgkg": "hh_soil_k_mgkg",
+    }
+    if k in common_aliases:
+        return common_aliases[k]
+    if instrument_type == "dibl_farmhub_7in1":
+        fh_aliases = {
+            "moisture": "hh_soil_vwc_pct",
+            "humidity": "hh_soil_vwc_pct",
+            "soil_moisture": "hh_soil_vwc_pct",
+            "vwc": "hh_soil_vwc_pct",
+            "temp": "hh_soil_temp_c",
+            "temperature": "hh_soil_temp_c",
+            "soil_temp": "hh_soil_temp_c",
+            "ec": "hh_soil_ec_uscm",
+            "soil_ec": "hh_soil_ec_uscm",
+            "ph": "hh_soil_ph",
+            "soil_ph": "hh_soil_ph",
+            "n": "hh_soil_n_mgkg",
+            "p": "hh_soil_p_mgkg",
+            "k": "hh_soil_k_mgkg",
+            "tds": "hh_soil_tds_ppm",
+            "salinity": "hh_soil_tds_ppm",
+        }
+        if k in fh_aliases:
+            return fh_aliases[k]
+    return k
+
+
 def _values_match(v1: Optional[float], v2: Optional[float]) -> bool:
     if v1 is None or v2 is None:
         return False
@@ -339,21 +402,28 @@ async def analyze_field_photo(
         raw_extra_a = res_a.get("extra_fields") if isinstance(res_a.get("extra_fields"), dict) else {}
         raw_extra_b = res_b.get("extra_fields") if (isinstance(res_b, dict) and isinstance(res_b.get("extra_fields"), dict)) else {}
 
+        instrument_type = str(res_a.get("instrument_type") or "").strip().lower() or None
+        norm_extra_b: Dict[str, Any] = {
+            _normalize_extra_key(kb, instrument_type): vb for kb, vb in raw_extra_b.items()
+        }
         extra: Dict[str, float] = {}
         for k, v in raw_extra_a.items():
             if v is not None and v != "":
                 try:
-                    extra[k] = float(v)
+                    nk = _normalize_extra_key(k, instrument_type)
+                    extra[nk] = float(v)
                 except (ValueError, TypeError):
                     pass
         if val_a is not None and parameter_key in fdb.PARAM_MAP and parameter_key not in extra:
             extra[parameter_key] = val_a
+        elif val_a is not None and parameter_key in ("auto_detect", "generic") and instrument_type == "spad" and "spad_value" not in extra:
+            extra["spad_value"] = val_a
 
         extra_sec: Dict[str, Optional[float]] = {}
         extra_consensus: Dict[str, bool] = {}
         for k, v1 in extra.items():
-            v2_raw = raw_extra_b.get(k)
-            if v2_raw is None and k == parameter_key and val_b is not None:
+            v2_raw = norm_extra_b.get(k)
+            if v2_raw is None and (k == parameter_key or (k == "spad_value" and instrument_type == "spad")) and val_b is not None:
                 v2_raw = val_b
             v2_num: Optional[float] = None
             if v2_raw is not None and v2_raw != "":
@@ -363,6 +433,13 @@ async def analyze_field_photo(
                     v2_num = None
             extra_sec[k] = v2_num
             extra_consensus[k] = _values_match(v1, v2_num) if v2_num is not None else True
+
+        # Fallback if multi-screen meter returned values in extra_fields while primary_value was null
+        if val_a is None and extra:
+            first_k = next(iter(extra.keys()))
+            val_a = extra[first_k]
+            if val_b is None:
+                val_b = extra_sec.get(first_k)
 
         screen_time = str(res_a.get("screen_time") or (res_b.get("screen_time") if isinstance(res_b, dict) else "") or "").strip() or None
         if screen_time and screen_time.lower() in ("null", "none", "n/a"):
@@ -413,6 +490,7 @@ async def analyze_field_photo(
             "captured_at_iso": captured_at_iso,
             "screen_time": screen_time,
             "instrument_detected": instrument_detected,
+            "instrument_type": instrument_type,
             "ai_value": val_a,
             "ai_secondary_value": val_b,
             "detected_unit": res_a.get("detected_unit") or expected_unit,

@@ -283,11 +283,16 @@ PARAMETER_CATALOG: List[Dict[str, Any]] = [
     {"key": "probe_solution_temp_c", "category": "ir_thermometer", "label_en": "Probe Solution Temp", "label_tr": "Prob Cozelti Sicakligi", "unit": "°C", "min": 5.0, "max": 45.0, "decimals": 1, "ai_profile": "ir_thermometer_lcd"},
     {"key": "canopy_delta_t_c", "category": "ir_thermometer", "label_en": "Leaf-Air Delta T", "label_tr": "Yaprak-Hava Delta T", "unit": "°C", "min": -12.0, "max": 15.0, "decimals": 2, "ai_profile": "ir_thermometer_lcd"},
 
-    # 4. Handheld Soil 4-in-1 & Leaf RH/T Reference Unit (Manual Arm Weekly Check)
-    {"key": "hh_soil_vwc_pct", "category": "handheld_sensor", "label_en": "Handheld Substrate VWC", "label_tr": "El Sensoru Ortam Nemi (VWC)", "unit": "%", "min": 1.0, "max": 100.0, "decimals": 1, "ai_profile": "generic_lcd"},
-    {"key": "hh_soil_ec_uscm", "category": "handheld_sensor", "label_en": "Handheld Substrate EC", "label_tr": "El Sensoru Ortam EC", "unit": "uS/cm", "min": 50.0, "max": 25000.0, "decimals": 0, "ai_profile": "ec_ph_lcd"},
-    {"key": "hh_soil_ph", "category": "handheld_sensor", "label_en": "Handheld Substrate pH", "label_tr": "El Sensoru Ortam pH", "unit": "pH", "min": 3.0, "max": 9.5, "decimals": 2, "ai_profile": "ec_ph_lcd"},
-    {"key": "hh_soil_temp_c", "category": "handheld_sensor", "label_en": "Handheld Substrate Temp", "label_tr": "El Sensoru Ortam Sicakligi", "unit": "°C", "min": 5.0, "max": 45.0, "decimals": 1, "ai_profile": "generic_lcd"},
+    # 4. Handheld DIBL FarmHub Soil 7-in-1 & Leaf Reference Unit (Manual & IoT Spot Checks)
+    {"key": "hh_soil_vwc_pct", "category": "handheld_sensor", "label_en": "FarmHub Soil Moisture (VWC)", "label_tr": "FarmHub Toprak Nemi (VWC)", "unit": "%", "min": 1.0, "max": 100.0, "decimals": 1, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_temp_c", "category": "handheld_sensor", "label_en": "FarmHub Soil Temp", "label_tr": "FarmHub Toprak Sicakligi", "unit": "°C", "min": 5.0, "max": 45.0, "decimals": 1, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_ec_uscm", "category": "handheld_sensor", "label_en": "FarmHub Soil EC", "label_tr": "FarmHub Toprak EC", "unit": "uS/cm", "min": 20.0, "max": 25000.0, "decimals": 0, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_ph", "category": "handheld_sensor", "label_en": "FarmHub Soil pH", "label_tr": "FarmHub Toprak pH", "unit": "pH", "min": 3.0, "max": 9.5, "decimals": 2, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_n_mgkg", "category": "handheld_sensor", "label_en": "FarmHub Soil Nitrogen (N)", "label_tr": "FarmHub Toprak Azot (N)", "unit": "mg/kg", "min": 0.0, "max": 2000.0, "decimals": 0, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_p_mgkg", "category": "handheld_sensor", "label_en": "FarmHub Soil Phosphorus (P)", "label_tr": "FarmHub Toprak Fosfor (P)", "unit": "mg/kg", "min": 0.0, "max": 2000.0, "decimals": 0, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_k_mgkg", "category": "handheld_sensor", "label_en": "FarmHub Soil Potassium (K)", "label_tr": "FarmHub Toprak Potasyum (K)", "unit": "mg/kg", "min": 0.0, "max": 3000.0, "decimals": 0, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_soil_tds_ppm", "category": "handheld_sensor", "label_en": "FarmHub Soil Salinity / TDS", "label_tr": "FarmHub Toprak Tuzluluk / TDS", "unit": "mg/L", "min": 0.0, "max": 20000.0, "decimals": 0, "ai_profile": "dibl_farmhub_7in1_lcd"},
+    {"key": "hh_leaf_wetness_pct", "category": "handheld_sensor", "label_en": "Handheld Leaf Surface Wetness", "label_tr": "El Sensoru Yaprak Islakligi", "unit": "%", "min": 0.0, "max": 100.0, "decimals": 1, "ai_profile": "dibl_farmhub_7in1_lcd"},
     {"key": "hh_leaf_temp_c", "category": "handheld_sensor", "label_en": "Handheld Leaf Temp", "label_tr": "El Sensoru Yaprak Sicakligi", "unit": "°C", "min": 5.0, "max": 50.0, "decimals": 1, "ai_profile": "generic_lcd"},
     {"key": "hh_leaf_rh_pct", "category": "handheld_sensor", "label_en": "Handheld Leaf RH", "label_tr": "El Sensoru Yaprak Nemi", "unit": "%", "min": 5.0, "max": 100.0, "decimals": 1, "ai_profile": "generic_lcd"},
 
@@ -1189,7 +1194,11 @@ def query_measurements(
         return [_enrich_measurement_row(r) for r in db._fetchall_dicts(cur)]
 
 
-def compute_summary_statistics(rows: List[Dict[str, Any]], experiment_code: str = "EXP2") -> Dict[str, Any]:
+def compute_summary_statistics(
+    rows: List[Dict[str, Any]],
+    experiment_code: str = "EXP2",
+    parameter_order: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     """
     Computes publication-ready Mean, SD, SE, Min, Max, N, % vs Control (T1 / T5),
     and 64-Planter Completeness Matrix for the Dashboard & Bilingual A4 Professor Print Studio.
@@ -1254,7 +1263,20 @@ def compute_summary_statistics(rows: List[Dict[str, Any]], experiment_code: str 
         rmap = rep_values.get((p_key, arm_name, trt_code), {})
         return [sum(rv) / len(rv) for _, rv in sorted(rmap.items()) if rv]
 
-    for pkey, pinfo in param_meta_seen.items():
+    catalog_rank = {p["key"]: idx for idx, p in enumerate(PARAMETER_CATALOG)}
+    explicit_rank = {k.strip(): idx for idx, k in enumerate(parameter_order or []) if k and k.strip()}
+
+    def _param_sort_key(pk: str) -> Tuple[int, int, str]:
+        if pk in explicit_rank:
+            return (0, explicit_rank[pk], pk)
+        if pk in catalog_rank:
+            return (1, catalog_rank[pk], pk)
+        return (2, 9999, pk)
+
+    ordered_pkeys = sorted(param_meta_seen.keys(), key=_param_sort_key)
+
+    for pkey in ordered_pkeys:
+        pinfo = param_meta_seen[pkey]
         for arm in ("IoT", "Manual", "EXP1"):
             ctrl_0 = _stats(_rep_mean_series(pkey, arm, "T1"))["mean"]
             ctrl_salt = _stats(_rep_mean_series(pkey, arm, "T5"))["mean"]
